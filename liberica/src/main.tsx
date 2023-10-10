@@ -1,4 +1,4 @@
-import { CreateTeam } from "page/CreateeTeam";
+import { CreateTeam } from "page/CreateTeam";
 import { Home } from "page/Home";
 import React from "react";
 import ReactDOM from "react-dom/client";
