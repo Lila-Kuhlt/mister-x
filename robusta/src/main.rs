@@ -4,9 +4,10 @@ use axum::{
     routing::get,
     Router,
 };
-use specta::{*, ts::*};
 
 mod ws_message;
+
+mod kvv;
 
 async fn handler(ws: WebSocketUpgrade) -> Response {
     ws.on_upgrade(handle_socket)
@@ -14,12 +15,15 @@ async fn handler(ws: WebSocketUpgrade) -> Response {
 
 async fn handle_socket(mut socket: WebSocket) {
     while let Some(msg) = socket.recv().await {
+
         let msg = if let Ok(msg) = msg {
             msg
         } else {
             // client disconnected
             return;
         };
+
+        let update = ws_message::ServerMessage::GameState(ws_message::GameState::default() )
 
         if socket.send(msg).await.is_err() {
             // client disconnected
@@ -30,8 +34,7 @@ async fn handle_socket(mut socket: WebSocket) {
 
 #[tokio::main]
 async fn main() {
-
-    specta::export::ts("../liberica/lib/bindings.ts").unwrap();
+    specta::export::ts("../liberica/src/lib/bindings.ts").unwrap();
 
     // build our application with a single route
     let app = Router::new().route("/ws", get(handler));

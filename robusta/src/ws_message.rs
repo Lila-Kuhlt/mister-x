@@ -1,4 +1,3 @@
-
 #[derive(specta::Type)]
 pub enum ClientMessage {
     Position { x: f32, y: f32 },
@@ -10,13 +9,11 @@ pub enum ServerMessage {
     GameState(GameState),
 }
 
-
-#[derive(specta::Type)]
+#[derive(specta::Type, Default, Clone)]
 pub struct GameState {
     pub players: Vec<Player>,
     pub trains: Vec<Train>,
 }
-
 
 #[derive(specta::Type)]
 pub struct Player {
@@ -42,4 +39,3 @@ pub struct Line {
     pub name: String,
     pub color: String,
 }
-
