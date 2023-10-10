@@ -4,6 +4,9 @@ use axum::{
     routing::get,
     Router,
 };
+use specta::{*, ts::*};
+
+mod ws_message;
 
 async fn handler(ws: WebSocketUpgrade) -> Response {
     ws.on_upgrade(handle_socket)
@@ -27,6 +30,9 @@ async fn handle_socket(mut socket: WebSocket) {
 
 #[tokio::main]
 async fn main() {
+
+    specta::export::ts("./bindings.ts").unwrap();
+
     // build our application with a single route
     let app = Router::new().route("/ws", get(handler));
 
