@@ -1,4 +1,5 @@
 import { CreateTeam } from "page/CreateTeam";
+import { Game } from "page/Game";
 import { Home } from "page/Home";
 import React from "react";
 import ReactDOM from "react-dom/client";
@@ -10,6 +11,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/create-team" element={<CreateTeam />} />
+        <Route path="/game" element={<Game />} />
       </Routes>
     </BrowserRouter>
   </React.StrictMode>
