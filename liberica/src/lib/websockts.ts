@@ -8,20 +8,20 @@ export class WebsocketApi {
   handlers: WSHandler[];
   errorHandler: WSErrorHandler;
 
-  constructor(endpoint: string) {
+  constructor(endpoint: string, connected: (api: WebsocketApi) => void) {
     this.connection = new WebSocket(endpoint);
 
     this.handlers = [];
     this.errorHandler = (x) => console.error("Websocket Error occured", x);
     this.connection.onerror = this.errorHandler;
-    this.connection.onopen = () => console.log("Established WS connection");
-    this.connection.onclose = () => console.log("Closed WS connection");
+    this.connection.onopen = () => {
+      connected(this);
+      console.log("Established WS connection");
+    };
+    this.connection.onclose = () => {
+      console.log("Closed WS connection");
+    };
     this.connection.onmessage = (e) => {
-      if (e.type !== "text") {
-        this.errorHandler("Unexpected message type, exptected only text");
-        return;
-      }
-
       const json = JSON.parse(e.data as string);
       this.handlers.forEach((handler) => handler(json as ServerMessage));
     };
@@ -38,6 +38,6 @@ export class WebsocketApi {
   }
 
   public send(msg: ClientMessage) {
-    this.connection.send(JSON.stringify(msg), this.errorHandler);
+    this.connection.send(JSON.stringify(msg));
   }
 }
