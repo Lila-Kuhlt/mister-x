@@ -15,7 +15,6 @@ async fn handler(ws: WebSocketUpgrade) -> Response {
 
 async fn handle_socket(mut socket: WebSocket) {
     while let Some(msg) = socket.recv().await {
-
         let msg = if let Ok(msg) = msg {
             msg
         } else {
@@ -23,9 +22,10 @@ async fn handle_socket(mut socket: WebSocket) {
             return;
         };
 
-        let update = ws_message::ServerMessage::GameState(ws_message::GameState::default() )
+        let update = ws_message::ServerMessage::GameState(ws_message::GameState::default());
+        let msg = serde_json::to_string(&update).unwrap();
 
-        if socket.send(msg).await.is_err() {
+        if socket.send(msg.into()).await.is_err() {
             // client disconnected
             return;
         }
