@@ -11,5 +11,15 @@ export function Game() {
 
   useEffect(() => ws?.send({ Message: "lol" }), [ws]);
 
+  useEffect(() => {
+    navigator.geolocation.watchPosition(
+      (pos) =>
+        pos.coords.altitude &&
+        ws?.send({
+          Position: { x: pos.coords.altitude, y: pos.coords.longitude },
+        })
+    );
+  }, [ws]);
+
   return <div></div>;
 }
