@@ -31,7 +31,7 @@ async fn handle_socket(mut socket: WebSocket) {
 #[tokio::main]
 async fn main() {
 
-    specta::export::ts("./bindings.ts").unwrap();
+    specta::export::ts("../liberica/lib/bindings.ts").unwrap();
 
     // build our application with a single route
     let app = Router::new().route("/ws", get(handler));
