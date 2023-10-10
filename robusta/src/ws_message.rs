@@ -42,7 +42,7 @@ pub struct Train {
     pub direction: String,
 }
 
-#[derive(specta::Type, Default, Clone, Serialize, Deserialize)]
+#[derive(specta::Type, Default, Clone, Serialize, Deserialize, Debug)]
 pub struct Line {
     pub id: u32,
     pub name: String,

@@ -7,9 +7,11 @@ edition = "2021"
 
 [dependencies]
 axum = { version = "0.6.20", features = ["ws", "tracing", "macros"] }
+chrono = "0.4.31"
 kvvliveapi = { git = "https://github.com/CodeAssemblingChicken/kvvliveapi-rs", version = "0.1.0" }
 serde = { version = "1.0.188", features = ["derive"] }
 serde_json = "1.0.107"
 specta = { version = "1.0.5", features = ["export"] }
 tokio = { version = "1.33.0", features = ["full"] }
 tracing = { version = "0.1.37", features = ["async-await"] }
+tracing-subscriber = "0.3.17"

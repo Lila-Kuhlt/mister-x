@@ -73,6 +73,7 @@ async fn list_teams(State(state): State<SharedState>) -> impl IntoResponse {
 
 #[tokio::main]
 async fn main() {
+    tracing_subscriber::fmt().init();
     specta::export::ts("../liberica/src/lib/bindings.ts").unwrap();
 
     let state = AppState::default();
