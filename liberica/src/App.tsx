@@ -1,7 +1,9 @@
-import { useState } from "react";
+import "./App.css"
 
 function App() {
-  return <div>test</div>;
+  return <div className="testdiv">
+    <p className="test">test</p>
+    </div>;
 }
 
 export default App;
