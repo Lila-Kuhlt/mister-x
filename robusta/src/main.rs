@@ -78,8 +78,8 @@ async fn main() {
     let state = AppState::default();
 
     let api = Router::new()
-        .route("create-team", post(create_team))
-        .route("teams", get(list_teams))
+        .route("/create-team", post(create_team))
+        .route("/teams", get(list_teams))
         .with_state(std::sync::Arc::new(tokio::sync::Mutex::new(state)));
 
     // build our application with a single route
