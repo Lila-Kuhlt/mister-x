@@ -8,5 +8,6 @@ edition = "2021"
 [dependencies]
 axum = { version = "0.6.20", features = ["ws", "tracing", "macros"] }
 kvvliveapi = { git = "https://github.com/CodeAssemblingChicken/kvvliveapi-rs", version = "0.1.0" }
+specta = "1.0.5"
 tokio = { version = "1.33.0", features = ["full"] }
 tracing = { version = "0.1.37", features = ["async-await"] }
