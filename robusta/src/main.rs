@@ -1,8 +1,8 @@
 use axum::{
     extract::ws::{WebSocket, WebSocketUpgrade},
     response::{IntoResponse, Response},
-    routing::get,
-    Router,
+    routing::{get, post},
+    Json, Router,
 };
 
 mod ws_message;
@@ -32,12 +32,18 @@ async fn handle_socket(mut socket: WebSocket) {
     }
 }
 
+pub async fn create_team(Json(team): Json<ws_message::Team>) -> impl IntoResponse {
+    Response::new("Hello World".to_string())
+}
+
 #[tokio::main]
 async fn main() {
     specta::export::ts("../liberica/src/lib/bindings.ts").unwrap();
 
     // build our application with a single route
-    let app = Router::new().route("/ws", get(handler));
+    let app = Router::new()
+        .route("/ws", get(handler))
+        .route("/api/create-team", post(create_team));
 
     // run it with hyper on localhost:3000
     axum::Server::bind(&"0.0.0.0:3000".parse().unwrap())

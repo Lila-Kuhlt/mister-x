@@ -23,6 +23,13 @@ pub struct Player {
     pub x: f32,
     pub y: f32,
     pub name: String,
+    pub team_id: u32,
+}
+
+#[derive(specta::Type, Default, Clone, Serialize, Deserialize)]
+pub struct Team {
+    pub id: u32,
+    pub name: String,
     pub color: String,
 }
 
