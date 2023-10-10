@@ -1,5 +1,8 @@
 use axum::{
-    extract::ws::{WebSocket, WebSocketUpgrade},
+    extract::{
+        ws::{WebSocket, WebSocketUpgrade},
+        State,
+    },
     response::{IntoResponse, Response},
     routing::{get, post},
     Json, Router,
@@ -15,6 +18,8 @@ mod kvv;
 struct AppState {
     pub teams: Vec<ws_message::Team>,
 }
+
+type SharedState = std::sync::Arc<tokio::sync::Mutex<AppState>>;
 
 async fn handler(ws: WebSocketUpgrade) -> Response {
     ws.on_upgrade(handle_socket)
@@ -52,8 +57,18 @@ async fn handle_socket(mut socket: WebSocket) {
     }
 }
 
-pub async fn create_team(Json(team): Json<ws_message::Team>) -> impl IntoResponse {
+async fn create_team(
+    State(state): State<SharedState>,
+    Json(team): Json<ws_message::Team>,
+) -> impl IntoResponse {
+    let mut state = state.lock().await;
+    state.teams.push(team.clone());
     Response::new(format!("Created, {}!", team.name))
+}
+
+async fn list_teams(State(state): State<SharedState>) -> impl IntoResponse {
+    let state = state.lock().await;
+    Response::new(serde_json::to_string(&state.teams).unwrap())
 }
 
 #[tokio::main]
@@ -64,7 +79,8 @@ async fn main() {
 
     let api = Router::new()
         .route("create-team", post(create_team))
-        .with_state(state);
+        .route("teams", get(list_teams))
+        .with_state(std::sync::Arc::new(tokio::sync::Mutex::new(state)));
 
     // build our application with a single route
     let app = Router::new().route("/ws", get(handler)).nest("/api", api);
