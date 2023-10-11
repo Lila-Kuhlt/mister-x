@@ -2,7 +2,7 @@
 
 export type Player = { id: number; x: number; y: number; name: string; team_id: number }
 
-export type Train = { id: number; x: number; y: number; line_id: Line; direction: string }
+export type Train = { id: number; long: number; lat: number; line_id: string; direction: string }
 
 export type GameState = { players: Player[]; trains: Train[] }
 

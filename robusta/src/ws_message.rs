@@ -33,12 +33,12 @@ pub struct Team {
     pub color: String,
 }
 
-#[derive(specta::Type, Default, Clone, Serialize, Deserialize)]
+#[derive(specta::Type, Default, Clone, Serialize, Deserialize, Debug)]
 pub struct Train {
     pub id: u32,
-    pub x: f32,
-    pub y: f32,
-    pub line_id: Line,
+    pub long: f32,
+    pub lat: f32,
+    pub line_id: String,
     pub direction: String,
 }
 

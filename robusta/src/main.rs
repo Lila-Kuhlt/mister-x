@@ -76,6 +76,9 @@ async fn main() {
     tracing_subscriber::fmt().init();
     specta::export::ts("../liberica/src/lib/bindings.ts").unwrap();
 
+    let trains = kvv::train_positions();
+    dbg!(trains.await);
+
     let state = AppState::default();
 
     let api = Router::new()
