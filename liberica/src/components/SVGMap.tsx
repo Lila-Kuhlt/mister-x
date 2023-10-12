@@ -1,28 +1,50 @@
 import { Train, Player} from 'lib/bindings'
+import "./SVGMap.css"
+import { Tooltip, Marker, MapContainer, TileLayer } from 'react-leaflet'
+import { LayersControl } from 'react-leaflet'
+import L from 'leaflet';
+import { TrainIcon, DetectiveIcon, MrXIcon } from './map_icons'
 
-export default function SVGMap(props: {trains: Train[], players: Player[]}) {
-  const stations = [
-    {x: 100, y: 100, name: "Hamburg"},
-  ];
-  return <div>
-      <svg>
-        {/* Background map */}
-        <use href="public/map.svg" />
+var viewBounds: L.LatLngBounds = new L.LatLngBounds([49.0129685,8.3782551], [48.9906205,8.4203851]);
 
-        {/* Dynamic train stations */}
-        {stations.map(station => (
-          <rect key={station.name} x={station.x} y={station.y} width="10" height="10" fill="yellow" />
-        ))}
+export default function SVGMap(props: { trains: Train[], players: Player[], mrX: Player}) {
+  return <div> 
+    <MapContainer bounds={viewBounds} zoom={13} >
+      <TileLayer
+        attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+       />
+     <Marker 
+       icon={MrXIcon}
+       position={[props.mrX.x, props.mrX.y]}>
+       <Tooltip> Mr X war hier </Tooltip>
+     </Marker>
+     <LayersControl position="topright">
 
-        {/* Dynamic train cars */}
-        {props.trains.map(train => (
-          <rect key={train.id} x={train.x} y={train.y} width="10" height="10" fill="yellow" />
-        ))}
+        {/* Trains */}
+        <LayersControl.Overlay checked name="Trains">
+         {props.trains.map((train) => 
+           <Marker 
+             key={train.id} 
+             icon={TrainIcon}
+             position={[train.lat, train.long]}>
+             <Tooltip> Linie {train.line_id} to {train.direction} </Tooltip>
+           </Marker>
+         )}
+        </LayersControl.Overlay>
 
-        {/* Dynamic Players */}
-        {props.players.map(player => (
-          <rect key={player.id} x={player.x} y={player.y} width="10" height="10" fill="red" />
-        ))}
-      </svg>
-    </div>
+        {/* Detectives */}
+        <LayersControl.Overlay checked name="Detectives">
+        {props.players.map((player) =>
+          <Marker
+            key={player.id}
+            icon={DetectiveIcon}
+            position={[player.x, player.y]}>
+            <Tooltip> {player.name} </Tooltip>
+          </Marker>
+        )}
+        </LayersControl.Overlay>
+       </LayersControl> 
+     </MapContainer>
+   </div>
 }

@@ -13,7 +13,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <Route path="/" element={<Home />} />
         <Route path="/create-team" element={<CreateTeam />} />
         <Route path="/game" element={<Game />} />
-        <Route path="/game-map" element={<Map />} />
+        <Route path="/map" element={<Map />} />
       </Routes>
     </BrowserRouter>
   </React.StrictMode>
