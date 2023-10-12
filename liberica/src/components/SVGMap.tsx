@@ -20,6 +20,14 @@ export default function SVGMap(props: { trains: Train[], players: Player[], mrX:
        <Tooltip> Mr X war hier </Tooltip>
      </Marker>
      <LayersControl position="topright">
+        {/* Mr X */}
+        <LayersControl.Overlay checked name="Mr X">
+          <Marker 
+            icon={MrXIcon}
+            position={[props.mrX.x, props.mrX.y]}>
+            <Tooltip> Mr X war hier </Tooltip>
+          </Marker>
+        </LayersControl.Overlay>
 
         {/* Trains */}
         <LayersControl.Overlay checked name="Trains">
