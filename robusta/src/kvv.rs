@@ -1,14 +1,26 @@
 use std::collections::HashMap;
 
-use kvvliveapi::Stop as KvvStop;
-
 mod api;
 
 use crate::ws_message::{Line, Train};
 
+#[derive(Debug, serde::Serialize, serde::Deserialize, specta::Type)]
 pub struct Stop {
     id: u32,
     kvv_stop: KvvStop,
+}
+
+/// Information about a tram station
+#[derive(Debug, specta::Type, serde::Serialize, serde::Deserialize, PartialEq)]
+pub struct KvvStop {
+    /// human readable stop name
+    pub name: String,
+    /// internal stop id
+    pub id: String,
+    /// position latitude
+    pub lat: f64,
+    /// position longitude
+    pub lon: f64,
 }
 
 #[derive(Clone, Default)]
@@ -81,7 +93,6 @@ fn parse_curve(line: &str) -> (String, String, Vec<Point>) {
     let end = parts.next().unwrap().parse().unwrap();
     let points = parts
         .map(|point| {
-            dbg!(&point);
             let mut coords = point.split(',');
             let x = coords.next().unwrap().trim().parse().unwrap();
             let y = coords.next().unwrap().trim().parse().unwrap();
@@ -115,12 +126,10 @@ fn intermediate_points(start_id: u32, end_id: u32) -> Vec<Point> {
 pub async fn kvv_stops() -> Vec<Stop> {
     let mut stops = Vec::new();
     for (id, stop) in STOPS.iter().enumerate() {
-        dbg!(stop);
+        tracing::trace!("fetching stop id for {}", stop);
 
         let stop_id = api::fetch_stop_id(stop).await.unwrap();
-        dbg!(&stop_id);
         let kvv_stop = api::fetch_stop_by_id(&stop_id).await.unwrap();
-        dbg!(&kvv_stop);
 
         stops.push(Stop {
             id: id as u32,
@@ -260,8 +269,15 @@ pub fn train_positions_per_route(
     trains
 }
 
-pub async fn train_positions() -> Vec<Train> {
+pub static KVV_STOPS: std::sync::OnceLock<Vec<Stop>> = std::sync::OnceLock::new();
+
+pub async fn init() {
     let stops = kvv_stops().await;
+    KVV_STOPS.set(stops).expect("failed to set KVV_STOPS");
+}
+
+pub async fn train_positions() -> Vec<Train> {
+    let stops = KVV_STOPS.get().expect("KVV_STOPS not initialized");
     let departures_per_line = fetch_departures(&stops).await;
 
     let mut trains = Vec::new();

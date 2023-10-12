@@ -25,7 +25,6 @@ pub async fn fetch_departures(stop: &str) -> Result<kvvliveapi::Departures, reqw
         .from_local_datetime(&Local::now().naive_local())
         .unwrap();
     for departure in response.departure_list.unwrap() {
-        dbg!(&departure);
         let line_name = departure.serving_line.symbol;
         let destination = departure.serving_line.direction;
         let time = departure.date_time;
@@ -70,18 +69,16 @@ pub async fn fetch_stop_id(name: &str) -> Result<String, reqwest::Error> {
     let request_string = format!("https://www.kvv.de/tunnelEfaDirect.php?action=XSLT_STOPFINDER_REQUEST&coordOutputFormat=WGS84[dd.ddddd]&name_sf=Karlsruhe, {}&language=de&outputFormat=JSON&type_sf=stop", name);
     let response = reqwest::get(&request_string).await?;
     let response = response.text().await?;
-    println!("{}", &response);
     let response: StopFinderResponse = serde_json::from_str(&response).unwrap();
-    dbg!(&response);
     let id = response.stop_finder.points.first().point_ref.id.clone();
     Ok(id)
 }
 
-pub async fn fetch_stop_by_id(id: &str) -> Result<kvvliveapi::Stop, reqwest::Error> {
+pub async fn fetch_stop_by_id(id: &str) -> Result<super::KvvStop, reqwest::Error> {
     let response = fetch_stop_events(id).await?;
     let departure = &response.departure_list.unwrap()[0];
     let pos = (departure.x.parse().unwrap(), departure.y.parse().unwrap());
-    let stop = kvvliveapi::Stop {
+    let stop = super::KvvStop {
         id: id.to_owned(),
         name: departure.stop_name.clone(),
         lon: pos.0,
