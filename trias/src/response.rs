@@ -9,27 +9,17 @@ pub struct TriasResponse {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum DeliveryPayload {
     LocationInformationResponse(LocationInformationResponse),
-    StopEventResponse(StopEventResponse),
+    StopEventResponse(Vec<StopEventResponse>),
     TripResponse(TripResponse),
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "PascalCase")]
 pub struct ServiceDelivery {
-    #[serde(rename = "ResponseTimestamp")]
     pub response_timestamp: ProducerRef,
-
-    #[serde(rename = "ProducerRef")]
     pub producer_ref: ProducerRef,
-
-    #[serde(rename = "Status")]
     pub status: ProducerRef,
-
-    #[serde(rename = "MoreData")]
     pub more_data: String,
-
-    #[serde(rename = "Language")]
     pub language: LanguageEnum,
-
-    #[serde(rename = "DeliveryPayload")]
     pub delivery_payload: DeliveryPayload,
 }
 
@@ -102,11 +92,20 @@ pub struct StopPoint {
     pub covered: String,
 }
 
+/*
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum StopEventResponse {
-    StopEventResponseContext(StopEventResponseContext),
     StopEventResult(Vec<StopEventResult>),
     ErrorMessage(ErrorMessage),
+}*/
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct StopEventResponse {
+    #[serde(rename = "StopEventResponseContext")]
+    pub stop_event_response_context: StopEventResponseContext,
+
+    #[serde(rename = "StopEventResult")]
+    pub stop_event_result: StopEventResult,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -127,67 +126,67 @@ pub struct StopEventResponseContext {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct StopEventResult {
     #[serde(rename = "ResultId")]
-    result_id: String,
+    pub result_id: String,
 
     #[serde(rename = "StopEvent")]
-    stop_event: StopEvent,
+    pub stop_event: StopEvent,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct StopEvent {
     #[serde(rename = "PreviousCall")]
-    previous_call: Option<Vec<Call>>,
+    pub previous_call: Option<Vec<Call>>,
 
     #[serde(rename = "ThisCall")]
-    this_call: Call,
+    pub this_call: Call,
 
     #[serde(rename = "OnwardCall")]
-    onward_call: Vec<Call>,
+    pub onward_call: Option<Vec<Call>>,
 
     #[serde(rename = "Service")]
-    service: StopEventService,
+    pub service: StopEventService,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Call {
     #[serde(rename = "CallAtStop")]
-    call_at_stop: CallAtStop,
+    pub call_at_stop: CallAtStop,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct CallAtStop {
     #[serde(rename = "StopPointRef")]
-    stop_point_ref: String,
+    pub stop_point_ref: String,
 
     #[serde(rename = "StopPointName")]
-    stop_point_name: LocationName,
+    pub stop_point_name: LocationName,
 
     #[serde(rename = "PlannedBay")]
-    planned_bay: Option<LocationName>,
+    pub planned_bay: Option<LocationName>,
 
     #[serde(rename = "ServiceArrival")]
-    service_arrival: Option<Service>,
+    pub service_arrival: Option<Service>,
 
     #[serde(rename = "ServiceDeparture")]
-    service_departure: Option<Service>,
+    pub service_departure: Option<Service>,
 
     #[serde(rename = "StopSeqNumber")]
-    stop_seq_number: String,
+    pub stop_seq_number: String,
 
     #[serde(rename = "DemandStop")]
-    demand_stop: String,
+    pub demand_stop: String,
 
     #[serde(rename = "UnplannedStop")]
-    unplanned_stop: String,
+    pub unplanned_stop: String,
 
     #[serde(rename = "NotServicedStop")]
-    not_serviced_stop: String,
+    pub not_serviced_stop: String,
 
     #[serde(rename = "NoBoardingAtStop")]
-    no_boarding_at_stop: String,
+    pub no_boarding_at_stop: String,
 
     #[serde(rename = "NoAlightingAtStop")]
-    no_alighting_at_stop: String,
+    pub no_alighting_at_stop: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -197,51 +196,27 @@ pub struct Service {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "PascalCase")]
 pub struct StopEventService {
-    #[serde(rename = "OperatingDayRef")]
-    operating_day_ref: String,
-
-    #[serde(rename = "JourneyRef")]
-    journey_ref: String,
-
-    #[serde(rename = "ServiceSection")]
-    service_section: ServiceSection,
-
-    #[serde(rename = "Attribute")]
-    attribute: Attribute,
-
-    #[serde(rename = "OriginStopPointRef")]
-    origin_stop_point_ref: String,
-
-    #[serde(rename = "OriginText")]
-    origin_text: LocationName,
-
-    #[serde(rename = "DestinationText")]
-    destination_text: LocationName,
-
-    #[serde(rename = "Unplanned")]
-    unplanned: String,
-
-    #[serde(rename = "Cancelled")]
-    cancelled: String,
-
-    #[serde(rename = "Deviation")]
-    deviation: String,
+    pub operating_day_ref: String,
+    pub journey_ref: String,
+    pub service_section: ServiceSection,
+    pub attribute: Attribute,
+    pub origin_stop_point_ref: String,
+    pub origin_text: LocationName,
+    pub destination_text: LocationName,
+    pub unplanned: String,
+    pub cancelled: String,
+    pub deviation: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "PascalCase")]
 pub struct Attribute {
-    #[serde(rename = "Text")]
-    text: LocationName,
-
-    #[serde(rename = "Code")]
-    code: String,
-
-    #[serde(rename = "Mandatory")]
-    mandatory: String,
-
-    #[serde(rename = "Status")]
-    status: Option<String>,
+    pub text: LocationName,
+    pub code: String,
+    pub mandatory: String,
+    pub status: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

@@ -57,9 +57,11 @@ async fn test_fetch_stop_event() {
             panic!("Wrong response type");
     };
 
-    let StopEventResponse::StopEventResult(result) = response else {
-        panic!("Wrong response type");
-    };
-    panic!("{:?}", result);
-    assert!(result.len() > 0);
+    let result = &response[0].stop_event_result;
+    assert!(result
+        .stop_event
+        .this_call
+        .call_at_stop
+        .service_departure
+        .is_some());
 }
