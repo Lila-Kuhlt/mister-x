@@ -43,10 +43,10 @@ impl LocationInformationRequestBuilder {
     pub fn new() -> Self {
         LocationInformationRequestBuilder {
             requestor_ref: "API-Explorer".to_string(),
-            location_name: "Bern".to_string(),
+            location_name: "Karlsruhe Hauptbahnhof".to_string(),
             location_type: "stop".to_string(),
             number_of_results: 2,
-            include_pt_modes: true,
+            include_pt_modes: false,
         }
     }
 
@@ -95,48 +95,32 @@ impl LocationInformationRequestBuilder {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct LocationInformationResponse {
-    #[serde(rename = "ServiceDelivery")]
-    pub service_delivery: ServiceDelivery,
-}
+#[derive(Serialize, Deserialize)]
+pub struct LocationResult {
+    #[serde(rename = "Location")]
+    location: Location,
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ServiceDelivery {
-    #[serde(rename = "ResponseTimestamp")]
-    pub response_timestamp: String,
-    #[serde(rename = "ProducerRef")]
-    pub producer_ref: String,
-    #[serde(rename = "Status")]
-    pub status: bool,
-    #[serde(rename = "Language")]
-    pub language: String,
-    #[serde(rename = "CalcTime")]
-    pub calc_time: Option<u32>,
-    #[serde(rename = "DeliveryPayload")]
-    pub delivery_payload: DeliveryPayload,
-}
+    #[serde(rename = "Complete")]
+    complete: String,
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct DeliveryPayload {
-    #[serde(rename = "LocationInformationResponse")]
-    pub location_information_response: Vec<Location>,
+    #[serde(rename = "Probability")]
+    probability: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Location {
     #[serde(rename = "StopPoint")]
-    pub stop_point: Option<StopPoint>,
+    pub stop_point: StopPoint,
     #[serde(rename = "LocationName")]
-    pub location_name: Option<TextLang>,
+    pub location_name: TextLang,
     #[serde(rename = "GeoPosition")]
-    pub geo_position: Option<GeoPosition>,
+    pub geo_position: GeoPosition,
     #[serde(rename = "Complete")]
-    pub complete: Option<bool>,
+    pub complete: bool,
     #[serde(rename = "Probability")]
-    pub probability: Option<f32>,
+    pub probability: f32,
     #[serde(rename = "Mode")]
-    pub mode: Option<Mode>,
+    pub mode: Mode,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

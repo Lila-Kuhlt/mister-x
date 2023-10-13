@@ -1,15 +1,31 @@
 // src/stop_event_request.rs
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "PascalCase")]
 pub struct StopEventRequest {
-    pub location_ref: String,
-    pub dep_arr_time: String,
+    pub location: Location,
     pub params: StopEventParams,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Location {
+    #[serde(rename = "LocationRef")]
+    pub location_ref: LocationRef,
+
+    #[serde(rename = "DepArrTime")]
+    pub dep_arr_time: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct LocationRef {
+    #[serde(rename = "StopPointRef")]
+    pub stop_point_ref: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "PascalCase")]
 pub struct StopEventParams {
-    pub number_of_results: usize,
+    pub number_of_results: u32,
     pub stop_event_type: String,
     pub include_previous_calls: bool,
     pub include_onward_calls: bool,
@@ -18,6 +34,7 @@ pub struct StopEventParams {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct StopEventRequestBuilder {
+    requestor_ref: String,
     location_ref: Option<String>,
     dep_arr_time: Option<String>,
     params: Option<StopEventParams>,
@@ -27,9 +44,15 @@ impl StopEventRequestBuilder {
     pub fn new() -> Self {
         Self {
             location_ref: None,
+            requestor_ref: "API-Explorer".to_string(),
             dep_arr_time: None,
             params: None,
         }
+    }
+
+    pub fn requestor_ref(&mut self, requestor_ref: &str) -> &mut Self {
+        self.requestor_ref = requestor_ref.to_string();
+        self
     }
 
     pub fn location_ref(&mut self, location_ref: String) -> &mut Self {
@@ -47,63 +70,51 @@ impl StopEventRequestBuilder {
         self
     }
 
-    pub fn build(&self) -> Result<StopEventRequest, &'static str> {
+    pub fn build(&self) -> Result<ServiceRequest, &'static str> {
         if self.location_ref.is_none() || self.dep_arr_time.is_none() {
             return Err("Missing required fields");
         }
-
-        Ok(StopEventRequest {
-            location_ref: self.location_ref.clone().unwrap(),
-            dep_arr_time: self.dep_arr_time.clone().unwrap(),
-            params: self.params.clone().unwrap_or_else(|| StopEventParams {
-                number_of_results: 1,
-                stop_event_type: "departure".to_string(),
-                include_previous_calls: false,
-                include_onward_calls: false,
-                include_realtime_data: false,
+        Ok(ServiceRequest {
+            request_timestamp: Utc::now().format("%Y-%m-%dT%H:%M:%S.%3fZ").to_string(),
+            requestor_ref: self.requestor_ref.clone(),
+            request_payload: RequestPayload::StopEventRequest(StopEventRequest {
+                location: Location {
+                    location_ref: LocationRef {
+                        stop_point_ref: self.location_ref.clone().unwrap(),
+                    },
+                    dep_arr_time: self.dep_arr_time.clone().unwrap(),
+                },
+                params: self.params.clone().unwrap_or_else(|| StopEventParams {
+                    number_of_results: 1,
+                    stop_event_type: "departure".to_string(),
+                    include_previous_calls: false,
+                    include_onward_calls: false,
+                    include_realtime_data: true,
+                }),
             }),
         })
     }
 }
 
+impl Default for StopEventRequestBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 // src/stop_event_response.rs
 
+use chrono::Utc;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct StopEventResponse {
-    #[serde(rename = "ServiceDelivery")]
-    pub service_delivery: ServiceDeliveryStopEvent,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ServiceDeliveryStopEvent {
-    #[serde(rename = "ResponseTimestamp")]
-    pub response_timestamp: String,
-    #[serde(rename = "ProducerRef")]
-    pub producer_ref: String,
-    #[serde(rename = "Status")]
-    pub status: bool,
-    #[serde(rename = "Language")]
-    pub language: String,
-    #[serde(rename = "CalcTime")]
-    pub calc_time: u32,
-    #[serde(rename = "DeliveryPayload")]
-    pub delivery_payload: DeliveryPayloadStopEvent,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct DeliveryPayloadStopEvent {
-    #[serde(rename = "StopEventResponse")]
-    pub stop_event_response: Vec<StopEventResult>,
-}
+use crate::{RequestPayload, ServiceRequest};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct StopEventResult {
     #[serde(rename = "ResultId")]
-    pub result_id: String,
+    pub result_id: Option<String>,
     #[serde(rename = "StopEvent")]
-    pub stop_event: StopEventDetails,
+    pub stop_event: Option<StopEventDetails>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

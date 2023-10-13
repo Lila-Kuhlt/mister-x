@@ -1,12 +1,13 @@
 mod location_information;
+pub mod response;
 mod stop_event_request;
 
 pub use location_information::LocationInformationRequestBuilder;
-use location_information::{LocationInformationRequest, LocationInformationResponse};
+use location_information::{LocationInformationRequest, LocationResult};
+use response::TriasResponse;
 pub use stop_event_request::StopEventRequestBuilder;
 
 use serde_xml_rs::to_string;
-use stop_event_request::StopEventResponse;
 
 pub fn generate_service_request(builder: ServiceRequest) -> Result<String, &'static str> {
     let xml_string = to_string(&builder).map_err(|_| "Failed to serialize to XML")?;
@@ -15,7 +16,7 @@ pub fn generate_service_request(builder: ServiceRequest) -> Result<String, &'sta
     Ok(format!(
         r#"
 <?xml version="1.0" encoding="UTF-8"?>
-<Trias version="1.1" xmlns="http://www.vdv.de/trias" xmlns:siri="http://www.siri.org.uk/siri"
+<Trias version="1.2" xmlns="http://www.vdv.de/trias" xmlns:siri="http://www.siri.org.uk/siri"
 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.vdv.de/trias
 file:///C:/development/HEAD/extras/TRIAS/TRIAS_1.1/Trias.xsd">
      {}
@@ -24,19 +25,12 @@ file:///C:/development/HEAD/extras/TRIAS/TRIAS_1.1/Trias.xsd">
     ))
 }
 
-pub fn generate_stop_event_request(
-    builder: stop_event_request::StopEventRequest,
-) -> Result<String, &'static str> {
-    let xml_string = to_string(&builder).map_err(|_| "Failed to serialize to XML")?;
-    Ok(xml_string)
-}
-
 use std::error::Error;
 
-pub async fn fetch_location_information(
+pub async fn post_request(
     api_endpoint: &str,
     request: &str,
-) -> Result<LocationInformationResponse, Box<dyn Error>> {
+) -> Result<TriasResponse, Box<dyn Error>> {
     let client = reqwest::Client::new();
     println!("Request: {}", request);
     let response = client
@@ -47,29 +41,13 @@ pub async fn fetch_location_information(
         .await?
         .text()
         .await?;
-    dbg!(&response);
+    println!("{}", &response);
 
-    let deserialized: LocationInformationResponse = serde_xml_rs::from_str(&response)?;
+    let deserialized: TriasResponse = serde_xml_rs::from_str(&response)?;
+    println!("{:?}", deserialized);
     Ok(deserialized)
 }
 
-pub async fn fetch_stop_event(
-    api_endpoint: &str,
-    request: &str,
-) -> Result<StopEventResponse, Box<dyn Error>> {
-    let client = reqwest::Client::new();
-    let response = client
-        .post(api_endpoint)
-        .body(request.to_string())
-        .header("Content-Type", "application/xml")
-        .send()
-        .await?
-        .text()
-        .await?;
-
-    let deserialized: StopEventResponse = serde_xml_rs::from_str(&response)?;
-    Ok(deserialized)
-}
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
