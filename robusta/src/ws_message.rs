@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use serde::{Deserialize, Serialize};
 
 #[derive(specta::Type, Clone, Serialize, Deserialize, Debug)]
@@ -13,13 +15,13 @@ pub enum ServerMessage {
 
 #[derive(specta::Type, Default, Clone, Serialize, Deserialize, Debug)]
 pub struct GameState {
-    pub players: Vec<Player>,
+    pub teams: HashMap<u32, Team>,
     pub trains: Vec<Train>,
 }
 impl GameState {
-    pub(crate) const fn new() -> GameState {
+    pub(crate) fn new() -> GameState {
         GameState {
-            players: Vec::new(),
+            teams: HashMap::new(),
             trains: Vec::new(),
         }
     }
@@ -28,8 +30,6 @@ impl GameState {
 #[derive(specta::Type, Default, Clone, Serialize, Deserialize, Debug)]
 pub struct Player {
     pub id: u32,
-    pub x: f32,
-    pub y: f32,
     pub name: String,
     pub team_id: u32,
 }
@@ -37,6 +37,8 @@ pub struct Player {
 #[derive(specta::Type, Default, Clone, Serialize, Deserialize, Debug)]
 pub struct Team {
     pub id: u32,
+    pub x: f32,
+    pub y: f32,
     pub name: String,
     pub color: String,
 }

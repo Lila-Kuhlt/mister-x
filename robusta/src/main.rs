@@ -195,19 +195,36 @@ async fn main() {
 async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, state: SharedState) {
     tracing::info!("Starting game loop");
     let mut tick = 0;
+    let mut game_state = GameState::new();
     loop {
         tick += 1;
         tracing::info!("tick {}", tick);
         tracing::trace!("updating train positions");
-        let mut game_state = GameState::new();
         let trains = kvv::train_positions().await;
         //dbg!(&trains);
 
         game_state.trains = trains;
+        let mut state = state.lock().await;
         if let Ok(msg) = recv.try_recv() {
             match msg {
                 InputMessage::Client(msg, id) => {
                     info!("Got message from client {}: {:?}", id, msg);
+                    let team = state
+                        .teams
+                        .iter()
+                        .find(|team| team.id == id)
+                        .expect("Team not found");
+
+                    match msg {
+                        ClientMessage::Position { x, y } => {
+                            let t = game_state.teams.entry(id).or_insert_with(|| team.clone());
+                            t.x = x;
+                            t.y = y;
+                        }
+                        ClientMessage::Message(msg) => {
+                            info!("Got message: {}", msg);
+                        }
+                    }
                 }
                 InputMessage::Server(msg) => {
                     info!("Got message from server: {:?}", msg);
@@ -215,7 +232,6 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
             }
         }
 
-        let mut state = state.lock().await;
         for connection in state.connections.iter_mut() {
             if connection.send.send(game_state.clone()).await.is_err() {
                 return;
