@@ -1,6 +1,6 @@
-import { ClientMessage, ServerMessage } from "lib/bindings";
+import { ClientMessage, GameState } from "lib/bindings";
 
-export type WSHandler = (msg: ServerMessage) => void;
+export type WSHandler = (msg: GameState) => void;
 export type WSErrorHandler = (error?: string | Error | object) => void;
 
 export class WebsocketApi {
@@ -23,7 +23,7 @@ export class WebsocketApi {
     };
     this.connection.onmessage = (e) => {
       const json = JSON.parse(e.data as string);
-      this.handlers.forEach((handler) => handler(json as ServerMessage));
+      this.handlers.forEach((handler) => handler(json as GameState));
     };
   }
 

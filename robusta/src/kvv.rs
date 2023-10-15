@@ -192,7 +192,7 @@ pub async fn fetch_departures(stops: &[Stop]) -> LineDepartures {
             let mut departures_by_line_and_stop = HashMap::new();
             let departures = stop.stop_event_result.iter().map(|x| &x.stop_event);
             for departure in departures {
-                let line_id = &departure.service.service_section.published_line_name.text;
+                let line_id = &departure.service.journey_ref.clone();
                 let time = &departure
                     .this_call
                     .call_at_stop
@@ -234,12 +234,12 @@ pub fn points_on_route(start_stop_id: u32, end_stop_id: u32, stops: &[Stop]) -> 
     let end_stop = find_stop_by_id(end_stop_id, stops).unwrap();
 
     let start = Point {
-        x: start_stop.kvv_stop.lat as f32,
-        y: start_stop.kvv_stop.lon as f32,
+        x: start_stop.kvv_stop.lon as f32,
+        y: start_stop.kvv_stop.lat as f32,
     };
     let end = Point {
-        x: end_stop.kvv_stop.lat as f32,
-        y: end_stop.kvv_stop.lon as f32,
+        x: end_stop.kvv_stop.lon as f32,
+        y: end_stop.kvv_stop.lat as f32,
     };
     let mut points = vec![start];
     points.extend(intermediate_points(start_stop_id, end_stop_id));

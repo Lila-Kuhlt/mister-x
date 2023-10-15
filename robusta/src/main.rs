@@ -200,7 +200,8 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
         tick += 1;
         tracing::info!("tick {}", tick);
         tracing::trace!("updating train positions");
-        let trains = kvv::train_positions().await;
+        let mut trains = kvv::train_positions().await;
+        trains.dedup_by_key(|train| (train.line_id.clone(), train.direction.clone(), train.lat));
         //dbg!(&trains);
 
         game_state.trains = trains;
@@ -209,20 +210,16 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
             match msg {
                 InputMessage::Client(msg, id) => {
                     info!("Got message from client {}: {:?}", id, msg);
-                    let team = state
-                        .teams
-                        .iter()
-                        .find(|team| team.id == id)
-                        .expect("Team not found");
-
-                    match msg {
-                        ClientMessage::Position { x, y } => {
-                            let t = game_state.teams.entry(id).or_insert_with(|| team.clone());
-                            t.x = x;
-                            t.y = y;
-                        }
-                        ClientMessage::Message(msg) => {
-                            info!("Got message: {}", msg);
+                    if let Some(team) = state.teams.iter().find(|team| team.id == id) {
+                        match msg {
+                            ClientMessage::Position { x, y } => {
+                                let t = game_state.teams.entry(id).or_insert_with(|| team.clone());
+                                t.x = x;
+                                t.y = y;
+                            }
+                            ClientMessage::Message(msg) => {
+                                info!("Got message: {}", msg);
+                            }
                         }
                     }
                 }

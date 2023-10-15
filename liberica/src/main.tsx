@@ -1,6 +1,6 @@
 import { CreateTeam } from "page/CreateTeam";
 import { Game } from "page/Game";
-import  Map  from "page/Map";
+import { Map } from "page/Map";
 import { Home } from "page/Home";
 import React from "react";
 import ReactDOM from "react-dom/client";
