@@ -1119,6 +1119,7 @@ dependencies = [
  "axum",
  "chrono",
  "chrono-tz",
+ "dotenv",
  "futures-util",
  "kvvliveapi",
  "reqwest",
@@ -1128,6 +1129,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
+ "trias",
  "urlencoding",
 ]
 

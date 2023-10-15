@@ -2,9 +2,10 @@ mod location_information;
 pub mod response;
 mod stop_event_request;
 
+use chrono::Utc;
 pub use location_information::LocationInformationRequestBuilder;
 use location_information::{LocationInformationRequest, LocationResult};
-use response::TriasResponse;
+use response::{DeliveryPayload, Location, StopEventResponse, TriasResponse};
 pub use stop_event_request::StopEventRequestBuilder;
 
 use serde_xml_rs::to_string;
@@ -46,6 +47,67 @@ pub async fn post_request(
     let deserialized: TriasResponse = serde_xml_rs::from_str(&response)?;
     println!("{:?}", deserialized);
     Ok(deserialized)
+}
+
+pub async fn search_stops(
+    name: String,
+    access_token: String,
+    api_endpoint: &str,
+    number_of_results: u32,
+) -> Result<Vec<Location>, Box<dyn Error>> {
+    let builder = LocationInformationRequestBuilder::new()
+        .location_name(name)
+        .requestor_ref(access_token)
+        .number_of_results(number_of_results)
+        .include_pt_modes(false)
+        .build();
+
+    let xml_request = generate_service_request(builder).unwrap();
+    let response = post_request(api_endpoint, &xml_request).await.unwrap();
+
+    let DeliveryPayload::LocationInformationResponse(response) = response
+        .service_delivery
+        .delivery_payload else {
+            panic!("Wrong response type");
+    };
+
+    let locations = response
+        .location_result
+        .into_iter()
+        .map(|x| x.location)
+        .collect();
+    Ok(locations)
+}
+
+pub async fn stop_events(
+    location_ref: String,
+    access_token: String,
+    number_of_results: u32,
+    api_endpoint: &str,
+) -> Result<Vec<StopEventResponse>, Box<dyn Error>> {
+    let params = stop_event_request::StopEventParams {
+        number_of_results,
+        include_realtime_data: true,
+        ..Default::default()
+    };
+    let builder = StopEventRequestBuilder::new()
+        .location_ref(location_ref)
+        .requestor_ref(access_token)
+        .params(params)
+        .build()
+        .unwrap()
+        //... set other fields ...
+        ;
+
+    let xml_request = generate_service_request(builder).unwrap();
+    let response = post_request(api_endpoint, &xml_request).await.unwrap();
+
+    let DeliveryPayload::StopEventResponse(response) = response
+        .service_delivery
+        .delivery_payload else {
+            panic!("Wrong response type");
+    };
+    Ok(response)
 }
 
 use serde::{Deserialize, Serialize};

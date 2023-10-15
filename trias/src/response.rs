@@ -20,6 +20,7 @@ pub struct ServiceDelivery {
     pub status: ProducerRef,
     pub more_data: String,
     pub language: LanguageEnum,
+    pub calc_time: Option<String>,
     pub delivery_payload: DeliveryPayload,
 }
 
@@ -105,7 +106,7 @@ pub struct StopEventResponse {
     pub stop_event_response_context: StopEventResponseContext,
 
     #[serde(rename = "StopEventResult")]
-    pub stop_event_result: StopEventResult,
+    pub stop_event_result: Vec<StopEventResult>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -120,7 +121,7 @@ pub struct ErrorMessage {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct StopEventResponseContext {
     #[serde(rename = "Situations")]
-    situations: String,
+    situations: Situations,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -192,7 +193,7 @@ pub struct CallAtStop {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Service {
     #[serde(rename = "TimetabledTime")]
-    timetabled_time: String,
+    pub timetabled_time: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -201,7 +202,7 @@ pub struct StopEventService {
     pub operating_day_ref: String,
     pub journey_ref: String,
     pub service_section: ServiceSection,
-    pub attribute: Attribute,
+    pub attribute: Option<Attribute>,
     pub origin_stop_point_ref: String,
     pub origin_text: LocationName,
     pub destination_text: LocationName,
@@ -222,22 +223,22 @@ pub struct Attribute {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ServiceSection {
     #[serde(rename = "LineRef")]
-    line_ref: String,
+    pub line_ref: String,
 
     #[serde(rename = "DirectionRef")]
-    direction_ref: String,
+    pub direction_ref: String,
 
     #[serde(rename = "Mode")]
-    mode: Mode,
+    pub mode: Mode,
 
     #[serde(rename = "PublishedLineName")]
-    published_line_name: LocationName,
+    pub published_line_name: LocationName,
 
     #[serde(rename = "OperatorRef")]
-    operator_ref: String,
+    pub operator_ref: String,
 
     #[serde(rename = "RouteDescription")]
-    route_description: LocationName,
+    pub route_description: Option<LocationName>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -276,7 +277,7 @@ pub struct TripResponseContext {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Situations {
     #[serde(rename = "PtSituation")]
-    pt_situation: Vec<PtSituation>,
+    pt_situation: Option<Vec<PtSituation>>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -375,7 +376,7 @@ pub struct ValidityPeriod {
     end_time: String,
 
     #[serde(rename = "_xmlns")]
-    xmlns: String,
+    xmlns: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -694,4 +695,55 @@ pub enum ValidityDuration {
 pub enum VatRate {
     #[serde(rename = "half")]
     Half,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct DestinationText {
+    #[serde(rename = "Text")]
+    text: String,
+
+    #[serde(rename = "Language")]
+    language: LanguageEnum,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct ThisCall {
+    #[serde(rename = "CallAtStop")]
+    call_at_stop: CallAtStop,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct ServiceDeparture {
+    #[serde(rename = "TimetabledTime")]
+    timetabled_time: String,
+
+    #[serde(rename = "EstimatedTime")]
+    estimated_time: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub enum DirectionRef {
+    #[serde(rename = "inward")]
+    Inward,
+
+    #[serde(rename = "outward")]
+    Outward,
+}
+
+#[derive(Serialize, Deserialize)]
+pub enum PtMode {
+    #[serde(rename = "rail")]
+    Rail,
+
+    #[serde(rename = "tram")]
+    Tram,
+}
+
+#[derive(Serialize, Deserialize)]
+pub enum OperatorRef {
+    #[serde(rename = "kvv:01")]
+    Kvv01,
+
+    #[serde(rename = "kvv:02")]
+    Kvv02,
 }

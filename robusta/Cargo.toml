@@ -11,6 +11,7 @@ chrono = "0.4.31"
 chrono-tz = "0.6"
 futures-util = "0.3.28"
 kvvliveapi = { git = "https://github.com/TrueDoctor/kvvliveapi-rs", version = "0.1.0" }
+trias = { path = "../trias" }
 reqwest = "0.11.22"
 serde = { version = "1.0.188", features = ["derive"] }
 serde_json = "1.0.107"
@@ -19,3 +20,4 @@ tokio = { version = "1.33.0", features = ["full"] }
 tracing = { version = "0.1.37", features = ["async-await"] }
 tracing-subscriber = "0.3.17"
 urlencoding = "2.1.3"
+dotenv = "0.15.0"

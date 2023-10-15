@@ -9,7 +9,7 @@ mod tests {
     #[test]
     fn test_location_information_request_builder() {
         let request = LocationInformationRequestBuilder::new()
-            .location_name("Bern")
+            .location_name("Bern".to_string())
             .number_of_results(5)
             .include_pt_modes(true)
             .build();

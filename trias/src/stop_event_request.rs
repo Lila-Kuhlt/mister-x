@@ -32,6 +32,18 @@ pub struct StopEventParams {
     pub include_realtime_data: bool,
 }
 
+impl Default for StopEventParams {
+    fn default() -> Self {
+        Self {
+            number_of_results: 10,
+            stop_event_type: "departure".to_string(),
+            include_previous_calls: false,
+            include_onward_calls: false,
+            include_realtime_data: true,
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct StopEventRequestBuilder {
     requestor_ref: String,
@@ -42,16 +54,17 @@ pub struct StopEventRequestBuilder {
 
 impl StopEventRequestBuilder {
     pub fn new() -> Self {
+        let timestamp = Utc::now().format("%Y-%m-%dT%H:%M:%S.%3fZ").to_string();
         Self {
             location_ref: None,
             requestor_ref: "API-Explorer".to_string(),
-            dep_arr_time: None,
+            dep_arr_time: Some(timestamp),
             params: None,
         }
     }
 
-    pub fn requestor_ref(&mut self, requestor_ref: &str) -> &mut Self {
-        self.requestor_ref = requestor_ref.to_string();
+    pub fn requestor_ref(&mut self, requestor_ref: String) -> &mut Self {
+        self.requestor_ref = requestor_ref;
         self
     }
 
@@ -84,13 +97,7 @@ impl StopEventRequestBuilder {
                     },
                     dep_arr_time: self.dep_arr_time.clone().unwrap(),
                 },
-                params: self.params.clone().unwrap_or_else(|| StopEventParams {
-                    number_of_results: 1,
-                    stop_event_type: "departure".to_string(),
-                    include_previous_calls: false,
-                    include_onward_calls: false,
-                    include_realtime_data: true,
-                }),
+                params: self.params.clone().unwrap_or_default(),
             }),
         })
     }

@@ -154,7 +154,7 @@ async fn list_stops() -> impl IntoResponse {
 #[tokio::main]
 async fn main() {
     tracing_subscriber::fmt()
-        .with_max_level(Level::TRACE)
+        .with_max_level(Level::INFO)
         .with_span_events(tracing_subscriber::fmt::format::FmtSpan::CLOSE)
         .init();
 
@@ -193,9 +193,17 @@ async fn main() {
 }
 
 async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, state: SharedState) {
+    tracing::info!("Starting game loop");
     let mut tick = 0;
     loop {
         tick += 1;
+        tracing::info!("tick {}", tick);
+        tracing::trace!("updating train positions");
+        let mut game_state = GameState::new();
+        let trains = kvv::train_positions().await;
+        dbg!(&trains);
+
+        game_state.trains = trains;
         let msg = recv.recv().await.unwrap();
         match msg {
             InputMessage::Client(msg, id) => {
@@ -205,12 +213,6 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
                 info!("Got message from server: {:?}", msg);
             }
         }
-        tracing::info!("tick {}", tick);
-        tracing::trace!("updating train positions");
-        let mut game_state = GameState::new();
-        let trains = kvv::train_positions().await;
-        dbg!(&trains);
-        game_state.trains = trains;
 
         let mut state = state.lock().await;
         for connection in state.connections.iter_mut() {

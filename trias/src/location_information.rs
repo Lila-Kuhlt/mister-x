@@ -50,13 +50,13 @@ impl LocationInformationRequestBuilder {
         }
     }
 
-    pub fn requestor_ref(&mut self, requestor_ref: &str) -> &mut Self {
-        self.requestor_ref = requestor_ref.to_string();
+    pub fn requestor_ref(&mut self, requestor_ref: String) -> &mut Self {
+        self.requestor_ref = requestor_ref;
         self
     }
 
-    pub fn location_name(&mut self, location_name: &str) -> &mut Self {
-        self.location_name = location_name.to_string();
+    pub fn location_name(&mut self, location_name: String) -> &mut Self {
+        self.location_name = location_name;
         self
     }
 

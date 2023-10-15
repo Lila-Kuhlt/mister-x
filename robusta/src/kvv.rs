@@ -2,6 +2,10 @@ use std::collections::HashMap;
 
 mod api;
 
+use chrono::Utc;
+use futures_util::FutureExt;
+use trias::response::{Location, StopEventResponse};
+
 use crate::ws_message::{Line, Train};
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, specta::Type)]
@@ -45,16 +49,19 @@ pub struct Point {
 
 /*
 
- "Arbeitsagentur",
- "Augartenstraße",
- "Barbarossaplatz",
- "Durlacher Tor/KIT-Campus Süd",
- "Durlacher Tor/KIT-Campus Süd (U)",
- "Ebertstraße",
- "Ettlinger Tor/Staatstheater",
- "Ettlinger Tor/Staatstheater (U)",
- "Europaplatz/Postgalerie",
- "Europaplatz/Postgalerie (U)",
+
+*/
+const STOPS: &[&str] = &[
+    "Arbeitsagentur",
+    "Augartenstraße",
+    "Barbarossaplatz",
+    "Durlacher Tor/KIT-Campus Süd",
+    "Durlacher Tor/KIT-Campus Süd (U)",
+    "Ebertstraße",
+    "Ettlinger Tor/Staatstheater",
+    "Ettlinger Tor/Staatstheater (U)",
+    "Europaplatz/Postgalerie",
+    "Europaplatz/Postgalerie (U)",
     "Hauptbahnhof (Vorplatz)",
     "Holtzstraße (Bus)",
     "Karlstor/Bundesgerichtshof",
@@ -62,9 +69,6 @@ pub struct Point {
     "Kongresszentrum (U)",
     "Kronenplatz",
     "Kronenplatz (U)",
-
-*/
-const STOPS: &[&str] = &[
     "Marktplatz (Kaiserstr. U) ",
     "Marktplatz (Pyramide U) ",
     "Mathystraße",
@@ -125,11 +129,29 @@ fn intermediate_points(start_id: u32, end_id: u32) -> Vec<Point> {
 
 pub async fn kvv_stops() -> Vec<Stop> {
     let mut stops = Vec::new();
-    for (id, stop) in STOPS.iter().enumerate() {
+    let mut futures = Vec::new();
+    for stop in STOPS.iter() {
         tracing::trace!("fetching stop id for {}", stop);
+        dotenv::dotenv().ok().unwrap();
+        let api_endpoint = "https://projekte.kvv-efa.de/koberttrias/trias"; // Replace with your API endpoint
+        let access_token = std::env::var("TRIAS_ACCESS_TOKEN").expect("TRIAS_ACCESS_TOKEN not set");
+        let name = format!("Karlsruhe, {}", stop);
 
-        let stop_id = api::fetch_stop_id(stop).await.unwrap();
-        let kvv_stop = api::fetch_stop_by_id(&stop_id).await.unwrap();
+        let stop = trias::search_stops(name, access_token, api_endpoint, 1);
+        futures.push(stop);
+    }
+    let results = futures_util::future::join_all(futures).await;
+
+    for (id, stop) in results.iter().enumerate() {
+        let stop = stop.as_ref().unwrap().clone();
+        let stop_point = stop[0].stop_point.clone();
+        let position = stop[0].geo_position.clone();
+        let kvv_stop = KvvStop {
+            name: stop_point.stop_point_name.text,
+            id: stop_point.stop_point_ref,
+            lat: position.latitude.parse().unwrap(),
+            lon: position.longitude.parse().unwrap(),
+        };
 
         stops.push(Stop {
             id: id as u32,
@@ -142,23 +164,63 @@ type LineDepartures = HashMap<(String, String), Vec<(u32, Vec<chrono::Duration>)
 
 pub async fn fetch_departures(stops: &[Stop]) -> LineDepartures {
     let mut departures_per_line = HashMap::new();
-    for stop in stops {
-        let departures = api::fetch_departures(&stop.kvv_stop.id).await.unwrap();
-        let response_time = departures.timestamp;
-        let mut departures_by_line_and_stop = HashMap::new();
+    let api_endpoint = "https://projekte.kvv-efa.de/koberttrias/trias"; // Replace with your API endpoint
+    let access_token = &std::env::var("TRIAS_ACCESS_TOKEN").expect("TRIAS_ACCESS_TOKEN not set");
 
-        for departure in departures.departures {
-            let line_id = departure.route;
-            let delta = departure.time.time() - response_time.time();
+    let futures: Vec<_> = stops
+        .iter()
+        .map(|stop| {
+            let name = stop.kvv_stop.id.clone();
+            let access_token = access_token.clone();
+            Box::pin(async move {
+                (
+                    stop.id,
+                    trias::stop_events(name, access_token, 10, api_endpoint)
+                        .await
+                        .unwrap(),
+                )
+            })
+        })
+        .collect();
 
-            let entry = departures_by_line_and_stop
-                .entry((line_id, departure.destination))
-                .or_insert_with(Vec::new);
-            entry.push(delta);
-        }
-        for (line_id, delta) in departures_by_line_and_stop {
-            let entry = departures_per_line.entry(line_id).or_insert_with(Vec::new);
-            entry.push((stop.id, delta));
+    let results = futures_util::future::join_all(futures).await;
+
+    for (id, stops) in results.iter() {
+        dbg!(stops);
+
+        let response_time = Utc::now();
+
+        for stop in stops {
+            let mut departures_by_line_and_stop = HashMap::new();
+            let departures = stop.stop_event_result.iter().map(|x| &x.stop_event);
+            for departure in departures {
+                let line_id = &departure.service.service_section.published_line_name.text;
+                let time = &departure
+                    .this_call
+                    .call_at_stop
+                    .service_departure
+                    .as_ref()
+                    .unwrap()
+                    .timetabled_time;
+                // example time 2023-10-15T17:10:54Z
+                let time =
+                    chrono::NaiveDateTime::parse_from_str(time, "%Y-%m-%dT%H:%M:%SZ").unwrap();
+                let delta = time.time() - response_time.time();
+
+                let entry = departures_by_line_and_stop
+                    .entry((
+                        line_id.clone(),
+                        departure.service.service_section.line_ref.clone(),
+                    ))
+                    .or_insert_with(Vec::new);
+                entry.push(delta);
+            }
+            for (line_id, delta) in departures_by_line_and_stop {
+                let entry = departures_per_line
+                    .entry(line_id.clone())
+                    .or_insert_with(Vec::new);
+                entry.push((*id, delta));
+            }
         }
     }
 

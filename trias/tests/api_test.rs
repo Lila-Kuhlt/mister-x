@@ -6,8 +6,8 @@ async fn test_fetch_location_information() {
     let access_token = std::env::var("TRIAS_ACCESS_TOKEN").expect("TRIAS_ACCESS_TOKEN not set");
 
     let builder = trias::LocationInformationRequestBuilder::new()
-        .location_name("Karlsruhe Hauptbahnhof")
-        .requestor_ref(&access_token)
+        .location_name("Karlsruhe Hauptbahnhof".to_string())
+        .requestor_ref(access_token.to_string())
         .number_of_results(2)
         .include_pt_modes(false)
         .build()
@@ -39,7 +39,7 @@ async fn test_fetch_stop_event() {
     let builder = trias::StopEventRequestBuilder::new()
         .location_ref("de:08212:7".to_string())
         .dep_arr_time("2023-10-13T00:24:28".to_string())
-        .requestor_ref(&access_token)
+        .requestor_ref(access_token)
         .build()
         .unwrap()
         //... set other fields ...
@@ -58,7 +58,7 @@ async fn test_fetch_stop_event() {
     };
 
     let result = &response[0].stop_event_result;
-    assert!(result
+    assert!(result[0]
         .stop_event
         .this_call
         .call_at_stop
