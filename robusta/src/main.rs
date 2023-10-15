@@ -201,16 +201,17 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
         tracing::trace!("updating train positions");
         let mut game_state = GameState::new();
         let trains = kvv::train_positions().await;
-        dbg!(&trains);
+        //dbg!(&trains);
 
         game_state.trains = trains;
-        let msg = recv.recv().await.unwrap();
-        match msg {
-            InputMessage::Client(msg, id) => {
-                info!("Got message from client {}: {:?}", id, msg);
-            }
-            InputMessage::Server(msg) => {
-                info!("Got message from server: {:?}", msg);
+        if let Ok(msg) = recv.try_recv() {
+            match msg {
+                InputMessage::Client(msg, id) => {
+                    info!("Got message from client {}: {:?}", id, msg);
+                }
+                InputMessage::Server(msg) => {
+                    info!("Got message from server: {:?}", msg);
+                }
             }
         }
 

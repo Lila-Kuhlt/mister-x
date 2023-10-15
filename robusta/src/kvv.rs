@@ -186,8 +186,6 @@ pub async fn fetch_departures(stops: &[Stop]) -> LineDepartures {
     let results = futures_util::future::join_all(futures).await;
 
     for (id, stops) in results.iter() {
-        dbg!(stops);
-
         let response_time = Utc::now();
 
         for stop in stops {

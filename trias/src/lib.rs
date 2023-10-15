@@ -33,7 +33,7 @@ pub async fn post_request(
     request: &str,
 ) -> Result<TriasResponse, Box<dyn Error>> {
     let client = reqwest::Client::new();
-    println!("Request: {}", request);
+    //println!("Request: {}", request);
     let response = client
         .post(api_endpoint)
         .header("Content-Type", "application/xml")
@@ -42,10 +42,10 @@ pub async fn post_request(
         .await?
         .text()
         .await?;
-    println!("{}", &response);
+    //println!("{}", &response);
 
     let deserialized: TriasResponse = serde_xml_rs::from_str(&response)?;
-    println!("{:?}", deserialized);
+    //println!("{:?}", deserialized);
     Ok(deserialized)
 }
 
