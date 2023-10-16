@@ -228,9 +228,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "29c39203181991a7dd4343b8005bd804e7a9a37afb8ac070e43771e8c820bbde"
 dependencies = [
  "chrono",
- "chrono-tz-build",
+ "chrono-tz-build 0.0.3",
  "phf",
  "serde",
+]
+
+[[package]]
+name = "chrono-tz"
+version = "0.8.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f1369bc6b9e9a7dfdae2055f6ec151fe9c554a9d23d357c0237cee2e25eaabb7"
+dependencies = [
+ "chrono",
+ "chrono-tz-build 0.2.0",
+ "phf",
 ]
 
 [[package]]
@@ -238,6 +249,17 @@ name = "chrono-tz-build"
 version = "0.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6f509c3a87b33437b05e2458750a0700e5bdd6956176773e6c7d6dd15a283a0c"
+dependencies = [
+ "parse-zoneinfo",
+ "phf",
+ "phf_codegen",
+]
+
+[[package]]
+name = "chrono-tz-build"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e2f5ebdc942f57ed96d560a6d1a459bae5851102a25d5bf89dc04ae453e31ecf"
 dependencies = [
  "parse-zoneinfo",
  "phf",
@@ -662,7 +684,7 @@ version = "0.1.0"
 source = "git+https://github.com/TrueDoctor/kvvliveapi-rs#e73fd09ed5230ae298591b4bae5205952e81059f"
 dependencies = [
  "chrono",
- "chrono-tz",
+ "chrono-tz 0.6.3",
  "regex",
  "reqwest",
  "serde",
@@ -1118,7 +1140,7 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "chrono",
- "chrono-tz",
+ "chrono-tz 0.6.3",
  "dotenv",
  "futures-util",
  "kvvliveapi",
@@ -1642,6 +1664,7 @@ name = "trias"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "chrono-tz 0.8.3",
  "dotenv",
  "reqwest",
  "serde",

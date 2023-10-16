@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 mod api;
 
-use chrono::Utc;
+use chrono::{Local, Utc};
 use futures_util::FutureExt;
 use trias::response::{Location, StopEventResponse};
 
@@ -160,7 +160,8 @@ pub async fn kvv_stops() -> Vec<Stop> {
     }
     stops
 }
-type LineDepartures = HashMap<(String, String), Vec<(u32, Vec<chrono::Duration>)>>;
+
+pub type LineDepartures = HashMap<String, Vec<(u32, chrono::Duration)>>;
 
 pub async fn fetch_departures(stops: &[Stop]) -> LineDepartures {
     let mut departures_per_line = HashMap::new();
@@ -186,7 +187,7 @@ pub async fn fetch_departures(stops: &[Stop]) -> LineDepartures {
     let results = futures_util::future::join_all(futures).await;
 
     for (id, stops) in results.iter() {
-        let response_time = Utc::now();
+        let response_time = Local::now().with_timezone(&chrono_tz::Europe::Berlin);
 
         for stop in stops {
             let mut departures_by_line_and_stop = HashMap::new();
@@ -200,24 +201,48 @@ pub async fn fetch_departures(stops: &[Stop]) -> LineDepartures {
                     .as_ref()
                     .unwrap()
                     .timetabled_time;
-                // example time 2023-10-15T17:10:54Z
+
                 let time =
                     chrono::NaiveDateTime::parse_from_str(time, "%Y-%m-%dT%H:%M:%SZ").unwrap();
                 let delta = time.time() - response_time.time();
 
                 let entry = departures_by_line_and_stop
-                    .entry((
-                        line_id.clone(),
-                        departure.service.service_section.line_ref.clone(),
-                    ))
-                    .or_insert_with(Vec::new);
-                entry.push(delta);
-            }
-            for (line_id, delta) in departures_by_line_and_stop {
-                let entry = departures_per_line
                     .entry(line_id.clone())
                     .or_insert_with(Vec::new);
                 entry.push((*id, delta));
+                dbg!(delta.num_minutes());
+
+                let Some(previous_call) = &departure
+                    .previous_call
+                    .as_ref() else { println!("no previous call");continue; };
+                let last_stop = &previous_call.last().unwrap().call_at_stop;
+
+                let last_stop_time = &last_stop
+                    .service_departure
+                    .as_ref()
+                    .unwrap()
+                    .timetabled_time;
+                let Some(last_stop) =
+                    find_stop_by_kkv_id(&last_stop.stop_point_ref, KVV_STOPS.get().unwrap()) else {
+                        continue;
+                    };
+
+                let last_stop_time =
+                    chrono::NaiveDateTime::parse_from_str(last_stop_time, "%Y-%m-%dT%H:%M:%SZ")
+                        .unwrap();
+
+                // example time 2023-10-15T17:10:54Z
+                let last_stop_delta = last_stop_time.time() - response_time.time();
+
+                entry.push((last_stop.id, last_stop_delta));
+                dbg!(last_stop_delta);
+            }
+            for (line_id, mut deltas) in departures_by_line_and_stop {
+                let entry = departures_per_line
+                    .entry(line_id.clone())
+                    .or_insert_with(Vec::new);
+                entry.append(&mut deltas);
+                entry.sort_by_key(|x| x.1);
             }
         }
     }
@@ -227,6 +252,10 @@ pub async fn fetch_departures(stops: &[Stop]) -> LineDepartures {
 
 pub fn find_stop_by_id(id: u32, stops: &[Stop]) -> Option<&Stop> {
     stops.iter().find(|stop| stop.id == id)
+}
+
+pub fn find_stop_by_kkv_id<'a>(id: &str, stops: &'a [Stop]) -> Option<&'a Stop> {
+    stops.iter().find(|stop| stop.kvv_stop.id == id)
 }
 
 pub fn points_on_route(start_stop_id: u32, end_stop_id: u32, stops: &[Stop]) -> Vec<Point> {
@@ -291,28 +320,24 @@ pub fn interpolate_segment(points: &[Point], progress: f32) -> Point {
 
 pub fn train_positions_per_route(
     departures_per_line: LineDepartures,
+    time_offset: chrono::Duration,
     line_id: &str,
     destination: &str,
     stops: &[Stop],
 ) -> Vec<Train> {
     let mut trains = Vec::new();
-    let departures = departures_per_line
-        .get(&(line_id.to_owned(), destination.to_owned()))
-        .unwrap();
+    let departures = departures_per_line.get(line_id).unwrap();
     let mut train_offsets = Vec::new();
-    for slice in departures.windows(2) {
-        if let [last, current] = slice {
-            if last.1 > current.1 {
-                // TODO: handle panics
-                let segment_duration = last.1[0] - current.1[0];
-                train_offsets.push(TrainPos {
-                    stop_id: last.0,
-                    next_stop_id: current.0,
-                    progress: current.1[0].num_seconds() as f32
-                        / segment_duration.num_seconds() as f32,
-                });
-            }
-        }
+    if let [last, current] = departures[..] {
+        // TODO: handle panics
+        let last_time = last.1 - time_offset;
+        let current_time = current.1 - time_offset;
+        let segment_duration = last_time - current_time - chrono::Duration::seconds(30);
+        train_offsets.push(TrainPos {
+            stop_id: last.0,
+            next_stop_id: current.0,
+            progress: current.1.num_seconds() as f32 / segment_duration.num_seconds() as f32,
+        });
     }
     for train_offset in train_offsets {
         let points = points_on_route(train_offset.stop_id, train_offset.next_stop_id, &stops);
@@ -335,15 +360,20 @@ pub async fn init() {
     let stops = kvv_stops().await;
     KVV_STOPS.set(stops).expect("failed to set KVV_STOPS");
 }
-
-pub async fn train_positions() -> Vec<Train> {
+pub async fn fetch_departures_for_region() -> LineDepartures {
     let stops = KVV_STOPS.get().expect("KVV_STOPS not initialized");
-    let departures_per_line = fetch_departures(&stops).await;
+    fetch_departures(&stops).await
+}
 
+pub async fn train_positions(
+    departures_per_line: &LineDepartures,
+    offset: chrono::Duration,
+) -> Vec<Train> {
+    let stops = KVV_STOPS.get().expect("KVV_STOPS not initialized");
     let mut trains = Vec::new();
-    for (line_id, destination) in departures_per_line.keys() {
+    for line_id in departures_per_line.keys() {
         let positions =
-            train_positions_per_route(departures_per_line.clone(), line_id, destination, &stops);
+            train_positions_per_route(departures_per_line.clone(), offset, line_id, line_id, stops);
         trains.extend(positions);
     }
     trains

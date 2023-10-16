@@ -54,7 +54,10 @@ pub struct StopEventRequestBuilder {
 
 impl StopEventRequestBuilder {
     pub fn new() -> Self {
-        let timestamp = Utc::now().format("%Y-%m-%dT%H:%M:%S.%3fZ").to_string();
+        let timestamp = Local::now()
+            .with_timezone(&chrono_tz::Europe::Berlin)
+            .format("%Y-%m-%dT%H:%M:%S.%3fZ")
+            .to_string();
         Self {
             location_ref: None,
             requestor_ref: "API-Explorer".to_string(),
@@ -88,7 +91,7 @@ impl StopEventRequestBuilder {
             return Err("Missing required fields");
         }
         Ok(ServiceRequest {
-            request_timestamp: Utc::now().format("%Y-%m-%dT%H:%M:%S.%3fZ").to_string(),
+            request_timestamp: self.dep_arr_time.clone().unwrap(),
             requestor_ref: self.requestor_ref.clone(),
             request_payload: RequestPayload::StopEventRequest(StopEventRequest {
                 location: Location {
@@ -111,7 +114,7 @@ impl Default for StopEventRequestBuilder {
 
 // src/stop_event_response.rs
 
-use chrono::Utc;
+use chrono::{Local, Utc};
 use serde::{Deserialize, Serialize};
 
 use crate::{RequestPayload, ServiceRequest};

@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 chrono = "0.4.31"
+chrono-tz = "0.8.3"
 reqwest = "0.11.22"
 serde = { version = "1.0.188", features = ["derive"] }
 serde-xml-rs = "0.6.0"

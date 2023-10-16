@@ -11,6 +11,7 @@ use axum::{
     Json, Router,
 };
 use futures_util::SinkExt;
+use kvv::LineDepartures;
 use tracing::{event, info, span, Level};
 use ws_message::{ClientMessage, GameState};
 
@@ -18,9 +19,15 @@ mod ws_message;
 
 mod kvv;
 
+#[derive(Debug)]
 enum InputMessage {
     Client(ClientMessage, u32),
-    Server(GameState),
+    Server(ServerMessage),
+}
+
+#[derive(Debug)]
+enum ServerMessage {
+    Departures(LineDepartures),
 }
 
 #[derive(Debug)]
@@ -79,7 +86,7 @@ async fn handler(ws: WebSocketUpgrade, State(state): State<SharedState>) -> Resp
     ws.on_upgrade(|socket| handle_socket(socket, client))
 }
 
-async fn handle_socket(mut socket: WebSocket, mut client: Client) {
+async fn handle_socket(socket: WebSocket, mut client: Client) {
     use futures_util::stream::{Stream, StreamExt};
 
     let (mut send, mut recv) = socket.split();
@@ -103,7 +110,7 @@ async fn handle_socket(mut socket: WebSocket, mut client: Client) {
                 .send
                 .send(InputMessage::Client(msg.clone(), 0))
                 .await
-                .unwrap();
+                .unwrap_or_else(|_| return);
 
             match msg {
                 ClientMessage::Position { x, y } => {
@@ -165,9 +172,20 @@ async fn main() {
 
     let (send, recv) = tokio::sync::mpsc::channel(100);
 
-    let state = AppState::new(send);
+    let state = AppState::new(send.clone());
 
     let state = std::sync::Arc::new(tokio::sync::Mutex::new(state));
+
+    // fetch departures every 5 seconds and send them to the game logic queue
+    tokio::spawn(async move {
+        loop {
+            tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+            let departures = kvv::fetch_departures_for_region().await;
+            send.send(InputMessage::Server(ServerMessage::Departures(departures)))
+                .await
+                .unwrap();
+        }
+    });
 
     tracing::info!("Starting game loop");
     tokio::spawn(run_game_loop(recv, state.clone()));
@@ -196,17 +214,13 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
     tracing::info!("Starting game loop");
     let mut tick = 0;
     let mut game_state = GameState::new();
+    let departures = &mut kvv::fetch_departures_for_region().await;
     loop {
         tick += 1;
         tracing::info!("tick {}", tick);
-        tracing::trace!("updating train positions");
-        let mut trains = kvv::train_positions().await;
-        trains.dedup_by_key(|train| (train.line_id.clone(), train.direction.clone(), train.lat));
-        //dbg!(&trains);
 
-        game_state.trains = trains;
         let mut state = state.lock().await;
-        if let Ok(msg) = recv.try_recv() {
+        while let Ok(msg) = recv.try_recv() {
             match msg {
                 InputMessage::Client(msg, id) => {
                     info!("Got message from client {}: {:?}", id, msg);
@@ -223,17 +237,24 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
                         }
                     }
                 }
-                InputMessage::Server(msg) => {
-                    info!("Got message from server: {:?}", msg);
+                InputMessage::Server(ServerMessage::Departures(deps)) => {
+                    *departures = deps;
                 }
             }
         }
+
+        tracing::trace!("updating train positions");
+        let mut trains =
+            kvv::train_positions(departures, chrono::Duration::milliseconds(200)).await;
+        trains.retain(|x| !x.line_id.contains("bus"));
+        //dbg!(&trains);
+        game_state.trains = trains;
 
         for connection in state.connections.iter_mut() {
             if connection.send.send(game_state.clone()).await.is_err() {
                 return;
             }
         }
-        tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+        tokio::time::sleep(std::time::Duration::from_millis(200)).await;
     }
 }
