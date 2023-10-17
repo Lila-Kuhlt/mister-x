@@ -89,6 +89,7 @@ pub async fn stop_events(
         number_of_results,
         include_realtime_data: true,
         include_previous_calls: true,
+        include_onward_calls: true,
         ..Default::default()
     };
     let builder = StopEventRequestBuilder::new()

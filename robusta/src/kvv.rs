@@ -47,46 +47,56 @@ pub struct Point {
     pub y: f32,
 }
 
-/*
-
-
-*/
-const STOPS: &[&str] = &[
-    "Arbeitsagentur",
-    "Augartenstraße",
-    "Barbarossaplatz",
-    "Durlacher Tor/KIT-Campus Süd",
-    "Durlacher Tor/KIT-Campus Süd (U)",
-    "Ebertstraße",
-    "Ettlinger Tor/Staatstheater",
-    "Ettlinger Tor/Staatstheater (U)",
-    "Europaplatz/Postgalerie",
-    "Europaplatz/Postgalerie (U)",
-    "Hauptbahnhof (Vorplatz)",
-    "Holtzstraße (Bus)",
-    "Karlstor/Bundesgerichtshof",
-    "Kolpingplatz",
-    "Kongresszentrum (U)",
-    "Kronenplatz",
-    "Kronenplatz (U)",
-    "Marktplatz (Kaiserstr. U) ",
-    "Marktplatz (Pyramide U) ",
-    "Mathystraße",
-    "Mühlburger Tor",
-    "Otto-Sachs-Straße",
-    "Poststraße",
-    "Rüppurrer Tor",
-    "Schillerstraße ",
-    "Sophienstraße",
-    "St. Vincentius Krankenhaus (Bus)",
-    "Südendschule (Bus)",
-    "Tivoli",
-    "Weinbrennerplatz",
-    "Welfenstraße",
-    "Werderstraße",
-    "ZKM",
-    "ZKM (Bus)",
-    "Lessingstraße",
+const STOPS: &[(&str, &str)] = &[
+    ("Arbeitsagentur", "de:08212:64"),
+    ("Augartenstraße", "de:08212:74"),
+    ("Barbarossaplatz", "de:08212:5003"),
+    ("Durlacher Tor/KIT-Campus Süd", "de:08212:3"),
+    ("Durlacher Tor/KIT-Campus Süd (U)", "de:08212:1001"),
+    ("Ebertstraße", "de:08212:91"),
+    ("Ettlinger Tor/Staatstheater", "de:08212:71"),
+    ("Ettlinger Tor/Staatstheater (U)", "de:08212:1012"),
+    ("Holtzstraße (Bus)", "de:08212:5509"),
+    ("Karlstor/Bundesgerichtshof", "de:08212:61"),
+    ("Kolpingplatz", "de:08212:63"),
+    ("Kongresszentrum", "de:08212:72"),
+    ("Kongresszentrum (U)", "de:08212:1013"),
+    ("Kronenplatz", "de:08212:80"),
+    ("Kronenplatz (U)", "de:08212:1002"),
+    ("Marktplatz (Kaiserstr. U)", "de:08212:1003"),
+    ("Marktplatz (Pyramide U) ", "de:08212:1011"),
+    ("Mathystraße", "de:08212:62"),
+    ("Mühlburger Tor", "de:08212:39"),
+    ("Otto-Sachs-Straße", "de:08212:508"),
+    ("Poststraße", "de:08212:98"),
+    ("Rüppurrer Tor", "de:08212:85"),
+    ("Schillerstraße", "de:08212:40"),
+    ("Sophienstraße", "de:08212:602"),
+    ("St. Vincentius Krankenhaus", "de:08212:5508"),
+    ("Südendschule", "de:08212:5504"),
+    ("Tivoli", "de:08212:84"),
+    ("Weinbrennerplatz", "de:08212:603"),
+    ("Welfenstraße", "de:08212:6218"),
+    ("Werderstraße", "de:08212:83"),
+    ("ZKM", "de:08212:65"),
+    //("ZKM/Städtische Galerie", "de:08212:29"),
+    ("Lessingstraße", "de:08212:507"),
+    ("Europaplatz/Postgalerie", "de:08212:37"),
+    ("Europaplatz/Postgalerie (U)", "de:08212:1004"),
+    ("Marktplatz (Pyramide U)", "de:08212:1011"),
+    ("Marktplatz (Kaiserstraße U)", "de:08212:1003"),
+    ("Gebhardstraße", "de:08212:5004"),
+    ("Gottesauer Platz/BGV", "de:08212:6"),
+    ("Hauptbahnhof (Vorplatz)", "de:08212:89"),
+    ("Hauptbahnhof Süd", "de:08212:88"),
+    ("Hübschstraße", "de:08212:505"),
+    ("Kongresszentrum", "de:08212:72"),
+    ("Kongresszentrum (U)", "de:08212:1013"),
+    ("Kronenplatz", "de:08212:80"),
+    ("Kronenplatz (U)", "de:08212:1002"),
+    ("Kunstakademie/Hochschule", "de:08212:7003"),
+    ("Landesbausparkasse", "de:08212:604"),
+    ("Yorckstraße", "de:08212:41"),
 ];
 
 const CURVES_STR: &str = include_str!("../data/route_curves.csv");
@@ -111,7 +121,7 @@ fn parse_curves() -> Vec<(String, String, Vec<Point>)> {
 }
 
 fn stop_id_by_name(name: &str) -> u32 {
-    STOPS.iter().position(|stop| stop == &name).unwrap() as u32
+    STOPS.iter().position(|stop| &stop.0 == &name).unwrap() as u32
 }
 
 fn intermediate_points(start_id: u32, end_id: u32) -> Vec<Point> {
@@ -120,7 +130,7 @@ fn intermediate_points(start_id: u32, end_id: u32) -> Vec<Point> {
     let end = STOPS[end_id as usize];
     let mut points = Vec::new();
 
-    if let Some(p) = curves.iter().find(|(s, e, _)| s == start && e == end) {
+    if let Some(p) = curves.iter().find(|(s, e, _)| s == start.0 && e == end.0) {
         points = p.2.clone();
     }
 
@@ -131,11 +141,28 @@ pub async fn kvv_stops() -> Vec<Stop> {
     let mut stops = Vec::new();
     let mut futures = Vec::new();
     for stop in STOPS.iter() {
-        tracing::trace!("fetching stop id for {}", stop);
+        tracing::trace!("fetching stop id for {}", stop.0);
         dotenv::dotenv().ok().unwrap();
         let api_endpoint = "https://projekte.kvv-efa.de/koberttrias/trias"; // Replace with your API endpoint
         let access_token = std::env::var("TRIAS_ACCESS_TOKEN").expect("TRIAS_ACCESS_TOKEN not set");
-        let name = format!("Karlsruhe, {}", stop);
+        let name = format!("{}", stop.1);
+
+        let foo = trias::search_stops(name.clone(), access_token.clone(), api_endpoint, 2).await;
+        /*
+        for stop in foo.as_ref().unwrap() {
+            println!(
+                "(\"{}\", \"{}\"),",
+                stop.stop_point.stop_point_name.text, stop.stop_point.stop_point_ref
+            );
+        }*/
+        /*
+        if stop != &foo.as_ref().unwrap()[0].stop_point.stop_point_name.text {
+            println!(
+                "stop name mismatch: {} != {}",
+                stop,
+                foo.unwrap()[0].stop_point.stop_point_name.text
+            );
+        }*/
 
         let stop = trias::search_stops(name, access_token, api_endpoint, 1);
         futures.push(stop);
@@ -191,7 +218,13 @@ pub async fn fetch_departures(stops: &[Stop]) -> LineDepartures {
 
         for stop in stops {
             let mut departures_by_line_and_stop = HashMap::new();
-            let departures = stop.stop_event_result.iter().map(|x| &x.stop_event);
+            println!("stop id: {}", id);
+            let departures = stop
+                .stop_event_result
+                .as_ref()
+                .unwrap()
+                .iter()
+                .map(|x| &x.stop_event);
             for departure in departures {
                 let line_id = &departure.service.journey_ref.clone();
                 let time = &departure
@@ -210,7 +243,7 @@ pub async fn fetch_departures(stops: &[Stop]) -> LineDepartures {
                     .entry(line_id.clone())
                     .or_insert_with(Vec::new);
                 entry.push((*id, delta));
-                dbg!(delta.num_minutes());
+                //dbg!(delta.num_minutes());
 
                 let Some(previous_call) = &departure
                     .previous_call
@@ -222,8 +255,9 @@ pub async fn fetch_departures(stops: &[Stop]) -> LineDepartures {
                     .as_ref()
                     .unwrap()
                     .timetabled_time;
-                let Some(last_stop) =
+                let Some(last_stop_id) =
                     find_stop_by_kkv_id(&last_stop.stop_point_ref, KVV_STOPS.get().unwrap()) else {
+                        println!("no last stop in KVV_STOPS {:?}", last_stop.stop_point_name.text);
                         continue;
                     };
 
@@ -231,11 +265,10 @@ pub async fn fetch_departures(stops: &[Stop]) -> LineDepartures {
                     chrono::NaiveDateTime::parse_from_str(last_stop_time, "%Y-%m-%dT%H:%M:%SZ")
                         .unwrap();
 
-                // example time 2023-10-15T17:10:54Z
+                // TODO: This only works during daytime
                 let last_stop_delta = last_stop_time.time() - response_time.time();
 
-                entry.push((last_stop.id, last_stop_delta));
-                dbg!(last_stop_delta);
+                entry.push((last_stop_id.id, last_stop_delta));
             }
             for (line_id, mut deltas) in departures_by_line_and_stop {
                 let entry = departures_per_line
@@ -243,6 +276,8 @@ pub async fn fetch_departures(stops: &[Stop]) -> LineDepartures {
                     .or_insert_with(Vec::new);
                 entry.append(&mut deltas);
                 entry.sort_by_key(|x| x.1);
+                entry.dedup_by_key(|x| x.1.num_seconds());
+                entry.dedup_by_key(|x| x.0);
             }
         }
     }
@@ -255,7 +290,7 @@ pub fn find_stop_by_id(id: u32, stops: &[Stop]) -> Option<&Stop> {
 }
 
 pub fn find_stop_by_kkv_id<'a>(id: &str, stops: &'a [Stop]) -> Option<&'a Stop> {
-    stops.iter().find(|stop| stop.kvv_stop.id == id)
+    stops.iter().find(|stop| id.starts_with(&stop.kvv_stop.id))
 }
 
 pub fn points_on_route(start_stop_id: u32, end_stop_id: u32, stops: &[Stop]) -> Vec<Point> {
@@ -328,19 +363,29 @@ pub fn train_positions_per_route(
     let mut trains = Vec::new();
     let departures = departures_per_line.get(line_id).unwrap();
     let mut train_offsets = Vec::new();
+    /*println!("departures for line {}", line_id);
+    for stop_id in departures {
+        println!(
+            "{} {}",
+            find_stop_by_id(stop_id.0, stops).unwrap().kvv_stop.name,
+            stop_id.1.num_seconds()
+        )
+    }*/
     if let [last, current] = departures[..] {
         // TODO: handle panics
         let last_time = last.1 - time_offset;
         let current_time = current.1 - time_offset;
-        let segment_duration = last_time - current_time - chrono::Duration::seconds(30);
+        let segment_duration = last_time - current_time - chrono::Duration::seconds(40);
         train_offsets.push(TrainPos {
             stop_id: last.0,
             next_stop_id: current.0,
-            progress: current.1.num_seconds() as f32 / segment_duration.num_seconds() as f32,
+            progress: 1.
+                - (current_time.num_seconds() as f32 / segment_duration.num_seconds() as f32)
+                    .clamp(0., 1.),
         });
     }
     for train_offset in train_offsets {
-        let points = points_on_route(train_offset.stop_id, train_offset.next_stop_id, &stops);
+        let points = points_on_route(train_offset.stop_id, train_offset.next_stop_id, stops);
         let position = interpolate_segment(&points, train_offset.progress);
 
         trains.push(Train {

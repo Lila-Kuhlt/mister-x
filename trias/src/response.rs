@@ -106,7 +106,7 @@ pub struct StopEventResponse {
     pub stop_event_response_context: StopEventResponseContext,
 
     #[serde(rename = "StopEventResult")]
-    pub stop_event_result: Vec<StopEventResult>,
+    pub stop_event_result: Option<Vec<StopEventResult>>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

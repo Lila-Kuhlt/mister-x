@@ -10,6 +10,7 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
+use chrono::Utc;
 use futures_util::SinkExt;
 use kvv::LineDepartures;
 use tracing::{event, info, span, Level};
@@ -215,6 +216,7 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
     let mut tick = 0;
     let mut game_state = GameState::new();
     let departures = &mut kvv::fetch_departures_for_region().await;
+    let mut request_time = Utc::now();
     loop {
         tick += 1;
         tracing::info!("tick {}", tick);
@@ -239,13 +241,17 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
                 }
                 InputMessage::Server(ServerMessage::Departures(deps)) => {
                     *departures = deps;
+                    request_time = Utc::now();
                 }
             }
         }
 
         tracing::trace!("updating train positions");
-        let mut trains =
-            kvv::train_positions(departures, chrono::Duration::milliseconds(200)).await;
+        tracing::info!(
+            "offset: {:?}",
+            (Utc::now() - request_time).num_milliseconds()
+        );
+        let mut trains = kvv::train_positions(departures, Utc::now() - request_time).await;
         trains.retain(|x| !x.line_id.contains("bus"));
         //dbg!(&trains);
         game_state.trains = trains;
