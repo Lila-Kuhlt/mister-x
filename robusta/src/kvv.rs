@@ -49,6 +49,13 @@ pub struct Point {
 }
 
 const STOPS: &[(&str, &str)] = &[
+    /*
+    ("Durlacher Tor/KIT-Campus Süd", "de:08212:3"),
+    ("Durlacher Tor/KIT-Campus Süd (U)", "de:08212:1001"),
+    ("Poststraße", "de:08212:98"),
+    ("Otto-Sachs-Straße", "de:08212:508"),
+    */
+    //
     ("Arbeitsagentur", "de:08212:64"),
     ("Augartenstraße", "de:08212:74"),
     ("Barbarossaplatz", "de:08212:5003"),
@@ -191,6 +198,10 @@ pub async fn kvv_stops() -> Vec<Stop> {
 
 pub type LineDepartures = HashMap<String, Vec<(u32, chrono::Duration)>>;
 
+pub fn parse_time(time: &str) -> chrono::NaiveTime {
+    chrono::NaiveTime::parse_from_str(time, "%Y-%m-%dT%H:%M:%SZ").unwrap()
+}
+
 pub async fn fetch_departures(stops: &[Stop]) -> LineDepartures {
     let mut departures_per_line = HashMap::new();
     let api_endpoint = "https://projekte.kvv-efa.de/koberttrias/trias"; // Replace with your API endpoint
@@ -202,18 +213,43 @@ pub async fn fetch_departures(stops: &[Stop]) -> LineDepartures {
             let name = stop.kvv_stop.id.clone();
             let access_token = access_token.clone();
             Box::pin(async move {
-                (
-                    stop.id,
-                    trias::stop_events(name, access_token, 10, api_endpoint)
-                        .await
-                        .unwrap(),
-                )
+                trias::stop_events(name, access_token, 10, api_endpoint)
+                    .await
+                    .unwrap_or_default()
             })
         })
         .collect();
 
     let results = futures_util::future::join_all(futures).await;
 
+    let mut jorneys = HashMap::new();
+
+    for stops in results
+        .iter()
+        .flatten()
+        .flat_map(|x| x.stop_event_result.as_ref())
+    {
+        for stop in stops {
+            let service = &stop.stop_event.service;
+            let journey = service.journey_ref;
+            let this_call = &stop.stop_event.this_call;
+            /*
+            let departure = &this_call.service_departure.as_ref().unwrap();
+            let this_call = (
+                this_call.stop_point_ref.clone(),
+                parse_time(&departure.timetabled_time),
+            );*/
+            let previous_call = &stop.stop_event.previous_call.iter().flatten();
+            let next_call = &stop.stop_event.onward_call.iter().flatten();
+            let entry = jorneys.entry(journey.clone()).or_insert_with(HashMap::new);
+            let calls = previous_call
+                .chain(std::iter::once(this_call))
+                .chain(next_call);
+            let stops = entry.push(stop.clone());
+        }
+    }
+
+    /*
     for (id, stops) in results.iter() {
         let response_time = Local::now().with_timezone(&chrono_tz::Europe::Berlin);
 
@@ -286,7 +322,7 @@ pub async fn fetch_departures(stops: &[Stop]) -> LineDepartures {
                 entry.dedup_by_key(|x| x.0);
             }
         }
-    }
+    }*/
 
     departures_per_line
 }
