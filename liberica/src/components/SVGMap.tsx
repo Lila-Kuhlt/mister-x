@@ -10,6 +10,7 @@ import {
 import { LayersControl } from "react-leaflet";
 import L from "leaflet";
 import { TrainIcon, DetectiveIcon, MrXIcon } from "components/MapIcons";
+export interface MapProps { trains: Train[], teams: Team[], mrX?: Team }
 
 const viewBounds: L.LatLngBounds = new L.LatLngBounds(
   [49.0129685, 8.3782551],
@@ -31,11 +32,13 @@ function ResetBoundsButton() {
   );
 }
 
-export default function SVGMap(props: {
-  trains: Train[];
-  teams: Team[];
-  mrX: Team;
-}) {
+
+export default function SVGMap(props: MapProps) {
+  const trains = props.trains | [];
+  const teams = props.teams | [];
+  // Mr X is hardcoded for now
+  const mrX =  { id: 0, x: 49.012796, y: 8.4031014, name: "Mr X", color: "black" };
+  
   return (
     <MapContainer bounds={viewBounds} zoom={13} className={Style.mapContainer}>
       <TileLayer
