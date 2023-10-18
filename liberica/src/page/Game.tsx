@@ -8,7 +8,15 @@ export function Game() {
   const [ws, setWs] = useState<WebsocketApi | undefined>(undefined);
   const [gameState, setGameState] = useState<GameState | undefined>(undefined);
 
+  async function updateGame(message: GameState) {
+    //console.log("update game: ", gameState);
+    setGameState(message);
+  }
+
   useEffect(() => {
+    new WebsocketApi(ENDPOINTS.GET_WS, setWs)
+      //.register(console.log)
+      .register(updateGame);
     new WebsocketApi(ENDPOINTS.GET_WS, setWs)
       .register((msg) => console.log("Received message", msg))
       .register(setGameState);
