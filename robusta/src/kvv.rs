@@ -135,8 +135,14 @@ fn stop_id_by_name(name: &str) -> u32 {
 fn intermediate_points(start_id: &str, end_id: &str) -> Vec<Point> {
     let curves = parse_curves();
     println!("start: {}, end: {}", start_id, end_id);
-    let start = STOPS.iter().find(|stop| stop.1 == start_id).unwrap();
-    let end = STOPS.iter().find(|stop| stop.1 == end_id).unwrap();
+    let start = STOPS
+        .iter()
+        .find(|stop| start_id.starts_with(stop.1))
+        .unwrap();
+    let end = STOPS
+        .iter()
+        .find(|stop| end_id.starts_with(stop.1))
+        .unwrap();
     let mut points = Vec::new();
 
     if let Some(p) = curves.iter().find(|(s, e, _)| s == start.0 && e == end.0) {
@@ -285,7 +291,9 @@ pub fn points_on_route(start_stop_id: &str, end_stop_id: &str, stops: &[Stop]) -
     let Some(start_stop) = find_stop_by_kkv_id(start_stop_id, stops) else {
         return Vec::new();
     };
-    let end_stop = find_stop_by_kkv_id(end_stop_id, stops).unwrap();
+    let Some(end_stop) = find_stop_by_kkv_id(end_stop_id, stops) else {
+        return Vec::new();
+    };
 
     let start = Point {
         x: start_stop.kvv_stop.lon as f32,
