@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 mod api;
 
-use chrono::{Local, Utc};
+use chrono::{FixedOffset, Local, Utc};
 use futures_util::FutureExt;
 use tracing::debug;
 use trias::response::{Location, StopEventResponse};
@@ -132,10 +132,11 @@ fn stop_id_by_name(name: &str) -> u32 {
     STOPS.iter().position(|stop| &stop.0 == &name).unwrap() as u32
 }
 
-fn intermediate_points(start_id: u32, end_id: u32) -> Vec<Point> {
+fn intermediate_points(start_id: &str, end_id: &str) -> Vec<Point> {
     let curves = parse_curves();
-    let start = STOPS[start_id as usize];
-    let end = STOPS[end_id as usize];
+    println!("start: {}, end: {}", start_id, end_id);
+    let start = STOPS.iter().find(|stop| stop.1 == start_id).unwrap();
+    let end = STOPS.iter().find(|stop| stop.1 == end_id).unwrap();
     let mut points = Vec::new();
 
     if let Some(p) = curves.iter().find(|(s, e, _)| s == start.0 && e == end.0) {
@@ -196,14 +197,15 @@ pub async fn kvv_stops() -> Vec<Stop> {
     stops
 }
 
-pub type LineDepartures = HashMap<String, Vec<(u32, chrono::Duration)>>;
+type JourneyRef = String;
+type StopRef = String;
+pub type LineDepartures = HashMap<JourneyRef, HashMap<StopRef, chrono::NaiveDateTime>>;
 
-pub fn parse_time(time: &str) -> chrono::NaiveTime {
-    chrono::NaiveTime::parse_from_str(time, "%Y-%m-%dT%H:%M:%SZ").unwrap()
+pub fn parse_time(time: &str) -> chrono::NaiveDateTime {
+    chrono::NaiveDateTime::parse_from_str(time, "%Y-%m-%dT%H:%M:%SZ").unwrap()
 }
 
 pub async fn fetch_departures(stops: &[Stop]) -> LineDepartures {
-    let mut departures_per_line = HashMap::new();
     let api_endpoint = "https://projekte.kvv-efa.de/koberttrias/trias"; // Replace with your API endpoint
     let access_token = &std::env::var("TRIAS_ACCESS_TOKEN").expect("TRIAS_ACCESS_TOKEN not set");
 
@@ -231,100 +233,43 @@ pub async fn fetch_departures(stops: &[Stop]) -> LineDepartures {
     {
         for stop in stops {
             let service = &stop.stop_event.service;
-            let journey = service.journey_ref;
+            let journey = &service.journey_ref;
             let this_call = &stop.stop_event.this_call;
-            /*
-            let departure = &this_call.service_departure.as_ref().unwrap();
-            let this_call = (
-                this_call.stop_point_ref.clone(),
-                parse_time(&departure.timetabled_time),
-            );*/
             let previous_call = &stop.stop_event.previous_call.iter().flatten();
             let next_call = &stop.stop_event.onward_call.iter().flatten();
             let entry = jorneys.entry(journey.clone()).or_insert_with(HashMap::new);
             let calls = previous_call
+                .clone()
                 .chain(std::iter::once(this_call))
-                .chain(next_call);
-            let stops = entry.push(stop.clone());
+                .chain(next_call.clone());
+
+            for call in calls {
+                let departure = &call.call_at_stop.service_departure.as_ref();
+                let arrival = &call.call_at_stop.service_arrival.as_ref();
+                let time = match (departure, arrival) {
+                    (Some(departure), _) => parse_time(&departure.timetabled_time),
+                    (_, Some(arrival)) => parse_time(&arrival.timetabled_time),
+                    _ => {
+                        println!("no departure or arrival time");
+                        continue;
+                    }
+                };
+                let stop_ref = call.call_at_stop.stop_point_ref.clone();
+                let old = entry.insert(stop_ref.clone(), time);
+                if let Some(old) = old {
+                    if old != time {
+                        tracing::warn!(
+                            "different times for same stop: {} {} {}",
+                            journey,
+                            stop_ref,
+                            time
+                        );
+                    }
+                }
+            }
         }
     }
-
-    /*
-    for (id, stops) in results.iter() {
-        let response_time = Local::now().with_timezone(&chrono_tz::Europe::Berlin);
-
-        for stop in stops {
-            let mut departures_by_line_and_stop = HashMap::new();
-            debug!("stop id: {}", id);
-            let departures = stop
-                .stop_event_result
-                .as_ref()
-                .unwrap()
-                .iter()
-                .map(|x| &x.stop_event);
-            for departure in departures {
-                let line_id = &departure.service.journey_ref.clone();
-                let time = &departure
-                    .this_call
-                    .call_at_stop
-                    .service_departure
-                    .as_ref()
-                    .unwrap()
-                    .timetabled_time;
-
-                let time =
-                    chrono::NaiveDateTime::parse_from_str(time, "%Y-%m-%dT%H:%M:%SZ").unwrap();
-                let delta = time.time() - response_time.time();
-
-                let entry = departures_by_line_and_stop
-                    .entry(line_id.clone())
-                    .or_insert_with(Vec::new);
-                entry.push((*id, delta));
-                //dbg!(delta.num_minutes());
-
-                let Some(previous_call) = &departure.previous_call.as_ref() else {
-                    println!("no previous call");
-                    continue;
-                };
-                let last_stop = &previous_call.last().unwrap().call_at_stop;
-
-                let last_stop_time = &last_stop
-                    .service_departure
-                    .as_ref()
-                    .unwrap()
-                    .timetabled_time;
-                let Some(last_stop_id) =
-                    find_stop_by_kkv_id(&last_stop.stop_point_ref, KVV_STOPS.get().unwrap())
-                else {
-                    println!(
-                        "no last stop in KVV_STOPS {:?}",
-                        last_stop.stop_point_name.text
-                    );
-                    continue;
-                };
-
-                let last_stop_time =
-                    chrono::NaiveDateTime::parse_from_str(last_stop_time, "%Y-%m-%dT%H:%M:%SZ")
-                        .unwrap();
-
-                // TODO: This only works during daytime
-                let last_stop_delta = last_stop_time.time() - response_time.time();
-
-                entry.push((last_stop_id.id, last_stop_delta));
-            }
-            for (line_id, mut deltas) in departures_by_line_and_stop {
-                let entry = departures_per_line
-                    .entry(line_id.clone())
-                    .or_insert_with(Vec::new);
-                entry.append(&mut deltas);
-                entry.sort_by_key(|x| x.1);
-                entry.dedup_by_key(|x| x.1.num_seconds());
-                entry.dedup_by_key(|x| x.0);
-            }
-        }
-    }*/
-
-    departures_per_line
+    jorneys
 }
 
 pub fn find_stop_by_id(id: u32, stops: &[Stop]) -> Option<&Stop> {
@@ -335,9 +280,12 @@ pub fn find_stop_by_kkv_id<'a>(id: &str, stops: &'a [Stop]) -> Option<&'a Stop> 
     stops.iter().find(|stop| id.starts_with(&stop.kvv_stop.id))
 }
 
-pub fn points_on_route(start_stop_id: u32, end_stop_id: u32, stops: &[Stop]) -> Vec<Point> {
-    let start_stop = find_stop_by_id(start_stop_id, stops).unwrap();
-    let end_stop = find_stop_by_id(end_stop_id, stops).unwrap();
+pub fn points_on_route(start_stop_id: &str, end_stop_id: &str, stops: &[Stop]) -> Vec<Point> {
+    println!("start: {}, end: {}", start_stop_id, end_stop_id);
+    let Some(start_stop) = find_stop_by_kkv_id(start_stop_id, stops) else {
+        return Vec::new();
+    };
+    let end_stop = find_stop_by_kkv_id(end_stop_id, stops).unwrap();
 
     let start = Point {
         x: start_stop.kvv_stop.lon as f32,
@@ -354,13 +302,14 @@ pub fn points_on_route(start_stop_id: u32, end_stop_id: u32, stops: &[Stop]) -> 
     points
 }
 
+#[derive(Debug, Clone)]
 struct TrainPos {
-    stop_id: u32,
-    next_stop_id: u32,
+    stop_id: String,
+    next_stop_id: String,
     progress: f32,
 }
 
-pub fn interpolate_segment(points: &[Point], progress: f32) -> Point {
+pub fn interpolate_segment(points: &[Point], progress: f32) -> Option<Point> {
     let total_length = points
         .windows(2)
         .map(|slice| {
@@ -384,15 +333,14 @@ pub fn interpolate_segment(points: &[Point], progress: f32) -> Point {
         let segment_length = (dx * dx + dy * dy).sqrt();
         if current_length + segment_length > length {
             let progress = (length - current_length) / segment_length;
-            return Point {
+            return Some(Point {
                 x: start.x + progress * dx,
                 y: start.y + progress * dy,
-            };
+            });
         }
         current_length += segment_length;
     }
-    let end = points.last().unwrap();
-    Point { x: end.x, y: end.y }
+    points.last().map(|end| Point { x: end.x, y: end.y })
 }
 
 pub fn train_positions_per_route(
@@ -403,40 +351,49 @@ pub fn train_positions_per_route(
     stops: &[Stop],
 ) -> Vec<Train> {
     let mut trains = Vec::new();
-    let departures = departures_per_line.get(line_id).unwrap();
+    let departures = departures_per_line.get(line_id);
+    let mut departures: Vec<_> = departures.map(|x| x.iter().collect()).unwrap_or_default();
+    departures.sort_by_key(|x| x.1);
+
+    let time = Local::now()
+        .with_timezone(&chrono_tz::Europe::Berlin)
+        .naive_local();
+    let pos_offset = departures
+        .iter()
+        .position(|x| x.1 > &time)
+        .unwrap_or_default();
     let mut train_offsets = Vec::new();
-    /*println!("departures for line {}", line_id);
-    for stop_id in departures {
-        println!(
-            "{} {}",
-            find_stop_by_id(stop_id.0, stops).unwrap().kvv_stop.name,
-            stop_id.1.num_seconds()
-        )
-    }*/
-    if let [last, current] = departures[..] {
+    if pos_offset != 0 {
+        //dbg!(&departures, pos_offset);
+    }
+    let slice = &departures[(pos_offset.max(1) - 1)..=pos_offset];
+    if let [last, current] = slice {
+        println!("last: {:?}, current: {:?}", last, current);
+        tracing::info!("last: {:?}, current: {:?}", last, current);
         // TODO: handle panics
-        let last_time = last.1 - time_offset;
-        let current_time = current.1 - time_offset;
+        let last_time = (*last.1 - time) - time_offset;
+        let current_time = (*current.1 - time) - time_offset;
         let segment_duration = last_time - current_time - chrono::Duration::seconds(40);
         train_offsets.push(TrainPos {
-            stop_id: last.0,
-            next_stop_id: current.0,
+            stop_id: last.0.clone(),
+            next_stop_id: current.0.clone(),
             progress: 1.
                 - (current_time.num_seconds() as f32 / segment_duration.num_seconds() as f32)
                     .clamp(0., 1.),
         });
     }
+    //dbg!(&train_offsets);
     for train_offset in train_offsets {
-        let points = points_on_route(train_offset.stop_id, train_offset.next_stop_id, stops);
-        let position = interpolate_segment(&points, train_offset.progress);
-
-        trains.push(Train {
-            id: 0,
-            long: position.x,
-            lat: position.y,
-            line_id: line_id.to_owned(),
-            direction: destination.to_owned(),
-        });
+        let points = points_on_route(&train_offset.stop_id, &train_offset.next_stop_id, stops);
+        if let Some(position) = interpolate_segment(&points, train_offset.progress) {
+            trains.push(Train {
+                id: 0,
+                long: position.x,
+                lat: position.y,
+                line_id: line_id.to_owned(),
+                direction: destination.to_owned(),
+            });
+        }
     }
     trains
 }
