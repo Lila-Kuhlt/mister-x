@@ -134,7 +134,6 @@ fn stop_id_by_name(name: &str) -> u32 {
 
 fn intermediate_points(start_id: &str, end_id: &str) -> Vec<Point> {
     let curves = parse_curves();
-    println!("start: {}, end: {}", start_id, end_id);
     let start = STOPS
         .iter()
         .find(|stop| start_id.starts_with(stop.1))
@@ -161,23 +160,6 @@ pub async fn kvv_stops() -> Vec<Stop> {
         let api_endpoint = "https://projekte.kvv-efa.de/koberttrias/trias"; // Replace with your API endpoint
         let access_token = std::env::var("TRIAS_ACCESS_TOKEN").expect("TRIAS_ACCESS_TOKEN not set");
         let name = format!("{}", stop.1);
-
-        let foo = trias::search_stops(name.clone(), access_token.clone(), api_endpoint, 2).await;
-        /*
-        for stop in foo.as_ref().unwrap() {
-            println!(
-                "(\"{}\", \"{}\"),",
-                stop.stop_point.stop_point_name.text, stop.stop_point.stop_point_ref
-            );
-        }*/
-        /*
-        if stop != &foo.as_ref().unwrap()[0].stop_point.stop_point_name.text {
-            println!(
-                "stop name mismatch: {} != {}",
-                stop,
-                foo.unwrap()[0].stop_point.stop_point_name.text
-            );
-        }*/
 
         let stop = trias::search_stops(name, access_token, api_endpoint, 1);
         futures.push(stop);
@@ -287,7 +269,6 @@ pub fn find_stop_by_kkv_id<'a>(id: &str, stops: &'a [Stop]) -> Option<&'a Stop> 
 }
 
 pub fn points_on_route(start_stop_id: &str, end_stop_id: &str, stops: &[Stop]) -> Vec<Point> {
-    println!("start: {}, end: {}", start_stop_id, end_stop_id);
     let Some(start_stop) = find_stop_by_kkv_id(start_stop_id, stops) else {
         return Vec::new();
     };
@@ -371,13 +352,8 @@ pub fn train_positions_per_route(
         .position(|x| x.1 > &time)
         .unwrap_or_default();
     let mut train_offsets = Vec::new();
-    if pos_offset != 0 {
-        //dbg!(&departures, pos_offset);
-    }
     let slice = &departures[(pos_offset.max(1) - 1)..=pos_offset];
     if let [last, current] = slice {
-        println!("last: {:?}, current: {:?}", last, current);
-        tracing::info!("last: {:?}, current: {:?}", last, current);
         // TODO: handle panics
         let last_time = (*last.1 - time) - time_offset;
         let current_time = (*current.1 - time) - time_offset;
@@ -390,7 +366,6 @@ pub fn train_positions_per_route(
                     .clamp(0., 1.),
         });
     }
-    //dbg!(&train_offsets);
     for train_offset in train_offsets {
         let points = points_on_route(&train_offset.stop_id, &train_offset.next_stop_id, stops);
         if let Some(position) = interpolate_segment(&points, train_offset.progress) {
