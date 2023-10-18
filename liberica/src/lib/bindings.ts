@@ -4,12 +4,12 @@ export type ServerMessage = { GameState: GameState }
 
 export type GameState = { teams: { [key: number]: Team }; trains: Train[] }
 
+export type Stop = { id: number; kvv_stop: KvvStop }
+
 /**
  * Information about a tram station
  */
 export type KvvStop = { name: string; id: string; lat: number; lon: number }
-
-export type Stop = { id: number; kvv_stop: KvvStop }
 
 export type Player = { id: number; name: string; team_id: number }
 

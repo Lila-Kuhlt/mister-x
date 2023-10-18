@@ -4,6 +4,7 @@ mod api;
 
 use chrono::{Local, Utc};
 use futures_util::FutureExt;
+use tracing::debug;
 use trias::response::{Location, StopEventResponse};
 
 use crate::ws_message::{Line, Train};
@@ -218,7 +219,7 @@ pub async fn fetch_departures(stops: &[Stop]) -> LineDepartures {
 
         for stop in stops {
             let mut departures_by_line_and_stop = HashMap::new();
-            println!("stop id: {}", id);
+            debug!("stop id: {}", id);
             let departures = stop
                 .stop_event_result
                 .as_ref()
@@ -245,9 +246,10 @@ pub async fn fetch_departures(stops: &[Stop]) -> LineDepartures {
                 entry.push((*id, delta));
                 //dbg!(delta.num_minutes());
 
-                let Some(previous_call) = &departure
-                    .previous_call
-                    .as_ref() else { println!("no previous call");continue; };
+                let Some(previous_call) = &departure.previous_call.as_ref() else {
+                    println!("no previous call");
+                    continue;
+                };
                 let last_stop = &previous_call.last().unwrap().call_at_stop;
 
                 let last_stop_time = &last_stop
@@ -256,10 +258,14 @@ pub async fn fetch_departures(stops: &[Stop]) -> LineDepartures {
                     .unwrap()
                     .timetabled_time;
                 let Some(last_stop_id) =
-                    find_stop_by_kkv_id(&last_stop.stop_point_ref, KVV_STOPS.get().unwrap()) else {
-                        println!("no last stop in KVV_STOPS {:?}", last_stop.stop_point_name.text);
-                        continue;
-                    };
+                    find_stop_by_kkv_id(&last_stop.stop_point_ref, KVV_STOPS.get().unwrap())
+                else {
+                    println!(
+                        "no last stop in KVV_STOPS {:?}",
+                        last_stop.stop_point_name.text
+                    );
+                    continue;
+                };
 
                 let last_stop_time =
                     chrono::NaiveDateTime::parse_from_str(last_stop_time, "%Y-%m-%dT%H:%M:%SZ")
@@ -323,8 +329,8 @@ pub fn interpolate_segment(points: &[Point], progress: f32) -> Point {
         .windows(2)
         .map(|slice| {
             let [start, end] = slice else {
-                 panic!("slice has wrong length");
-             };
+                panic!("slice has wrong length");
+            };
             let dx = end.x - start.x;
             let dy = end.y - start.y;
             (dx * dx + dy * dy).sqrt()
@@ -335,8 +341,8 @@ pub fn interpolate_segment(points: &[Point], progress: f32) -> Point {
     let mut current_length = 0.0;
     for slice in points.windows(2) {
         let [start, end] = slice else {
-             panic!("slice has wrong length");
-         };
+            panic!("slice has wrong length");
+        };
         let dx = end.x - start.x;
         let dy = end.y - start.y;
         let segment_length = (dx * dx + dy * dy).sqrt();

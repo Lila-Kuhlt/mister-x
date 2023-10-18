@@ -65,10 +65,10 @@ pub async fn search_stops(
     let xml_request = generate_service_request(builder).unwrap();
     let response = post_request(api_endpoint, &xml_request).await.unwrap();
 
-    let DeliveryPayload::LocationInformationResponse(response) = response
-        .service_delivery
-        .delivery_payload else {
-            panic!("Wrong response type");
+    let DeliveryPayload::LocationInformationResponse(response) =
+        response.service_delivery.delivery_payload
+    else {
+        panic!("Wrong response type");
     };
 
     let locations = response
@@ -101,13 +101,12 @@ pub async fn stop_events(
         //... set other fields ...
         ;
 
-    let xml_request = generate_service_request(builder).unwrap();
-    let response = post_request(api_endpoint, &xml_request).await.unwrap();
+    let xml_request = generate_service_request(builder)?;
+    let response = post_request(api_endpoint, &xml_request).await?;
 
-    let DeliveryPayload::StopEventResponse(response) = response
-        .service_delivery
-        .delivery_payload else {
-            panic!("Wrong response type");
+    let DeliveryPayload::StopEventResponse(response) = response.service_delivery.delivery_payload
+    else {
+        panic!("Wrong response type");
     };
     Ok(response)
 }

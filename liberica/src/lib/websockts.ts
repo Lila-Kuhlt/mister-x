@@ -4,6 +4,7 @@ export type WSHandler = (msg: GameState) => void;
 export type WSErrorHandler = (error?: string | Error | object) => void;
 
 export class WebsocketApi {
+  lastMessage?: Date;
   connection: WebSocket;
   handlers: WSHandler[];
   errorHandler: WSErrorHandler;
@@ -23,6 +24,7 @@ export class WebsocketApi {
     };
     this.connection.onmessage = (e) => {
       const json = JSON.parse(e.data as string);
+      this.lastMessage = new Date();
       this.handlers.forEach((handler) => handler(json as GameState));
     };
   }

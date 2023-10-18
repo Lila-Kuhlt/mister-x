@@ -13,7 +13,7 @@ use axum::{
 use chrono::Utc;
 use futures_util::SinkExt;
 use kvv::LineDepartures;
-use tracing::{event, info, span, Level};
+use tracing::{error, event, info, span, Level};
 use ws_message::{ClientMessage, GameState};
 
 mod ws_message;
@@ -182,9 +182,12 @@ async fn main() {
         loop {
             tokio::time::sleep(std::time::Duration::from_secs(2)).await;
             let departures = kvv::fetch_departures_for_region().await;
-            send.send(InputMessage::Server(ServerMessage::Departures(departures)))
+            if let Err(err) = send
+                .send(InputMessage::Server(ServerMessage::Departures(departures)))
                 .await
-                .unwrap();
+            {
+                error!("Error while fetching data: {err}")
+            }
         }
     });
 
@@ -219,7 +222,7 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
     let mut request_time = Utc::now();
     loop {
         tick += 1;
-        tracing::info!("tick {}", tick);
+        tracing::trace!("tick {}", tick);
 
         let mut state = state.lock().await;
         while let Ok(msg) = recv.try_recv() {
@@ -247,7 +250,7 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
         }
 
         tracing::trace!("updating train positions");
-        tracing::info!(
+        tracing::trace!(
             "offset: {:?}",
             (Utc::now() - request_time).num_milliseconds()
         );
