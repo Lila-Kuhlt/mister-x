@@ -14,6 +14,7 @@ use chrono::{Local, Utc};
 use futures_util::SinkExt;
 use kvv::LineDepartures;
 use serde_json::json;
+use tower_http::cors::CorsLayer;
 use tracing::{error, event, info, span, Level};
 use ws_message::{ClientMessage, GameState, Team};
 
@@ -216,6 +217,7 @@ async fn main() {
     let app = Router::new()
         .route("/ws", get(handler))
         .nest("/api", api)
+        .layer(CorsLayer::permissive())
         .with_state(state.clone());
 
     tracing::info!("Starting web server");
