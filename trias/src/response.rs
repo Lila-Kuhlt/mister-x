@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TriasResponse {
     #[serde(rename = "ServiceDelivery")]
-    pub service_delivery: ServiceDelivery,
+    pub service_delivery: Option<ServiceDelivery>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

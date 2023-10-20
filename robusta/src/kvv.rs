@@ -214,12 +214,12 @@ pub async fn fetch_departures(stops: &[Stop]) -> LineDepartures {
 
     let mut jorneys = HashMap::new();
 
-    for stops in results
+    for stop_events in results
         .iter()
         .flatten()
         .flat_map(|x| x.stop_event_result.as_ref())
     {
-        for stop in stops {
+        for stop in stop_events {
             let service = &stop.stop_event.service;
             let journey = &service.journey_ref;
             let this_call = &stop.stop_event.this_call;
@@ -243,7 +243,16 @@ pub async fn fetch_departures(stops: &[Stop]) -> LineDepartures {
                     }
                 };
                 let stop_ref = call.call_at_stop.stop_point_ref.clone();
-                let old = entry.insert(stop_ref.clone(), time);
+                let Some(proper_stop_ref) = find_stop_by_kkv_id(&stop_ref, stops) else { continue; };
+                let short_ref = proper_stop_ref.kvv_stop.id.clone();
+                let current_time = entry.get(&short_ref);
+                if let Some(current_time) = current_time {
+                    if *current_time < time {
+                        continue;
+                    }
+                }
+                let old = entry.insert(proper_stop_ref.kvv_stop.id.clone(), time);
+                /*
                 if let Some(old) = old {
                     if old != time {
                         tracing::warn!(
@@ -253,7 +262,7 @@ pub async fn fetch_departures(stops: &[Stop]) -> LineDepartures {
                             time
                         );
                     }
-                }
+                }*/
             }
         }
     }
