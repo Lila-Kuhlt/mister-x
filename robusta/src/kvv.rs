@@ -252,8 +252,7 @@ pub async fn fetch_departures(stops: &[Stop]) -> LineDepartures {
                     }
                 }
                 let old = entry.insert(proper_stop_ref.kvv_stop.id.clone(), time);
-                /*
-                if let Some(old) = old {
+                /*if let Some(old) = old {
                     if old != time {
                         tracing::warn!(
                             "different times for same stop: {} {} {}",
@@ -274,7 +273,12 @@ pub fn find_stop_by_id(id: u32, stops: &[Stop]) -> Option<&Stop> {
 }
 
 pub fn find_stop_by_kkv_id<'a>(id: &str, stops: &'a [Stop]) -> Option<&'a Stop> {
-    stops.iter().find(|stop| id.starts_with(&stop.kvv_stop.id))
+    //stops.iter().find(|stop| id.starts_with(&stop.kvv_stop.id))
+    let id = format!("{}:", id);
+    stops
+        .iter()
+        .filter(|stop| id.starts_with(&format!("{}:", stop.kvv_stop.id)))
+        .max_by_key(|stop| stop.kvv_stop.id.len())
 }
 
 pub fn points_on_route(start_stop_id: &str, end_stop_id: &str, stops: &[Stop]) -> Vec<Point> {

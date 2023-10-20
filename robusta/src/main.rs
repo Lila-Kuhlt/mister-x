@@ -250,7 +250,7 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
         let time = Local::now().with_timezone(&chrono_tz::Europe::Berlin);
         let mut trains = kvv::train_positions(departures, time.naive_local()).await;
         trains.retain(|x| !x.line_id.contains("bus"));
-        //dbg!(&trains[0]);
+        dbg!(&trains.get(0));
 
         game_state.trains = trains;
 
