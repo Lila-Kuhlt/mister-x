@@ -13,8 +13,9 @@ use axum::{
 use chrono::{Local, Utc};
 use futures_util::SinkExt;
 use kvv::LineDepartures;
+use serde_json::json;
 use tracing::{error, event, info, span, Level};
-use ws_message::{ClientMessage, GameState};
+use ws_message::{ClientMessage, GameState, Team};
 
 mod ws_message;
 
@@ -50,7 +51,8 @@ struct AppState {
     pub teams: Vec<ws_message::Team>,
     pub game_logic_sender: tokio::sync::mpsc::Sender<InputMessage>,
     pub connections: Vec<ClientConnection>,
-    pub id_counter: u32,
+    pub client_id_counter: u32,
+    pub team_id_counter: u32,
 }
 
 impl AppState {
@@ -59,7 +61,8 @@ impl AppState {
             teams: Vec::new(),
             game_logic_sender,
             connections: Vec::new(),
-            id_counter: 0,
+            client_id_counter: 0,
+            team_id_counter: 0,
         }
     }
 }
@@ -71,9 +74,9 @@ async fn handler(ws: WebSocketUpgrade, State(state): State<SharedState>) -> Resp
     let (send, rec) = tokio::sync::mpsc::channel(100);
     let client = {
         let mut state = state.lock().await;
-        state.id_counter += 1;
+        state.client_id_counter += 1;
         let client_connection = ClientConnection {
-            id: state.id_counter,
+            id: state.client_id_counter,
             team_id: 0,
             name: String::new(),
             send,
@@ -137,13 +140,22 @@ async fn handle_socket(socket: WebSocket, mut client: Client) {
 
 async fn create_team(
     State(state): State<SharedState>,
-    Json(team): Json<ws_message::Team>,
+    Json(team): Json<ws_message::CreateTeam>,
 ) -> impl IntoResponse {
-    {
+    let team = {
         let mut state = state.lock().await;
+        state.team_id_counter += 1;
+        let team = Team {
+            id: state.team_id_counter,
+            x: 0.0,
+            y: 0.0,
+            color: team.color,
+            name: team.name,
+        };
         state.teams.push(team.clone());
-    }
-    Response::new(format!("Created, {}!", team.name))
+        team
+    };
+    Json(team)
 }
 
 async fn list_teams(State(state): State<SharedState>) -> impl IntoResponse {

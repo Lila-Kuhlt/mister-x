@@ -1,9 +1,9 @@
 import axios from "axios";
-import { Team } from "./bindings";
+import { Team } from "lib/bindings";
 
 export const BASE_URLS = {
   WEBSOCKET: "ws://localhost:3000",
-  FETCH: "http://localhost:3000",
+  FETCH: "http://localhost:3000/api",
 };
 
 export const ENDPOINTS = {

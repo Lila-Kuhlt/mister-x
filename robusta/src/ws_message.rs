@@ -34,6 +34,12 @@ pub struct Player {
     pub team_id: u32,
 }
 
+#[derive(specta::Type, Clone, Serialize, Deserialize, Debug)]
+pub struct CreateTeam {
+    pub name: String,
+    pub color: String,
+}
+
 #[derive(specta::Type, Default, Clone, Serialize, Deserialize, Debug)]
 pub struct Team {
     pub id: u32,
