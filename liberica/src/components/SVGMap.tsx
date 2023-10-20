@@ -47,10 +47,17 @@ function ResetBoundsButton() {
   );
 }
 
+function MapLabel(props: { text: string }) {
+  const zoom = useMap().getZoom();
+
+  if (zoom >= 17) {
+      return <Tooltip direction="right" offset={ICON_OFFSET} permanent> {props.text} </Tooltip>
+  }
+}
+
 function TrainMarker(props: { train: Train }) {
   const train = props.train;
   const tooltipText = `Linie S100 to Durlacher Tor/KIT-Campus Süd`;
-  const zoom = useMap().getZoom();
 
   return (
     <Marker
@@ -58,10 +65,7 @@ function TrainMarker(props: { train: Train }) {
       icon={TrainIcon}
       position={[train.lat, train.long]}
     >
-      {
-        zoom >= 17 &&
-        <Tooltip direction="right" offset={ICON_OFFSET} permanent> {tooltipText} </Tooltip>
-      }
+      <MapLabel text={tooltipText} />
     </Marker>
   );
 }
