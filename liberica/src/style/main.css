@@ -2,3 +2,7 @@ body,html {
     margin: 0;
     padding: 0
 }
+
+.h-max {
+    height: 100vh;
+}

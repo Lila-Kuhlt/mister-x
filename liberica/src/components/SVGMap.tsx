@@ -15,6 +15,7 @@ import {
   MrXIcon,
   ICON_OFFSET,
 } from "components/MapIcons";
+
 export interface MapProps {
   trains: Train[];
   teams: Team[];
