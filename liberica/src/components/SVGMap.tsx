@@ -48,18 +48,9 @@ function ResetBoundsButton() {
   );
 }
 
-function MapLabel(props: { text: string }) {
-  const zoom = useMap().getZoom();
-
-  return <>
-    {
-      zoom >= 16 && <Tooltip direction="right" offset={ICON_OFFSET} permanent> {props.text} </Tooltip>
-    }
-  </>;
-}
-
 function TrainMarker(props: { train: Train }) {
   const train = props.train;
+  const zoom = useMap().getZoom();
 
   return (
     <Marker
@@ -67,18 +58,20 @@ function TrainMarker(props: { train: Train }) {
       icon={TrainIcon}
       position={[train.lat, train.long]}
     >
-      <MapLabel text={train.line_name} />
+      {
+        zoom >= 16 && <Tooltip direction="right" offset={ICON_OFFSET} permanent> {train.line_name} to {train.direction} </Tooltip>
+      }
     </Marker>
   );
 }
 
 function DetectiveMarker(props: { player: Team }) {
   const player = props.player;
-  console.log(player);
+  console.log(player)
 
   return (
     <Marker icon={DetectiveIcon} position={[player.x, player.y]}>
-      <Tooltip> {player.name} </Tooltip>
+      <Tooltip direction="right" offset={ICON_OFFSET} permanent> {player.name} </Tooltip>
     </Marker>
   );
 }
@@ -98,24 +91,10 @@ function MrXMarker(props: { player: Team }) {
 }
 
 export default function SVGMap(props: MapProps) {
-  const trains = props.trains ?? [];
-  const teams = props.teams ?? [
-    {
-      id: 1,
-      x: 49.012786,
-      y: 8.4031014,
-      name: "Detective 1",
-      color: "#ff0000",
-    }
-  ];
-  const mrX = {
-    id: 0,
-    x: 49.012796,
-    y: 8.4031014,
-    name: "Mr X",
-    color: "black",
-  };
-
+  const trains = props.trains;
+  const teams = props.teams;
+  const mrX = props.mrX;
+  
   return (
     <MapContainer bounds={viewBounds} zoom={13} className={Style.mapContainer}>
       <TileLayer
@@ -135,7 +114,7 @@ export default function SVGMap(props: MapProps) {
         {/* Trains */}
         <LayersControl.Overlay checked name="Trains">
           <LayerGroup>
-            {props.trains.map((train) => (
+            {trains.map((train) => (
               <TrainMarker train={train} key={train.line_id} />        
             ))}
           </LayerGroup>

@@ -28,10 +28,6 @@ export function Game() {
   }, [ws]);
 
   return (
-    <div>
-      {gameState && (
-        <Map trains={gameState.trains} teams={Object.values(gameState.teams)} />
-      )}
-    </div>
-  );
+    <Map gameState={gameState} />
+   );
 }
