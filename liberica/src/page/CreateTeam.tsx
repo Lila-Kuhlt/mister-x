@@ -13,7 +13,9 @@ export function CreateTeam() {
     // form validation
     if (!name || name.trim() === "" || !color || color.length !== 7) return;
 
-    await postCreateTeam(name, color).then(() => setLoading(false));
+    await postCreateTeam(name, color)
+      .then(() => setLoading(false))
+      .then(() => (window.location.href = "/"));
   };
 
   return (
@@ -21,7 +23,13 @@ export function CreateTeam() {
       className="d-flex flex-column justify-content-center align-items-center h-max"
       style={{ backgroundColor: color }}
     >
-      <div className="bg-white p-3 rounded shadow-lg">
+      <form
+        className="bg-white p-3 rounded shadow-lg"
+        onSubmit={(e) => {
+          e.preventDefault();
+          !loading && sendRequset();
+        }}
+      >
         <Form.Control
           placeholder="Team name"
           onChange={(item) => setName(item.target.value)}
@@ -35,7 +43,7 @@ export function CreateTeam() {
           />
         </div>
         <div className="d-grid gap-2">
-          <Button disabled={loading} variant="primary" onClick={sendRequset}>
+          <Button disabled={loading} variant="primary">
             {!loading ? (
               <>Create</>
             ) : (
@@ -45,7 +53,7 @@ export function CreateTeam() {
             )}
           </Button>
         </div>
-      </div>
+      </form>
     </div>
   );
 }
