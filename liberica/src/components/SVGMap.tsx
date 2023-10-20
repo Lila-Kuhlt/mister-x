@@ -50,9 +50,11 @@ function ResetBoundsButton() {
 function MapLabel(props: { text: string }) {
   const zoom = useMap().getZoom();
 
-  if (zoom >= 17) {
-      return <Tooltip direction="right" offset={ICON_OFFSET} permanent> {props.text} </Tooltip>
-  }
+  return <>
+    {
+      zoom >= 16 && <Tooltip direction="right" offset={ICON_OFFSET} permanent> {props.text} </Tooltip>
+    }
+  </>;
 }
 
 function TrainMarker(props: { train: Train }) {
