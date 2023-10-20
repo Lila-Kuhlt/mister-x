@@ -1,5 +1,6 @@
 import { getTeams } from "lib/api";
 import { Team } from "lib/bindings";
+import { useTeamStore } from "lib/state";
 import { opt } from "lib/util";
 import { useEffect, useState } from "react";
 import { Button } from "react-bootstrap";
@@ -7,8 +8,14 @@ import { Button } from "react-bootstrap";
 export function Home() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [selected, setSelected] = useState<number | undefined>(undefined);
+  const TS = useTeamStore();
 
   useEffect(() => void getTeams().then(setTeams), []);
+
+  const setTeam = (team: Team) => {
+    TS.setTeam(team);
+    window.location.href = "/game";
+  };
 
   return (
     <div className="d-flex w-max h-max flex-center flex-column">
@@ -30,7 +37,11 @@ export function Home() {
         ))}
       </ol>
       <div className="d-grid col-6 mx-auto m-4">
-        <Button variant="primary m-2" disabled={!selected}>
+        <Button
+          variant="primary m-2"
+          disabled={!selected}
+          onClick={() => selected && setTeam(teams[selected])}
+        >
           Join
         </Button>
       </div>
