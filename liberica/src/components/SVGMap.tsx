@@ -50,6 +50,7 @@ function ResetBoundsButton() {
 function TrainMarker(props: { train: Train }) {
   const train = props.train;
   const tooltipText = `Linie S100 to Durlacher Tor/KIT-Campus Süd`;
+  const zoom = useMap().getZoom();
 
   return (
     <Marker
@@ -57,9 +58,10 @@ function TrainMarker(props: { train: Train }) {
       icon={TrainIcon}
       position={[train.lat, train.long]}
     >
-      <Tooltip direction="right" offset={ICON_OFFSET} permanent>
-        {tooltipText}
-      </Tooltip>
+      {
+        zoom >= 17 &&
+        <Tooltip direction="right" offset={ICON_OFFSET} permanent> {tooltipText} </Tooltip>
+      }
     </Marker>
   );
 }
