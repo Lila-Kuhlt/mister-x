@@ -60,7 +60,6 @@ function MapLabel(props: { text: string }) {
 
 function TrainMarker(props: { train: Train }) {
   const train = props.train;
-  const tooltipText = `Linie S100 to Durlacher Tor/KIT-Campus Süd`;
 
   return (
     <Marker
@@ -68,7 +67,7 @@ function TrainMarker(props: { train: Train }) {
       icon={TrainIcon}
       position={[train.lat, train.long]}
     >
-      <MapLabel text={tooltipText} />
+      <MapLabel text={train.line_name} />
     </Marker>
   );
 }
@@ -127,8 +126,7 @@ export default function SVGMap(props: MapProps) {
         {/* Trains */}
         <LayersControl.Overlay checked name="Trains">
           {props.trains.map((train) => (
-            // TODO: Change key to trian.id, when backend responds with correct data
-            <TrainMarker train={train} key={train.direction} />
+            <TrainMarker train={train} key={train.line_id} />        
           ))}
         </LayersControl.Overlay>
 

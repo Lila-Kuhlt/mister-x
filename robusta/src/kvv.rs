@@ -147,7 +147,7 @@ fn intermediate_points(start_id: &str, end_id: &str) -> Vec<Point> {
     if let Some(p) = curves.iter().find(|(s, e, _)| s == start.0 && e == end.0) {
         points = p.2.clone();
     }
-    if let Some(p) = curves.iter().find(|(s, e, _)| e == start.0 && e == end.0) {
+    if let Some(p) = curves.iter().find(|(s, e, _)| e == start.0 && s == end.0) {
         points = p.2.clone();
         points.reverse();
     }
@@ -410,7 +410,7 @@ pub fn train_positions_per_route(
         // TODO: handle panics
         let last_time = *last.1 - time;
         let next_time = *next.1 - time;
-        let segment_duration = next_time - last_time - chrono::Duration::seconds(0);
+        let segment_duration = next_time - last_time - chrono::Duration::seconds(30);
         train_offsets.push(TrainPos {
             stop_id: last.0.clone(),
             next_stop_id: next.0.clone(),
