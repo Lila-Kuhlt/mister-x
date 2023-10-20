@@ -10,7 +10,7 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
-use chrono::Utc;
+use chrono::{Local, Utc};
 use futures_util::SinkExt;
 use kvv::LineDepartures;
 use tracing::{error, event, info, span, Level};
@@ -206,7 +206,7 @@ async fn main() {
         .nest("/api", api)
         .with_state(state.clone());
 
-    tracing::info!("Starting server");
+    tracing::info!("Starting web server");
     // run it with hyper on localhost:3000
     axum::Server::bind(&"0.0.0.0:3000".parse().unwrap())
         .serve(app.into_make_service())
@@ -215,11 +215,9 @@ async fn main() {
 }
 
 async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, state: SharedState) {
-    tracing::info!("Starting game loop");
     let mut tick = 0;
     let mut game_state = GameState::new();
     let departures = &mut kvv::fetch_departures_for_region().await;
-    let mut request_time = Utc::now();
     loop {
         tick += 1;
         tracing::trace!("tick {}", tick);
@@ -244,19 +242,16 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
                 }
                 InputMessage::Server(ServerMessage::Departures(deps)) => {
                     *departures = deps;
-                    request_time = Utc::now();
                 }
             }
         }
 
         tracing::trace!("updating train positions");
-        tracing::trace!(
-            "offset: {:?}",
-            (Utc::now() - request_time).num_milliseconds()
-        );
-        let mut trains = kvv::train_positions(departures, Utc::now() - request_time).await;
+        let time = Local::now().with_timezone(&chrono_tz::Europe::Berlin);
+        let mut trains = kvv::train_positions(departures, time.naive_local()).await;
         trains.retain(|x| !x.line_id.contains("bus"));
-        //dbg!(&trains);
+        //dbg!(&trains[0]);
+
         game_state.trains = trains;
 
         for connection in state.connections.iter_mut() {
@@ -264,6 +259,6 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
                 return;
             }
         }
-        tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+        tokio::time::sleep(std::time::Duration::from_millis(400)).await;
     }
 }

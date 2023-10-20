@@ -334,7 +334,7 @@ pub fn interpolate_segment(points: &[Point], progress: f32) -> Option<Point> {
 
 pub fn train_positions_per_route(
     departures_per_line: LineDepartures,
-    time_offset: chrono::Duration,
+    time: chrono::NaiveDateTime,
     line_id: &str,
     destination: &str,
     stops: &[Stop],
@@ -343,10 +343,14 @@ pub fn train_positions_per_route(
     let departures = departures_per_line.get(line_id);
     let mut departures: Vec<_> = departures.map(|x| x.iter().collect()).unwrap_or_default();
     departures.sort_by_key(|x| x.1);
+    //dbg!(&departures);
+    println!("departures for line {}", line_id);
+    for departure in departures.iter() {
+        if let Some(stop) = find_stop_by_kkv_id(departure.0, stops) {
+            println!("stop: {} {}", stop.kvv_stop.name, departure.1.time());
+        }
+    }
 
-    let time = Local::now()
-        .with_timezone(&chrono_tz::Europe::Berlin)
-        .naive_local();
     let pos_offset = departures
         .iter()
         .position(|x| x.1 > &time)
@@ -355,9 +359,9 @@ pub fn train_positions_per_route(
     let slice = &departures[(pos_offset.max(1) - 1)..=pos_offset];
     if let [last, current] = slice {
         // TODO: handle panics
-        let last_time = (*last.1 - time) - time_offset;
-        let current_time = (*current.1 - time) - time_offset;
-        let segment_duration = last_time - current_time - chrono::Duration::seconds(40);
+        let last_time = *last.1 - time;
+        let current_time = *current.1 - time;
+        let segment_duration = last_time - current_time - chrono::Duration::seconds(0);
         train_offsets.push(TrainPos {
             stop_id: last.0.clone(),
             next_stop_id: current.0.clone(),
@@ -394,13 +398,18 @@ pub async fn fetch_departures_for_region() -> LineDepartures {
 
 pub async fn train_positions(
     departures_per_line: &LineDepartures,
-    offset: chrono::Duration,
+    render_time: chrono::NaiveDateTime,
 ) -> Vec<Train> {
     let stops = KVV_STOPS.get().expect("KVV_STOPS not initialized");
     let mut trains = Vec::new();
     for line_id in departures_per_line.keys() {
-        let positions =
-            train_positions_per_route(departures_per_line.clone(), offset, line_id, line_id, stops);
+        let positions = train_positions_per_route(
+            departures_per_line.clone(),
+            render_time,
+            line_id,
+            line_id,
+            stops,
+        );
         trains.extend(positions);
     }
     trains
