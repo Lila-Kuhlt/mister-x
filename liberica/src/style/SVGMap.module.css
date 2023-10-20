@@ -2,3 +2,17 @@
     width: 100vw;
     height: 100vh;
 }
+
+.tooltip {
+  background-color: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.detectiveLabel {
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  border: 0;
+  textDecoration: 'none';
+  color: 'black';
+}

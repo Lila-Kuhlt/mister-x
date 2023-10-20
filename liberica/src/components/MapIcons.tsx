@@ -7,6 +7,7 @@ import L, { IconOptions } from "leaflet";
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const ICON_OFFSET: [number, number] = [15, 0];
+export const ICON_OFFSET_TOP: [number, number] = [0, -15];
 
 const DEFAULT_SETTINGS: Partial<IconOptions> = {
   iconSize: [30, 30], // size of the icon

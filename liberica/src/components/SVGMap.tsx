@@ -14,6 +14,7 @@ import {
   DetectiveIcon,
   MrXIcon,
   ICON_OFFSET,
+  ICON_OFFSET_TOP,
 } from "components/MapIcons";
 
 export interface MapProps {
@@ -71,7 +72,14 @@ function DetectiveMarker(props: { player: Team }) {
 
   return (
     <Marker icon={DetectiveIcon} position={[player.x, player.y]}>
-      <Tooltip direction="right" offset={ICON_OFFSET} permanent> {player.name} </Tooltip>
+      <Tooltip className={Style.tooltip} direction="top" opacity={1} offset={ICON_OFFSET_TOP} permanent>
+        <a 
+          style={{
+            background: player.color
+          }}
+          className={Style.detectiveLabel} >{player.name}
+        </a>
+      </Tooltip>
     </Marker>
   );
 }
