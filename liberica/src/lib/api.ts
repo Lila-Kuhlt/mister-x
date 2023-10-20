@@ -1,10 +1,18 @@
 import axios from "axios";
 import { Team } from "lib/bindings";
 
-export const BASE_URLS = {
-  WEBSOCKET: "ws://localhost:3000",
-  FETCH: "http://localhost:3000/api",
-};
+const HOSTNAME_DEV = window.location.hostname + ":3000";
+const HOSTNAME_PROD = window.location.hostname;
+
+export const BASE_URLS = import.meta.env.DEV
+  ? {
+      WEBSOCKET: `ws://${HOSTNAME_DEV}`,
+      FETCH: `http://${HOSTNAME_DEV}/api`,
+    }
+  : {
+      WEBSOCKET: `wss://${HOSTNAME_PROD}`,
+      FETCH: `https://${HOSTNAME_PROD}/api`,
+    };
 
 export const ENDPOINTS = {
   POST_CRATE_TEAM: "/create-team",

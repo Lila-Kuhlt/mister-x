@@ -12,7 +12,7 @@ export function Home() {
 
   return (
     <div className="d-flex w-max h-max flex-center flex-column">
-      <ol className="list-group list-group-numbered container">
+      <ol className="list-group list-group-numbered w-75">
         {teams.map((team) => (
           <li
             key={team.id}
@@ -29,9 +29,11 @@ export function Home() {
           </li>
         ))}
       </ol>
-      <Button variant="primary m-2" disabled={!selected}>
-        Join
-      </Button>
+      <div className="d-grid col-6 mx-auto m-4">
+        <Button variant="primary m-2" disabled={!selected}>
+          Join
+        </Button>
+      </div>
     </div>
   );
 }
