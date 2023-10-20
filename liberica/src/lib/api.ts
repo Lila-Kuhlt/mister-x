@@ -9,6 +9,7 @@ export const BASE_URLS = {
 export const ENDPOINTS = {
   POST_CRATE_TEAM: "/create-team",
   POST_START_GAME: "/start-game",
+  GET_TEAMS: "/teams",
   GET_WS: "ws://localhost:3000/ws",
 };
 
@@ -18,4 +19,4 @@ export const postCreateTeam = (name: string, color: string): Promise<void> =>
   AXIOS.post(ENDPOINTS.POST_CRATE_TEAM, { name, color });
 
 export const getTeams = (): Promise<Team[]> =>
-  AXIOS.post(ENDPOINTS.POST_CRATE_TEAM).then((data) => JSON.parse(data.data));
+  AXIOS.get(ENDPOINTS.GET_TEAMS).then((data) => data.data);

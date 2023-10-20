@@ -6,3 +6,8 @@ body,html {
 .h-max {
     height: 100vh;
 }
+
+.flex-center {
+    justify-content: center;
+    align-items: center;
+}

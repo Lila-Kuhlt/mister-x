@@ -92,7 +92,7 @@ async fn handler(ws: WebSocketUpgrade, State(state): State<SharedState>) -> Resp
 }
 
 async fn handle_socket(socket: WebSocket, mut client: Client) {
-    use futures_util::stream::{Stream, StreamExt};
+    use futures_util::stream::StreamExt;
 
     let (mut send, mut recv) = socket.split();
 
@@ -159,12 +159,9 @@ async fn create_team(
     Json(team)
 }
 
-async fn list_teams(State(state): State<SharedState>) -> impl IntoResponse {
-    let teams = {
-        let state = state.lock().await;
-        Response::new(serde_json::to_string(&state.teams).unwrap())
-    };
-    Response::new(teams)
+async fn list_teams(State(state): State<SharedState>) -> Json<Vec<Team>> {
+    let state = state.lock().await;
+    Json(state.teams.clone())
 }
 
 async fn list_stops() -> impl IntoResponse {
