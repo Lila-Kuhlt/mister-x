@@ -5,6 +5,9 @@ import TramSVG from "assets/tram1.svg";
 
 import L, { IconOptions } from "leaflet";
 
+// eslint-disable-next-line react-refresh/only-export-components
+export const ICON_OFFSET: [number, number] = [15, 0];
+
 const DEFAULT_SETTINGS: Partial<IconOptions> = {
   iconSize: [30, 30], // size of the icon
   shadowSize: [0, 0], // size of the shadow
