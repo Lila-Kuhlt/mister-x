@@ -7,7 +7,7 @@ import {
   MapContainer,
   TileLayer,
 } from "react-leaflet";
-import { LayersControl } from "react-leaflet";
+import { LayersControl, LayerGroup } from "react-leaflet";
 import L, { LeafletMouseEvent } from "leaflet";
 import {
   TrainIcon,
@@ -74,6 +74,7 @@ function TrainMarker(props: { train: Train }) {
 
 function DetectiveMarker(props: { player: Team }) {
   const player = props.player;
+  console.log(player);
 
   return (
     <Marker icon={DetectiveIcon} position={[player.x, player.y]}>
@@ -98,7 +99,15 @@ function MrXMarker(props: { player: Team }) {
 
 export default function SVGMap(props: MapProps) {
   const trains = props.trains ?? [];
-  const teams = props.teams ?? [];
+  const teams = props.teams ?? [
+    {
+      id: 1,
+      x: 49.012786,
+      y: 8.4031014,
+      name: "Detective 1",
+      color: "#ff0000",
+    }
+  ];
   const mrX = {
     id: 0,
     x: 49.012796,
@@ -115,26 +124,30 @@ export default function SVGMap(props: MapProps) {
       />
       <LayersControl position="topright">
         {/* Mr X */}
-        {props.mrX && (
+        {mrX && (
           <LayersControl.Overlay checked name="Mr X">
-            <Marker icon={MrXIcon} position={[props.mrX.x, props.mrX.y]}>
-              <Tooltip> Mr X war hier </Tooltip>
-            </Marker>
+            <LayerGroup>
+              <MrXMarker player={mrX} />
+            </LayerGroup>
           </LayersControl.Overlay>
         )}
 
         {/* Trains */}
         <LayersControl.Overlay checked name="Trains">
-          {props.trains.map((train) => (
-            <TrainMarker train={train} key={train.line_id} />        
-          ))}
+          <LayerGroup>
+            {props.trains.map((train) => (
+              <TrainMarker train={train} key={train.line_id} />        
+            ))}
+          </LayerGroup>
         </LayersControl.Overlay>
 
         {/* Detectives */}
         <LayersControl.Overlay checked name="Detectives">
-          {props.teams.map((player) => (
-            <DetectiveMarker player={player} />
-          ))}
+          <LayerGroup>
+            {teams.map((player) => (
+              <DetectiveMarker player={player} />
+            ))}
+          </LayerGroup>
         </LayersControl.Overlay>
       </LayersControl>
       <ResetBoundsButton />
