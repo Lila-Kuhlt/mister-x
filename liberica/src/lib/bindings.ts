@@ -15,9 +15,9 @@ export type Player = { id: number; name: string; team_id: number }
 
 export type ClientMessage = { Position: { x: number; y: number } } | { Message: string }
 
-export type Train = { id: number; long: number; lat: number; line_id: string; direction: string }
-
 export type Line = { id: number; name: string; color: string }
+
+export type Train = { id: number; long: number; lat: number; line_id: string; line_name: string; direction: string }
 
 export type Team = { id: number; x: number; y: number; name: string; color: string }
 

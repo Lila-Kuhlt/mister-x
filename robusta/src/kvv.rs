@@ -111,8 +111,8 @@ const CURVES_STR: &str = include_str!("../data/route_curves.csv");
 
 fn parse_curve(line: &str) -> (String, String, Vec<Point>) {
     let mut parts = line.split(';');
-    let start = parts.next().unwrap().parse().unwrap();
-    let end = parts.next().unwrap().parse().unwrap();
+    let start = parts.next().unwrap();
+    let end = parts.next().unwrap();
     let points = parts
         .map(|point| {
             let mut coords = point.split(',');
@@ -121,7 +121,7 @@ fn parse_curve(line: &str) -> (String, String, Vec<Point>) {
             Point { x, y }
         })
         .collect();
-    (start, end, points)
+    (start.to_owned(), end.to_owned(), points)
 }
 
 fn parse_curves() -> Vec<(String, String, Vec<Point>)> {
@@ -146,6 +146,10 @@ fn intermediate_points(start_id: &str, end_id: &str) -> Vec<Point> {
 
     if let Some(p) = curves.iter().find(|(s, e, _)| s == start.0 && e == end.0) {
         points = p.2.clone();
+    }
+    if let Some(p) = curves.iter().find(|(s, e, _)| e == start.0 && e == end.0) {
+        points = p.2.clone();
+        points.reverse();
     }
 
     points
@@ -184,10 +188,26 @@ pub async fn kvv_stops() -> Vec<Stop> {
     }
     stops
 }
+#[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
+pub struct Journey {
+    stops: HashMap<JourneyRef, chrono::NaiveDateTime>,
+    line_name: String,
+    destination: String,
+}
+
+impl Journey {
+    fn new(line_name: String, destination: String) -> Self {
+        Self {
+            stops: HashMap::new(),
+            line_name,
+            destination,
+        }
+    }
+}
 
 type JourneyRef = String;
 type StopRef = String;
-pub type LineDepartures = HashMap<JourneyRef, HashMap<StopRef, chrono::NaiveDateTime>>;
+pub type LineDepartures = HashMap<JourneyRef, Journey>;
 
 pub fn parse_time(time: &str) -> chrono::NaiveDateTime {
     chrono::NaiveDateTime::parse_from_str(time, "%Y-%m-%dT%H:%M:%SZ").unwrap()
@@ -222,10 +242,14 @@ pub async fn fetch_departures(stops: &[Stop]) -> LineDepartures {
         for stop in stop_events {
             let service = &stop.stop_event.service;
             let journey = &service.journey_ref;
+            let line_name = service.service_section.published_line_name.text.clone();
+            let destination = service.destination_text.text.clone();
             let this_call = &stop.stop_event.this_call;
             let previous_call = &stop.stop_event.previous_call.iter().flatten();
             let next_call = &stop.stop_event.onward_call.iter().flatten();
-            let entry = jorneys.entry(journey.clone()).or_insert_with(HashMap::new);
+            let entry = jorneys
+                .entry(journey.clone())
+                .or_insert(Journey::new(line_name, destination));
             let calls = previous_call
                 .clone()
                 .chain(std::iter::once(this_call))
@@ -245,13 +269,15 @@ pub async fn fetch_departures(stops: &[Stop]) -> LineDepartures {
                 let stop_ref = call.call_at_stop.stop_point_ref.clone();
                 let Some(proper_stop_ref) = find_stop_by_kkv_id(&stop_ref, stops) else { continue; };
                 let short_ref = proper_stop_ref.kvv_stop.id.clone();
-                let current_time = entry.get(&short_ref);
+                let current_time = entry.stops.get(&short_ref);
                 if let Some(current_time) = current_time {
                     if *current_time < time {
                         continue;
                     }
                 }
-                let old = entry.insert(proper_stop_ref.kvv_stop.id.clone(), time);
+                let old = entry
+                    .stops
+                    .insert(proper_stop_ref.kvv_stop.id.clone(), time);
                 /*if let Some(old) = old {
                     if old != time {
                         tracing::warn!(
@@ -349,20 +375,30 @@ pub fn train_positions_per_route(
     departures_per_line: LineDepartures,
     time: chrono::NaiveDateTime,
     line_id: &str,
-    destination: &str,
     stops: &[Stop],
 ) -> Vec<Train> {
     let mut trains = Vec::new();
     let departures = departures_per_line.get(line_id);
-    let mut departures: Vec<_> = departures.map(|x| x.iter().collect()).unwrap_or_default();
+    let mut departures: Vec<_> = departures
+        .map(|x| x.stops.iter().collect())
+        .unwrap_or_default();
     departures.sort_by_key(|x| x.1);
+
+    let line_name = departures_per_line
+        .get(line_id)
+        .map(|x| x.line_name.clone())
+        .unwrap_or_default();
+    let destination = departures_per_line
+        .get(line_id)
+        .map(|x| x.destination.clone())
+        .unwrap_or_default();
     //dbg!(&departures);
-    println!("departures for line {}", line_id);
+    /*println!("departures for line {}", line_id);
     for departure in departures.iter() {
         if let Some(stop) = find_stop_by_kkv_id(departure.0, stops) {
             println!("stop: {} {}", stop.kvv_stop.name, departure.1.time());
         }
-    }
+    }*/
 
     let pos_offset = departures
         .iter()
@@ -370,16 +406,16 @@ pub fn train_positions_per_route(
         .unwrap_or_default();
     let mut train_offsets = Vec::new();
     let slice = &departures[(pos_offset.max(1) - 1)..=pos_offset];
-    if let [last, current] = slice {
+    if let [last, next] = slice {
         // TODO: handle panics
         let last_time = *last.1 - time;
-        let current_time = *current.1 - time;
-        let segment_duration = last_time - current_time - chrono::Duration::seconds(0);
+        let next_time = *next.1 - time;
+        let segment_duration = next_time - last_time - chrono::Duration::seconds(0);
         train_offsets.push(TrainPos {
             stop_id: last.0.clone(),
-            next_stop_id: current.0.clone(),
+            next_stop_id: next.0.clone(),
             progress: 1.
-                - (current_time.num_seconds() as f32 / segment_duration.num_seconds() as f32)
+                - (next_time.num_seconds() as f32 / segment_duration.num_seconds() as f32)
                     .clamp(0., 1.),
         });
     }
@@ -391,6 +427,7 @@ pub fn train_positions_per_route(
                 long: position.x,
                 lat: position.y,
                 line_id: line_id.to_owned(),
+                line_name: line_name.to_owned(),
                 direction: destination.to_owned(),
             });
         }
@@ -406,7 +443,7 @@ pub async fn init() {
 }
 pub async fn fetch_departures_for_region() -> LineDepartures {
     let stops = KVV_STOPS.get().expect("KVV_STOPS not initialized");
-    fetch_departures(&stops).await
+    fetch_departures(stops).await
 }
 
 pub async fn train_positions(
@@ -415,14 +452,11 @@ pub async fn train_positions(
 ) -> Vec<Train> {
     let stops = KVV_STOPS.get().expect("KVV_STOPS not initialized");
     let mut trains = Vec::new();
-    for line_id in departures_per_line.keys() {
-        let positions = train_positions_per_route(
-            departures_per_line.clone(),
-            render_time,
-            line_id,
-            line_id,
-            stops,
-        );
+    let mut journeys: Vec<_> = departures_per_line.keys().collect();
+    journeys.sort();
+    for line_id in journeys {
+        let positions =
+            train_positions_per_route(departures_per_line.clone(), render_time, line_id, stops);
         trains.extend(positions);
     }
     trains

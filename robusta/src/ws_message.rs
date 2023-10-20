@@ -49,6 +49,7 @@ pub struct Train {
     pub long: f32,
     pub lat: f32,
     pub line_id: String,
+    pub line_name: String,
     pub direction: String,
 }
 

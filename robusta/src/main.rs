@@ -180,7 +180,7 @@ async fn main() {
     // fetch departures every 5 seconds and send them to the game logic queue
     tokio::spawn(async move {
         loop {
-            tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+            tokio::time::sleep(std::time::Duration::from_secs(5)).await;
             let departures = kvv::fetch_departures_for_region().await;
             if let Err(err) = send
                 .send(InputMessage::Server(ServerMessage::Departures(departures)))
@@ -250,7 +250,6 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
         let time = Local::now().with_timezone(&chrono_tz::Europe::Berlin);
         let mut trains = kvv::train_positions(departures, time.naive_local()).await;
         trains.retain(|x| !x.line_id.contains("bus"));
-        dbg!(&trains.get(0));
 
         game_state.trains = trains;
 
@@ -259,6 +258,6 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
                 return;
             }
         }
-        tokio::time::sleep(std::time::Duration::from_millis(400)).await;
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
     }
 }
