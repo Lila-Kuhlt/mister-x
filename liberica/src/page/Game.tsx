@@ -1,21 +1,40 @@
 import { BASE_URLS, ENDPOINTS } from "lib/api";
 import { WebsocketApi } from "lib/websockts";
-import { useTeamStore } from "lib/state";
-import { useEffect, useState } from "react";
+import { useGameState, useTeamStore } from "lib/state";
+import { PropsWithChildren, useEffect, useState } from "react";
 import { Map } from "page/Map";
-import { GameState } from "lib/bindings";
+import { Button } from "react-bootstrap";
+
+export function Navbar(props: PropsWithChildren) {
+  return (
+    <div
+      className="position-absolute bottom-0 w-max d-flex bg-white p-2 justify-content-between align-items-center"
+      style={{ zIndex: 10000 }}
+    >
+      {props.children}
+    </div>
+  );
+}
+
+export function WarningPage(props: PropsWithChildren) {
+  return (
+    <div className="d-flex flex-center w-max h-max flex-column">
+      {props.children}
+    </div>
+  );
+}
 
 export function Game() {
   const [ws, setWs] = useState<WebsocketApi | undefined>(undefined);
-  const [gameState, setGameState] = useState<GameState | undefined>(undefined);
+  const { setGameState, embarkedTrain } = useGameState();
   const TS = useTeamStore();
 
   useEffect(() => {
     new WebsocketApi(BASE_URLS.WEBSOCKET + ENDPOINTS.GET_WS, setWs)
       .register((msg) => console.log("Received message", msg))
       .register(setGameState)
-      .setDisconnectHandler(() => setTimeout(() => location.reload(), 15000));
-  }, []);
+      .setDisconnectHandler(() => setTimeout(() => location.reload(), 5000));
+  }, [setGameState]);
 
   useEffect(() => {
     if (!ws) return;
@@ -36,5 +55,30 @@ export function Game() {
     );
   }, [ws]);
 
-  return ws && <Map gameState={gameState} ws={ws} />;
+  return ws ? (
+    <>
+      <Map ws={ws} />
+      <Navbar>
+        <Button
+          onClick={() => {
+            TS.setTeam(undefined);
+            window.location.href = "/";
+          }}
+        >
+          <i className="bi bi-house-fill"></i>
+        </Button>
+        {embarkedTrain && (
+          <span>
+            Current: {embarkedTrain?.line_name} {embarkedTrain?.direction}
+          </span>
+        )}
+        {/* <Button disabled={!TS.team}>Disembark</Button> */}
+      </Navbar>
+    </>
+  ) : (
+    <WarningPage>
+      <h3>Server is reloading</h3>
+      <p>Reload the site in a few seconds</p>
+    </WarningPage>
+  );
 }

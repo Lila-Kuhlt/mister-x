@@ -18,6 +18,7 @@ import {
 } from "components/MapIcons";
 import { WebsocketApi } from "lib/websockts";
 import { getContrastingTextColor } from "lib/util";
+import { useGameState } from "lib/state";
 
 export interface MapProps {
   trains: Train[];
@@ -128,12 +129,15 @@ export default function SVGMap(props: MapProps) {
   const trains = props.trains;
   const teams = props.teams;
   const mrX = props.mrX;
+  const { setEmbarkedTrain } = useGameState();
 
   function disembark() {
+    setEmbarkedTrain(undefined);
     props.ws.send({ DisembarkTrain: 0 });
   }
 
   function embark(train: Train) {
+    setEmbarkedTrain(train);
     props.ws.send({ EmbarkTrain: { train_id: train.line_id } });
   }
 

@@ -1,7 +1,8 @@
 //49.0069° N, 8.4037° E
 //[49.0069, 8.4037]
 import SVGMap from "components/SVGMap";
-import { GameState, Train, Team } from "lib/bindings";
+import { Train, Team } from "lib/bindings";
+import { useGameState } from "lib/state";
 import { WebsocketApi } from "lib/websockts";
 export interface MapProps {
   trains: Train[];
@@ -41,15 +42,13 @@ const defaultProps = {
   },
 };
 
-export function Map(props: {
-  gameState: GameState | undefined;
-  ws: WebsocketApi;
-}) {
+export function Map(props: { ws: WebsocketApi }) {
+  const { gameState } = useGameState();
   return (
     <SVGMap
-      trains={props.gameState?.trains || defaultProps.trains}
-      teams={Object.values(props.gameState?.teams ?? defaultProps.teams)}
-      mrX={props.gameState?.teams[0] || defaultProps.mrX}
+      trains={gameState?.trains || defaultProps.trains}
+      teams={Object.values(gameState?.teams ?? defaultProps.teams)}
+      mrX={gameState?.teams[0] || defaultProps.mrX}
       ws={props.ws}
     />
   );
