@@ -71,7 +71,7 @@ function DetectiveMarker(props: { player: Team }) {
   console.log(player)
 
   return (
-    <Marker icon={DetectiveIcon} position={[player.long, player.lat]}>
+    <Marker icon={DetectiveIcon} position={[player.lat, player.long]}>
       <Tooltip className={Style.tooltip} direction="top" opacity={1} offset={ICON_OFFSET_TOP} permanent>
         <a
           style={{
