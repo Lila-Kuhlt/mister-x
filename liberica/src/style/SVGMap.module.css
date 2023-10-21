@@ -13,6 +13,6 @@
   padding: 0.5rem;
   border-radius: 0.5rem;
   border: 0;
-  textDecoration: 'none';
-  color: 'black';
+  font-weight: bold;
+  text-decoration: none;
 }

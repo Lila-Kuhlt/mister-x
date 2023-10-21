@@ -17,6 +17,7 @@ import {
   ICON_OFFSET_TOP,
 } from "components/MapIcons";
 import { WebsocketApi } from "lib/websockts";
+import { getContrastingTextColor } from "lib/util";
 
 export interface MapProps {
   trains: Train[];
@@ -112,6 +113,7 @@ function DetectiveMarker(props: { player: Team; disembark: () => void }) {
         <a
           style={{
             background: player.color,
+            color: getContrastingTextColor(player.color),
           }}
           className={Style.detectiveLabel}
         >
