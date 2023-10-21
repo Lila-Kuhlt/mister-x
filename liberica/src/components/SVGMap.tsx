@@ -1,4 +1,4 @@
-import { Train, Team } from "lib/bindings";
+import { Train, Team, Stop } from "lib/bindings";
 import Style from "style/SVGMap.module.css";
 import {
   useMap,
@@ -7,7 +7,7 @@ import {
   MapContainer,
   TileLayer,
 } from "react-leaflet";
-import { LayersControl, LayerGroup } from "react-leaflet";
+import { LayersControl, LayerGroup, Circle } from "react-leaflet";
 import L from "leaflet";
 import {
   TrainIcon,
@@ -24,6 +24,7 @@ export interface MapProps {
   trains: Train[];
   teams: Team[];
   mrX?: Team;
+  stops: Stop[];
   ws: WebsocketApi;
 }
 
@@ -128,6 +129,7 @@ function DetectiveMarker(props: { player: Team; disembark: () => void }) {
 export default function SVGMap(props: MapProps) {
   const trains = props.trains;
   const teams = props.teams;
+  const stops = props.stops;
   const mrX = props.mrX;
   const { setEmbarkedTrain } = useGameState();
 
@@ -148,6 +150,19 @@ export default function SVGMap(props: MapProps) {
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       <LayersControl position="topright">
+        {/* Stops */}
+        <LayersControl.Overlay checked name="Stops">
+          <LayerGroup>
+            {stops.map((stop) => (
+              <Circle
+                center={[stop.kvv_stop.lat, stop.kvv_stop.lon]}
+                pathOptions={{ color: "none", fillColor: "blue", opacity: 10.0 }}
+                radius={50}
+              />
+            ))}
+          </LayerGroup>
+        </LayersControl.Overlay>
+
         {/* Mr X */}
         {mrX && (
           <LayersControl.Overlay checked name="Mr X">

@@ -45,13 +45,6 @@ pub struct Point {
 
 
 const STOPS: &[(&str, &str)] = &[
-    /*
-    ("Durlacher Tor/KIT-Campus Süd", "de:08212:3"),
-    ("Durlacher Tor/KIT-Campus Süd (U)", "de:08212:1001"),
-    ("Poststraße", "de:08212:98"),
-    ("Otto-Sachs-Straße", "de:08212:508"),
-    */
-    //
     ("Arbeitsagentur", "de:08212:64"),
     ("Augartenstraße", "de:08212:74"),
     ("Barbarossaplatz", "de:08212:5003"),
@@ -60,7 +53,6 @@ const STOPS: &[(&str, &str)] = &[
     ("Ebertstraße", "de:08212:91"),
     ("Ettlinger Tor/Staatstheater", "de:08212:71"),
     ("Ettlinger Tor/Staatstheater (U)", "de:08212:1012"),
-    ("Holtzstraße (Bus)", "de:08212:5509"),
     ("Karlstor/Bundesgerichtshof", "de:08212:61"),
     ("Kolpingplatz", "de:08212:63"),
     ("Kongresszentrum", "de:08212:72"),
@@ -83,24 +75,18 @@ const STOPS: &[(&str, &str)] = &[
     ("Welfenstraße", "de:08212:6218"),
     ("Werderstraße", "de:08212:83"),
     ("ZKM", "de:08212:65"),
-    //("ZKM/Städtische Galerie", "de:08212:29"),
     ("Lessingstraße", "de:08212:507"),
     ("Europaplatz/Postgalerie", "de:08212:37"),
     ("Europaplatz/Postgalerie (U)", "de:08212:1004"),
     ("Marktplatz (Pyramide U)", "de:08212:1011"),
     ("Marktplatz (Kaiserstraße U)", "de:08212:1003"),
-    ("Gebhardstraße", "de:08212:5004"),
     ("Gottesauer Platz/BGV", "de:08212:6"),
     ("Hauptbahnhof (Vorplatz)", "de:08212:89"),
-    ("Hauptbahnhof Süd", "de:08212:88"),
-    ("Hübschstraße", "de:08212:505"),
     ("Kongresszentrum", "de:08212:72"),
     ("Kongresszentrum (U)", "de:08212:1013"),
     ("Kronenplatz", "de:08212:80"),
     ("Kronenplatz (U)", "de:08212:1002"),
     ("Kunstakademie/Hochschule", "de:08212:7003"),
-    ("Landesbausparkasse", "de:08212:604"),
-    ("Yorckstraße", "de:08212:41"),
 ];
 
 const CURVES_STR: &str = include_str!("../data/route_curves.csv");

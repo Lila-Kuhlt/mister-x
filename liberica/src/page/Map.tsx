@@ -1,9 +1,11 @@
 //49.0069° N, 8.4037° E
 //[49.0069, 8.4037]
 import SVGMap from "components/SVGMap";
-import { Train, Team } from "lib/bindings";
+import { Train, Team, Stop } from "lib/bindings";
 import { useGameState } from "lib/state";
 import { WebsocketApi } from "lib/websockts";
+import { getStops } from "lib/api";
+import { useEffect, useState } from "react";
 export interface MapProps {
   trains: Train[];
   teams: Team[];
@@ -44,11 +46,17 @@ const defaultProps = {
 
 export function Map(props: { ws: WebsocketApi }) {
   const { gameState } = useGameState();
+  const [stops, setStops] = useState<Stop[]>([]);
+  useEffect(() => {
+    getStops().then(setStops);
+  }, []);
+
   return (
     <SVGMap
       trains={gameState?.trains || defaultProps.trains}
       teams={Object.values(gameState?.teams ?? defaultProps.teams)}
       mrX={gameState?.teams[0] || defaultProps.mrX}
+      stops={stops || []}
       ws={props.ws}
     />
   );
