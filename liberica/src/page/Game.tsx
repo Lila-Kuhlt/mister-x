@@ -1,5 +1,6 @@
 import { BASE_URLS, ENDPOINTS } from "lib/api";
 import { WebsocketApi } from "lib/websockts";
+import { useTeamStore } from "lib/state";
 import { useEffect, useState } from "react";
 import { Map } from "page/Map";
 import { GameState } from "lib/bindings";
@@ -7,6 +8,7 @@ import { GameState } from "lib/bindings";
 export function Game() {
   const [ws, setWs] = useState<WebsocketApi | undefined>(undefined);
   const [gameState, setGameState] = useState<GameState | undefined>(undefined);
+  const TS = useTeamStore();
 
   useEffect(() => {
     new WebsocketApi(BASE_URLS.WEBSOCKET + ENDPOINTS.GET_WS, setWs)
@@ -14,7 +16,11 @@ export function Game() {
       .register(setGameState);
   }, []);
 
-  useEffect(() => ws?.send({ Message: "Hello from Client" }), [ws]);
+  useEffect(() => {
+    ws?.send({ Message: "Hello from Client" });
+    if (!TS.team) return;
+    ws?.send({ JoinTeam: { team_id: TS.team.id } })
+  }, [ws]);
 
   useEffect(() => {
     if (!window.isSecureContext) return;
