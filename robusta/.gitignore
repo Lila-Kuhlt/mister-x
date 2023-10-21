@@ -1,3 +1,4 @@
 target
 .env
 teams.json
+log.csv

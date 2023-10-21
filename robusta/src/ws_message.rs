@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 #[derive(specta::Type, Clone, Serialize, Deserialize, Debug)]
 pub enum ClientMessage {
     Position { long: f32, lat: f32 },
+    SetTeamPosition { long: f32, lat: f32, team_id: u32 },
     JoinTeam { team_id: u32 },
     EmbarkTrain { train_id: String },
     DisembarkTrain(u8),

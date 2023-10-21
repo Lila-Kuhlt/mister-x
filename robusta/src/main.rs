@@ -14,6 +14,7 @@ use chrono::Local;
 use futures_util::SinkExt;
 use kvv::LineDepartures;
 use reqwest::StatusCode;
+use std::io::Write;
 use tokio::sync::mpsc::Sender;
 use tower::util::ServiceExt;
 use tower_http::{
@@ -301,6 +302,11 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
     let mut tick = 0;
     let mut game_state = GameState::new();
     let departures = &mut kvv::fetch_departures_for_region().await;
+    let mut log_file = std::fs::OpenOptions::new()
+        .append(true)
+        .create(true)
+        .open("log.csv")
+        .unwrap();
     loop {
         tick += 1;
         tracing::trace!("tick {}", tick);
@@ -310,6 +316,7 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
             serde_json::to_string_pretty(&game_state.teams).unwrap(),
         )
         .unwrap();
+
         let mut state = state.lock().await;
         while let Ok(msg) = recv.try_recv() {
             match msg {
@@ -322,6 +329,12 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
                                     team.long = (long + team.long) / 2.;
                                     team.lat = (lat + team.lat) / 2.;
                                 }
+                            }
+                        }
+                        ClientMessage::SetTeamPosition { long, lat, team_id } => {
+                            if let Some(team) = state.teams.iter_mut().find(|x| x.id == team_id) {
+                                team.long = long;
+                                team.lat = lat;
                             }
                         }
                         ClientMessage::Message(msg) => {
@@ -373,6 +386,14 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
 
         game_state.trains = trains;
         game_state.teams = state.teams.clone();
+
+        write!(
+            log_file,
+            "{}, {}\n",
+            time,
+            serde_json::to_string(&game_state).unwrap()
+        )
+        .unwrap();
 
         for connection in state.connections.iter_mut() {
             if connection.send.send(game_state.clone()).await.is_err() {
