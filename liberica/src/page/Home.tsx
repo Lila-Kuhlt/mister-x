@@ -13,6 +13,7 @@ export function Home() {
   useEffect(() => void getTeams().then(setTeams), []);
 
   const setTeam = (team: Team) => {
+    console.log("setting team", team);
     TS.setTeam(team);
     window.location.href = "/game";
   };
@@ -22,14 +23,14 @@ export function Home() {
       <div className="w-100 text-center" style={{ maxWidth: "330px" }}>
         <h2 className="p-2">Join a team</h2>
         <ol className="list-group mb-3">
-          {teams.map((team) => (
+          {teams.map((team, index) => (
             <li
               key={team.id}
               className={
                 "list-group-item list-group-item-action d-flex justify-content-between align-items-start " +
-                opt(selected === team.id, "active")
+                opt(selected === index, "active")
               }
-              onClick={() => setSelected(team.id)}
+              onClick={() => setSelected(index)}
             >
               <div className="ms-2 me-auto">
                 <div className="fw-bold">{team.name}</div>
@@ -40,8 +41,8 @@ export function Home() {
         <Button
           className="w-100"
           variant="primary"
-          disabled={!selected}
-          onClick={() => selected && setTeam(teams[selected])}
+          disabled={selected === undefined}
+          onClick={() => setTeam(teams[selected])}
         >
           Join
         </Button>

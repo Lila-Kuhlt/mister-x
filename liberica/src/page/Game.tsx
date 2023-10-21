@@ -17,10 +17,12 @@ export function Game() {
   }, []);
 
   useEffect(() => {
-    ws?.send({ Message: "Hello from Client" });
+    if (!ws) return;
     if (!TS.team) return;
-    ws?.send({ JoinTeam: { team_id: TS.team.id } })
-  }, [ws]);
+
+    ws.send({ Message: "Hello from Client" });
+    ws.send({ JoinTeam: { team_id: TS.team.id } });
+  }, [ws, TS.team]);
 
   useEffect(() => {
     if (!window.isSecureContext) return;
@@ -33,7 +35,5 @@ export function Game() {
     );
   }, [ws]);
 
-  return (
-    <Map gameState={gameState} />
-  );
+  return <Map gameState={gameState} />;
 }

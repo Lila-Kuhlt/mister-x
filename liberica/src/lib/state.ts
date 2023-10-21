@@ -11,7 +11,7 @@ export const useTeamStore = create<TeamStore>()(
   persist(
     (set) => ({
       team: undefined,
-      setTeam: (team: Team) => set({ team }),
+      setTeam: (team: Team) => set(() => ({ team })),
     }),
     { name: "team-store" }
   )

@@ -1,24 +1,24 @@
 import axios from "axios";
 import { Team } from "lib/bindings";
 
-const HOSTNAME_DEV = "misterx.kobert.dev";
+const HOSTNAME_DEV = window.location.hostname;
 const HOSTNAME_PROD = window.location.host;
 
 export const BASE_URLS = import.meta.env.DEV
   ? {
-    WEBSOCKET: `ws://${HOSTNAME_DEV}`,
-    FETCH: `http://${HOSTNAME_DEV}/api`,
-  }
+      WEBSOCKET: `ws://${HOSTNAME_DEV}:3000`,
+      FETCH: `http://${HOSTNAME_DEV}:3000/api`,
+    }
   : {
-    WEBSOCKET: `ws://${HOSTNAME_PROD}`,
-    FETCH: `https://${HOSTNAME_PROD}/api`,
-  };
+      WEBSOCKET: `ws://${HOSTNAME_PROD}`,
+      FETCH: `https://${HOSTNAME_PROD}/api`,
+    };
 
 export const ENDPOINTS = {
   POST_CRATE_TEAM: "/create-team",
   POST_START_GAME: "/start-game",
   GET_TEAMS: "/teams",
-  GET_WS: '/ws',
+  GET_WS: "/ws",
 };
 
 export const AXIOS = axios.create({ baseURL: BASE_URLS.FETCH });
