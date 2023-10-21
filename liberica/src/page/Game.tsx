@@ -13,7 +13,8 @@ export function Game() {
   useEffect(() => {
     new WebsocketApi(BASE_URLS.WEBSOCKET + ENDPOINTS.GET_WS, setWs)
       .register((msg) => console.log("Received message", msg))
-      .register(setGameState);
+      .register(setGameState)
+      .setDisconnectHandler(() => setTimeout(() => location.reload(), 15000));
   }, []);
 
   useEffect(() => {
