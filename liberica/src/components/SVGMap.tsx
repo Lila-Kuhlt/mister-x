@@ -17,7 +17,6 @@ import {
   ICON_OFFSET_TOP,
 } from "components/MapIcons";
 import { WebsocketApi } from "lib/websockts";
-import { useState } from "react";
 
 export interface MapProps {
   trains: Train[];
@@ -98,7 +97,7 @@ export default function SVGMap(props: MapProps) {
 
     return (
       <Marker
-        eventHandlers={{ click: () => switchTrain(train) }}
+        eventHandlers={{ click: () => switchTrain(train, !props.embarked) }}
         icon={TrainIcon}
         position={[train.lat, train.long]}
       >
