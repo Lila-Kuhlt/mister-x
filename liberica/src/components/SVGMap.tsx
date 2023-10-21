@@ -91,15 +91,14 @@ export default function SVGMap(props: MapProps) {
   const trains = props.trains;
   const teams = props.teams;
   const mrX = props.mrX;
-  const [embarked, setEmbarked] = useState(false);
 
-  function TrainMarker(props: { train: Train }) {
+  function TrainMarker(props: { train: Train; embarked: boolean }) {
     const train = props.train;
     const zoom = useMap().getZoom();
 
     return (
       <Marker
-        eventHandlers={{ click: () => switchTrain(train, !embarked) }}
+        eventHandlers={{ click: () => switchTrain(train) }}
         icon={TrainIcon}
         position={[train.lat, train.long]}
       >
@@ -117,7 +116,6 @@ export default function SVGMap(props: MapProps) {
   function switchTrain(train: Train, embark: boolean) {
     if (embark) props.ws.send({ EmbarkTrain: { train_id: train.line_id } });
     else props.ws.send({ DisembarkTrain: 0 });
-    setEmbarked(embark);
   }
 
   return (
@@ -140,7 +138,14 @@ export default function SVGMap(props: MapProps) {
         <LayersControl.Overlay checked name="Trains">
           <LayerGroup>
             {trains.map((train) => (
-              <TrainMarker train={train} key={train.line_id} />
+              <TrainMarker
+                train={train}
+                embarked={
+                  teams.find((team) => team.on_train === train.line_id) !==
+                  undefined
+                }
+                key={train.line_id}
+              />
             ))}
           </LayerGroup>
         </LayersControl.Overlay>
