@@ -10,7 +10,7 @@ export const BASE_URLS = import.meta.env.DEV
       FETCH: `http://${HOSTNAME_DEV}:3000/api`,
     }
   : {
-      WEBSOCKET: `ws://${HOSTNAME_PROD}`,
+      WEBSOCKET: `wss://${HOSTNAME_PROD}`,
       FETCH: `https://${HOSTNAME_PROD}/api`,
     };
 
