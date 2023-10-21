@@ -16,22 +16,19 @@ import {
   ICON_OFFSET,
   ICON_OFFSET_TOP,
 } from "components/MapIcons";
+import { WebsocketApi } from "lib/websockts";
 
 export interface MapProps {
   trains: Train[];
   teams: Team[];
   mrX?: Team;
+  ws: WebsocketApi;
 }
 
 const viewBounds: L.LatLngBounds = new L.LatLngBounds(
   [49.0129685, 8.3782551],
   [48.9906205, 8.4203851]
 );
-
-// Game Stuff (Needs to be updated to actually change the game state)
-function switchTrain(train: LeafletMouseEvent) {
-  console.log("switching train ", train);
-}
 
 // React Stuff
 function ResetBoundsButton() {
@@ -49,35 +46,26 @@ function ResetBoundsButton() {
   );
 }
 
-function TrainMarker(props: { train: Train }) {
-  const train = props.train;
-  const zoom = useMap().getZoom();
-
-  return (
-    <Marker
-      eventHandlers={{ click: switchTrain }}
-      icon={TrainIcon}
-      position={[train.lat, train.long]}
-    >
-      {
-        zoom >= 16 && <Tooltip direction="right" offset={ICON_OFFSET} permanent> {train.line_name.split(" ")[1]} to {train.direction} </Tooltip>
-      }
-    </Marker>
-  );
-}
-
 function DetectiveMarker(props: { player: Team }) {
   const player = props.player;
-  console.log(player)
+  console.log(player);
 
   return (
     <Marker icon={DetectiveIcon} position={[player.lat, player.long]}>
-      <Tooltip className={Style.tooltip} direction="top" opacity={1} offset={ICON_OFFSET_TOP} permanent>
+      <Tooltip
+        className={Style.tooltip}
+        direction="top"
+        opacity={1}
+        offset={ICON_OFFSET_TOP}
+        permanent
+      >
         <a
           style={{
-            background: player.color
+            background: player.color,
           }}
-          className={Style.detectiveLabel} >{player.name}
+          className={Style.detectiveLabel}
+        >
+          {player.name}
         </a>
       </Tooltip>
     </Marker>
@@ -102,6 +90,31 @@ export default function SVGMap(props: MapProps) {
   const trains = props.trains;
   const teams = props.teams;
   const mrX = props.mrX;
+
+  function TrainMarker(props: { train: Train }) {
+    const train = props.train;
+    const zoom = useMap().getZoom();
+
+    return (
+      <Marker
+        eventHandlers={{ click: () => switchTrain(train) }}
+        icon={TrainIcon}
+        position={[train.lat, train.long]}
+      >
+        {zoom >= 16 && (
+          <Tooltip direction="right" offset={ICON_OFFSET} permanent>
+            {" "}
+            {train.line_name.split(" ")[1]} to {train.direction}{" "}
+          </Tooltip>
+        )}
+      </Marker>
+    );
+  }
+
+  // Game Stuff (Needs to be updated to actually change the game state)
+  function switchTrain(train: Train) {
+    props.ws.send({ EmbarkTrain: { train_id: train.line_id } });
+  }
 
   return (
     <MapContainer bounds={viewBounds} zoom={13} className={Style.mapContainer}>
