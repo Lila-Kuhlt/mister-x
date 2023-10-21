@@ -244,7 +244,9 @@ async fn main() {
         .unwrap_or_default();
 
     let mut state = AppState::new(send.clone());
+    let max_id = teams.iter().map(|x| x.id).max().unwrap_or(0);
     state.teams = teams;
+    state.team_id_counter = max_id;
 
     let state = std::sync::Arc::new(tokio::sync::Mutex::new(state));
 
