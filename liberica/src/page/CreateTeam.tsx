@@ -8,7 +8,7 @@ export function CreateTeam() {
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const sendRequset = async () => {
+  const sendRequest = async () => {
     setLoading(true);
     // form validation
     if (!name || name.trim() === "" || !color || color.length !== 7) return;
@@ -27,7 +27,7 @@ export function CreateTeam() {
         className="bg-white p-3 rounded shadow-lg"
         onSubmit={(e) => {
           e.preventDefault();
-          !loading && sendRequset();
+          !loading && sendRequest();
         }}
       >
         <Form.Control
@@ -43,7 +43,7 @@ export function CreateTeam() {
           />
         </div>
         <div className="d-grid gap-2">
-          <Button disabled={loading} variant="primary">
+          <Button disabled={loading} variant="primary" onClick={sendRequest}>
             {!loading ? (
               <>Create</>
             ) : (
