@@ -114,7 +114,7 @@ impl Default for StopEventRequestBuilder {
 
 // src/stop_event_response.rs
 
-use chrono::{Local, Utc};
+use chrono::Local;
 use serde::{Deserialize, Serialize};
 
 use crate::{RequestPayload, ServiceRequest};

@@ -2,9 +2,8 @@ mod location_information;
 pub mod response;
 mod stop_event_request;
 
-use chrono::Utc;
+use location_information::LocationInformationRequest;
 pub use location_information::LocationInformationRequestBuilder;
-use location_information::{LocationInformationRequest, LocationResult};
 use response::{DeliveryPayload, Location, StopEventResponse, TriasResponse};
 pub use stop_event_request::StopEventRequestBuilder;
 

@@ -1,5 +1,3 @@
-use std::cell::Cell;
-
 use axum::{
     debug_handler,
     extract::{
@@ -10,12 +8,12 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
-use chrono::{Local, Utc};
+use chrono::Local;
 use futures_util::SinkExt;
 use kvv::LineDepartures;
-use serde_json::json;
+use tokio::sync::mpsc::Sender;
 use tower_http::cors::CorsLayer;
-use tracing::{error, event, info, span, Level};
+use tracing::{error, info, Level};
 use ws_message::{ClientMessage, GameState, Team};
 
 mod ws_message;
@@ -31,12 +29,14 @@ enum InputMessage {
 #[derive(Debug)]
 enum ServerMessage {
     Departures(LineDepartures),
+    ClientDisconnected(u32),
 }
 
 #[derive(Debug)]
 struct Client {
     recv: tokio::sync::mpsc::Receiver<GameState>,
     send: tokio::sync::mpsc::Sender<InputMessage>,
+    id: u32,
 }
 
 #[derive(Debug, Clone)]
@@ -86,6 +86,7 @@ async fn handler(ws: WebSocketUpgrade, State(state): State<SharedState>) -> Resp
         Client {
             recv: rec,
             send: state.game_logic_sender.clone(),
+            id: state.client_id_counter,
         }
     };
     ws.on_upgrade(|socket| handle_socket(socket, client))
@@ -95,9 +96,21 @@ async fn handle_socket(socket: WebSocket, mut client: Client) {
     use futures_util::stream::StreamExt;
 
     let (mut send, mut recv) = socket.split();
+    let client_send = client.send.clone();
+    let client_id = client.id;
+
+    let disconnect = |client_send: Sender<InputMessage>, client_id| async move {
+        client_send
+            .clone()
+            .send(InputMessage::Server(ServerMessage::ClientDisconnected(
+                client_id,
+            )))
+            .await
+            .expect("game logic queue disconnected");
+    };
 
     // Propagate ws update to the game logic queue
-    tokio::spawn(async move {
+    tokio::task::spawn(async move {
         while let Some(msg) = recv.next().await {
             let msg = if let Ok(Ok(msg)) = msg.map(|msg| msg.to_text().map(|msg| msg.to_owned())) {
                 if let Ok(msg) = serde_json::from_str::<ws_message::ClientMessage>(&msg) {
@@ -108,16 +121,10 @@ async fn handle_socket(socket: WebSocket, mut client: Client) {
                 }
             } else {
                 // client disconnected
+                disconnect(client.send, client.id).await;
                 return;
             };
-
-            client
-                .send
-                .send(InputMessage::Client(msg.clone(), 0))
-                .await
-                .unwrap_or_else(|_| return);
-
-            match msg {
+            match &msg {
                 ClientMessage::Position { x, y } => {
                     info!("Got position: {}, {}", x, y);
                 }
@@ -125,6 +132,12 @@ async fn handle_socket(socket: WebSocket, mut client: Client) {
                     info!("Got message: {}", msg);
                 }
             }
+
+            client
+                .send
+                .send(InputMessage::Client(msg, client.id))
+                .await
+                .expect("game logic queue disconnected");
         }
     });
 
@@ -133,7 +146,7 @@ async fn handle_socket(socket: WebSocket, mut client: Client) {
         let msg = serde_json::to_string(&update).unwrap();
 
         if send.send(msg.into()).await.is_err() {
-            // client disconnected
+            disconnect(client_send, client_id).await;
             return;
         }
     }
@@ -254,6 +267,9 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
                 InputMessage::Server(ServerMessage::Departures(deps)) => {
                     *departures = deps;
                 }
+                InputMessage::Server(ServerMessage::ClientDisconnected(id)) => {
+                    state.connections.retain(|x| x.id != id);
+                }
             }
         }
 
@@ -266,7 +282,7 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
 
         for connection in state.connections.iter_mut() {
             if connection.send.send(game_state.clone()).await.is_err() {
-                return;
+                continue;
             }
         }
         tokio::time::sleep(std::time::Duration::from_millis(100)).await;

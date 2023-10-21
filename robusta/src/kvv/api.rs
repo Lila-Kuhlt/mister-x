@@ -11,8 +11,7 @@
 //     let model: Welcome = serde_json::from_str(&json).unwrap();
 // }
 
-use chrono::NaiveDate;
-use chrono::{DateTime, Duration, Local, NaiveDateTime, NaiveTime, TimeZone};
+use chrono::{Duration, Local, TimeZone};
 use serde::{Deserialize, Serialize};
 
 pub async fn fetch_departures(stop: &str) -> Result<kvvliveapi::Departures, reqwest::Error> {
@@ -27,22 +26,6 @@ pub async fn fetch_departures(stop: &str) -> Result<kvvliveapi::Departures, reqw
     for departure in response.departure_list.unwrap() {
         let line_name = departure.serving_line.symbol;
         let destination = departure.serving_line.direction;
-        let time = departure.date_time;
-        //dbg!(departure.countdown);
-        let date = NaiveDate::from_ymd_opt(
-            time.year.parse().unwrap(),
-            time.month.parse().unwrap(),
-            time.day.parse().unwrap(),
-        )
-        .unwrap();
-        let time =
-            NaiveTime::from_hms_opt(time.hour.parse().unwrap(), time.minute.parse().unwrap(), 0)
-                .unwrap();
-        let datetime = NaiveDateTime::new(date, time);
-        let datetime = chrono_tz::Europe::Berlin
-            .from_local_datetime(&datetime)
-            .unwrap();
-        //dbg!((datetime - request_time).num_seconds());
         let datetime = request_time + Duration::seconds(departure.countdown.parse().unwrap());
 
         let departure = kvvliveapi::Departure {
@@ -472,7 +455,7 @@ pub enum PointsUnion {
 }
 
 impl PointsUnion {
-    fn first(&self) -> &Point {
+    pub fn first(&self) -> &Point {
         match self {
             PointsUnion::PointElementArray(vec) => &vec[0],
             PointsUnion::PointsClass(point) => &point.point,

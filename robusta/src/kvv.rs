@@ -1,13 +1,8 @@
 use std::collections::HashMap;
 
-mod api;
+// mod api;
 
-use chrono::{FixedOffset, Local, Utc};
-use futures_util::FutureExt;
-use tracing::debug;
-use trias::response::{Location, StopEventResponse};
-
-use crate::ws_message::{Line, Train};
+use crate::ws_message::Train;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, specta::Type)]
 pub struct Stop {
@@ -47,6 +42,7 @@ pub struct Point {
     pub x: f32,
     pub y: f32,
 }
+
 
 const STOPS: &[(&str, &str)] = &[
     /*
@@ -128,10 +124,6 @@ fn parse_curves() -> Vec<(String, String, Vec<Point>)> {
     CURVES_STR.lines().map(parse_curve).collect()
 }
 
-fn stop_id_by_name(name: &str) -> u32 {
-    STOPS.iter().position(|stop| &stop.0 == &name).unwrap() as u32
-}
-
 fn intermediate_points(start_id: &str, end_id: &str) -> Vec<Point> {
     let curves = parse_curves();
     let start = STOPS
@@ -190,7 +182,7 @@ pub async fn kvv_stops() -> Vec<Stop> {
 }
 #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Journey {
-    stops: HashMap<JourneyRef, chrono::NaiveDateTime>,
+    stops: HashMap<StopRef, chrono::NaiveDateTime>,
     line_name: String,
     destination: String,
 }
@@ -267,7 +259,8 @@ pub async fn fetch_departures(stops: &[Stop]) -> LineDepartures {
                     }
                 };
                 let stop_ref = call.call_at_stop.stop_point_ref.clone();
-                let Some(proper_stop_ref) = find_stop_by_kkv_id(&stop_ref, stops) else { continue; };
+                let Some(proper_stop_ref) = find_stop_by_kkv_id(&stop_ref, stops) else { 
+                    continue; };
                 let short_ref = proper_stop_ref.kvv_stop.id.clone();
                 let current_time = entry.stops.get(&short_ref);
                 if let Some(current_time) = current_time {
@@ -275,31 +268,19 @@ pub async fn fetch_departures(stops: &[Stop]) -> LineDepartures {
                         continue;
                     }
                 }
-                let old = entry
-                    .stops
-                    .insert(proper_stop_ref.kvv_stop.id.clone(), time);
-                /*if let Some(old) = old {
-                    if old != time {
-                        tracing::warn!(
-                            "different times for same stop: {} {} {}",
-                            journey,
-                            stop_ref,
-                            time
-                        );
-                    }
-                }*/
+                entry.stops.insert(short_ref, time);
+            }
+            if entry.stops.len() < 2 {
+                jorneys.remove(journey);
             }
         }
     }
     jorneys
 }
 
-pub fn find_stop_by_id(id: u32, stops: &[Stop]) -> Option<&Stop> {
-    stops.iter().find(|stop| stop.id == id)
-}
-
 pub fn find_stop_by_kkv_id<'a>(id: &str, stops: &'a [Stop]) -> Option<&'a Stop> {
-    //stops.iter().find(|stop| id.starts_with(&stop.kvv_stop.id))
+    // stop ids can have extra information at the end, e.g. "de:08212:3:01" which is not present in
+    // the base id "de:08212:3". We want to match the base id.
     let id = format!("{}:", id);
     stops
         .iter()
@@ -383,6 +364,11 @@ pub fn train_positions_per_route(
         .map(|x| x.stops.iter().collect())
         .unwrap_or_default();
     departures.sort_by_key(|x| x.1);
+
+    if departures.is_empty() {
+        tracing::warn!("no departures for line {}", line_id);
+        return vec![];
+    }
 
     let line_name = departures_per_line
         .get(line_id)
