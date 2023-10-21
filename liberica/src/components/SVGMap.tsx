@@ -46,85 +46,93 @@ function ResetBoundsButton() {
   );
 }
 
+function MrXMarker(props: { player: Team; disembark: () => void }) {
+  const player = props.player;
+  const key = player.id;
+
+  return (
+    <Marker
+      icon={MrXIcon}
+      position={[player.long, player.lat]}
+      eventHandlers={{ click: () => props.disembark() }}
+    >
+      <Tooltip offset={ICON_OFFSET} key={key}>
+        {" "}
+        Mr X war hier{" "}
+      </Tooltip>
+    </Marker>
+  );
+}
+
+function TrainMarker(props: {
+  train: Train;
+  embarked: boolean;
+  embark: (train: Train) => void;
+  disembark: () => void;
+}) {
+  const train = props.train;
+  const zoom = useMap().getZoom();
+
+  return (
+    <Marker
+      eventHandlers={{
+        click: () =>
+          !props.embarked ? props.embark(train) : props.disembark(),
+      }}
+      icon={TrainIcon}
+      position={[train.lat, train.long]}
+    >
+      {zoom >= 16 && (
+        <Tooltip direction="right" offset={ICON_OFFSET} permanent>
+          {" "}
+          {train.line_name.split(" ")[1]} to {train.direction}{" "}
+        </Tooltip>
+      )}
+    </Marker>
+  );
+}
+
+function DetectiveMarker(props: { player: Team; disembark: () => void }) {
+  const player = props.player;
+  console.log(player);
+
+  return (
+    <Marker
+      icon={DetectiveIcon}
+      position={[player.lat, player.long]}
+      eventHandlers={{ click: () => props.disembark() }}
+    >
+      <Tooltip
+        className={Style.tooltip}
+        direction="top"
+        opacity={1}
+        offset={ICON_OFFSET_TOP}
+        permanent
+      >
+        <a
+          style={{
+            background: player.color,
+          }}
+          className={Style.detectiveLabel}
+        >
+          {player.name}
+        </a>
+      </Tooltip>
+    </Marker>
+  );
+}
 
 export default function SVGMap(props: MapProps) {
   const trains = props.trains;
   const teams = props.teams;
   const mrX = props.mrX;
 
-  function DetectiveMarker(props: { player: Team }) {
-    const player = props.player;
-    console.log(player);
-
-    return (
-      <Marker icon={DetectiveIcon} position={[player.lat, player.long]}
-        eventHandlers={{ click: () => disembarkTrain() }}
-      >
-        <Tooltip
-          className={Style.tooltip}
-          direction="top"
-          opacity={1}
-          offset={ICON_OFFSET_TOP}
-          permanent
-        >
-          <a
-            style={{
-              background: player.color,
-            }}
-            className={Style.detectiveLabel}
-          >
-            {player.name}
-          </a>
-        </Tooltip>
-      </Marker>
-    );
-  }
-
-  function MrXMarker(props: { player: Team }) {
-    const player = props.player;
-    const key = player.id;
-
-    return (
-      <Marker icon={MrXIcon} position={[player.long, player.lat]}
-        eventHandlers={{ click: () => disembarkTrain() }}
-      >
-        <Tooltip offset={ICON_OFFSET} key={key}>
-          {" "}
-          Mr X war hier{" "}
-        </Tooltip>
-      </Marker>
-    );
-
-  }
-
-  function TrainMarker(props: { train: Train; embarked: boolean }) {
-    const train = props.train;
-    const zoom = useMap().getZoom();
-
-    return (
-      <Marker
-        eventHandlers={{ click: () => switchTrain(train, !props.embarked) }}
-        icon={TrainIcon}
-        position={[train.lat, train.long]}
-      >
-        {zoom >= 16 && (
-          <Tooltip direction="right" offset={ICON_OFFSET} permanent>
-            {" "}
-            {train.line_name.split(" ")[1]} to {train.direction}{" "}
-          </Tooltip>
-        )}
-      </Marker>
-    );
-  }
-
-  // Game Stuff (Needs to be updated to actually change the game state)
-  function switchTrain(train: Train, embark: boolean) {
-    if (embark) props.ws.send({ EmbarkTrain: { train_id: train.line_id } });
-    else props.ws.send({ DisembarkTrain: 0 });
-  }
-
-  function disembarkTrain() {
+  function disembark() {
     props.ws.send({ DisembarkTrain: 0 });
+  }
+
+  function embark(train: Train) {
+    props.ws.send({ EmbarkTrain: { train_id: train.line_id } });
   }
 
   return (
@@ -138,7 +146,7 @@ export default function SVGMap(props: MapProps) {
         {mrX && (
           <LayersControl.Overlay checked name="Mr X">
             <LayerGroup>
-              <MrXMarker player={mrX} />
+              <MrXMarker player={mrX} disembark={disembark} />
             </LayerGroup>
           </LayersControl.Overlay>
         )}
@@ -148,12 +156,14 @@ export default function SVGMap(props: MapProps) {
           <LayerGroup>
             {trains.map((train) => (
               <TrainMarker
+                disembark={disembark}
+                embark={embark}
                 train={train}
+                key={train.line_id}
                 embarked={
                   teams.find((team) => team.on_train === train.line_id) !==
                   undefined
                 }
-                key={train.line_id}
               />
             ))}
           </LayerGroup>
@@ -163,7 +173,11 @@ export default function SVGMap(props: MapProps) {
         <LayersControl.Overlay checked name="Detectives">
           <LayerGroup>
             {teams.map((player) => (
-              <DetectiveMarker player={player} key={player.id} />
+              <DetectiveMarker
+                player={player}
+                key={player.id}
+                disembark={disembark}
+              />
             ))}
           </LayerGroup>
         </LayersControl.Overlay>
