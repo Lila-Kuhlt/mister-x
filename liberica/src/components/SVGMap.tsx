@@ -8,7 +8,7 @@ import {
   TileLayer,
 } from "react-leaflet";
 import { LayersControl, LayerGroup } from "react-leaflet";
-import L, { LeafletMouseEvent } from "leaflet";
+import L from "leaflet";
 import {
   TrainIcon,
   DetectiveIcon,

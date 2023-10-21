@@ -35,5 +35,5 @@ export function Game() {
     );
   }, [ws]);
 
-  return <Map gameState={gameState} />;
+  return ws && <Map gameState={gameState} ws={ws} />;
 }
