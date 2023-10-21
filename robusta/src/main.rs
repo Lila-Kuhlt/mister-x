@@ -304,11 +304,10 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
                 InputMessage::Client(msg, id) => {
                     info!("Got message from client {}: {:?}", id, msg);
                     match msg {
-                        ClientMessage::Position { x, y } => {
+                        ClientMessage::Position { long, lat } => {
                             if let Some(team) = state.team_mut_by_client_id(id) {
-                                let t = game_state.teams.entry(id).or_insert_with(|| team.clone());
-                                t.long = x;
-                                t.lat = y;
+                                team.long = long;
+                                team.lat = lat;
                             }
                         }
                         ClientMessage::Message(msg) => {
@@ -343,22 +342,23 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
             }
         }
 
+        tracing::trace!("updating train positions");
+        let time = Local::now().with_timezone(&chrono_tz::Europe::Berlin);
+        let mut trains = kvv::train_positions(departures, time.naive_local()).await;
+        trains.retain(|x| !x.line_id.contains("bus"));
+
         // update positions for players on trains
-        for team in game_state.teams.values_mut() {
+        for team in state.teams.iter_mut() {
             if let Some(train_id) = &team.on_train {
-                if let Some(train) = game_state.trains.iter().find(|x| &x.line_id == train_id) {
+                if let Some(train) = trains.iter().find(|x| &x.line_id == train_id) {
                     team.long = train.long;
                     team.lat = train.lat;
                 }
             }
         }
 
-        tracing::trace!("updating train positions");
-        let time = Local::now().with_timezone(&chrono_tz::Europe::Berlin);
-        let mut trains = kvv::train_positions(departures, time.naive_local()).await;
-        trains.retain(|x| !x.line_id.contains("bus"));
-
         game_state.trains = trains;
+        game_state.teams = state.teams.clone();
 
         for connection in state.connections.iter_mut() {
             if connection.send.send(game_state.clone()).await.is_err() {

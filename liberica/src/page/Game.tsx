@@ -14,7 +14,7 @@ export function Game() {
       .register(setGameState);
   }, []);
 
-  useEffect(() => ws?.send({ Message: "lol" }), [ws]);
+  useEffect(() => ws?.send({ Message: "Hello from Client" }), [ws]);
 
   useEffect(() => {
     if (!window.isSecureContext) return;
@@ -22,7 +22,7 @@ export function Game() {
       (pos) =>
         pos.coords.altitude &&
         ws?.send({
-          Position: { x: pos.coords.altitude, y: pos.coords.longitude },
+          Position: { lat: pos.coords.latitude, long: pos.coords.longitude },
         })
     );
   }, [ws]);
