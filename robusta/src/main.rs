@@ -272,6 +272,7 @@ async fn main() {
         .route("/create-team", post(create_team))
         .route("/teams", get(list_teams))
         .route("/stops", get(list_stops))
+        .route("/ping", get(|_: ()| async { "pong" }))
         .with_state(state.clone());
 
     // build our application with a single route

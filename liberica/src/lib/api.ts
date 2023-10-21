@@ -19,6 +19,7 @@ export const ENDPOINTS = {
   POST_START_GAME: "/start-game",
   GET_TEAMS: "/teams",
   GET_STOPS: "/stops",
+  GET_PING: "/ping",
   GET_WS: "/ws",
 };
 
@@ -32,3 +33,6 @@ export const getTeams = (): Promise<Team[]> =>
 
 export const getStops = (): Promise<Stop[]> =>
   AXIOS.get(ENDPOINTS.GET_STOPS).then((data) => data.data);
+
+export const serverAlive = (): Promise<boolean> =>
+  AXIOS.get(ENDPOINTS.GET_PING).then(() => true).catch(() => false);
