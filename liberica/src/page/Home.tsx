@@ -42,7 +42,7 @@ export function Home() {
           className="w-100"
           variant="primary"
           disabled={selected === undefined}
-          onClick={() => setTeam(teams[selected])}
+          onClick={() => selected !== undefined && setTeam(teams[selected])}
         >
           Join
         </Button>
