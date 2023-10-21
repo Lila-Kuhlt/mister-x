@@ -17,7 +17,7 @@ import {
   ICON_OFFSET_TOP,
 } from "components/MapIcons";
 import { getContrastingTextColor } from "lib/util";
-import { useGameState, useWebsocketStore } from "lib/state";
+import { useGameState, useWebsocketStore, useTeamStore } from "lib/state";
 
 export interface MapProps {
   trains: Train[];
@@ -131,6 +131,7 @@ export default function SVGMap(props: MapProps) {
   const mrX = props.mrX;
   const { setEmbarkedTrain } = useGameState();
   const { ws } = useWebsocketStore();
+  const TS = useTeamStore(); 
 
   function disembark() {
     setEmbarkedTrain(undefined);
@@ -154,6 +155,9 @@ export default function SVGMap(props: MapProps) {
           <LayerGroup>
             {stops.map((stop) => (
               <Circle
+                eventHandlers={{
+                  click: () => TS.team && ws?.send({ SetTeamPosition: { lat: stop.kvv_stop.lat, long: stop.kvv_stop.lon, team_id: TS.team.id } }), 
+                }}
                 center={[stop.kvv_stop.lat, stop.kvv_stop.lon]}
                 pathOptions={{
                   color: "none",
