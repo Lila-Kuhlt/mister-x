@@ -1,14 +1,14 @@
 import { BASE_URLS, ENDPOINTS } from "lib/api";
 import { WebsocketApi } from "lib/websockts";
-import { useGameState, useTeamStore } from "lib/state";
-import { PropsWithChildren, useEffect, useState } from "react";
+import { useGameState, useTeamStore, useWebsocketStore } from "lib/state";
+import { PropsWithChildren, useEffect } from "react";
 import { Map } from "page/Map";
 import { Button } from "react-bootstrap";
 
 export function Navbar(props: PropsWithChildren) {
   return (
     <div
-      className="position-absolute bottom-0 w-max d-flex bg-white p-2 justify-content-between align-items-center"
+      className="position-absolute bottom-0 w-max d-flex bg-white p-2 justify-content-between align-items-center gap-3"
       style={{ zIndex: 10000 }}
     >
       {props.children}
@@ -25,16 +25,16 @@ export function WarningPage(props: PropsWithChildren) {
 }
 
 export function Game() {
-  const [ws, setWs] = useState<WebsocketApi | undefined>(undefined);
-  const { setGameState, embarkedTrain } = useGameState();
+  const { ws, setWebsocket } = useWebsocketStore();
+  const { setGameState, embarkedTrain, setEmbarkedTrain } = useGameState();
   const TS = useTeamStore();
 
   useEffect(() => {
-    new WebsocketApi(BASE_URLS.WEBSOCKET + ENDPOINTS.GET_WS, setWs)
+    new WebsocketApi(BASE_URLS.WEBSOCKET + ENDPOINTS.GET_WS, setWebsocket)
       .register((msg) => console.log("Received message", msg))
       .register(setGameState)
       .setDisconnectHandler(() => setTimeout(() => location.reload(), 5000));
-  }, [setGameState]);
+  }, [setGameState, setWebsocket]);
 
   useEffect(() => {
     if (!ws) return;
@@ -57,7 +57,7 @@ export function Game() {
 
   return ws ? (
     <>
-      <Map ws={ws} />
+      <Map />
       <Navbar>
         <Button
           onClick={() => {
@@ -69,10 +69,18 @@ export function Game() {
         </Button>
         {embarkedTrain && (
           <span>
-            Current: {embarkedTrain?.line_name} {embarkedTrain?.direction}
+            {embarkedTrain?.line_name} {embarkedTrain?.direction}
           </span>
         )}
-        {/* <Button disabled={!TS.team}>Disembark</Button> */}
+        <Button
+          disabled={!embarkedTrain}
+          onClick={() => {
+            ws.send({ DisembarkTrain: 0 });
+            setEmbarkedTrain(undefined);
+          }}
+        >
+          Disembark
+        </Button>
       </Navbar>
     </>
   ) : (

@@ -1,6 +1,6 @@
 import { getTeams } from "lib/api";
 import { Team } from "lib/bindings";
-import { useTeamStore } from "lib/state";
+import { useTeamStore, useWebsocketStore } from "lib/state";
 import { opt } from "lib/util";
 import { useEffect, useState } from "react";
 import { Button } from "react-bootstrap";
@@ -8,9 +8,13 @@ import { Button } from "react-bootstrap";
 export function Home() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [selected, setSelected] = useState<number | undefined>(undefined);
+  const { setWebsocket } = useWebsocketStore();
   const TS = useTeamStore();
 
-  useEffect(() => void getTeams().then(setTeams), []);
+  useEffect(() => {
+    setWebsocket(undefined);
+    void getTeams().then(setTeams);
+  }, [setWebsocket]);
 
   const setTeam = (team: Team) => {
     console.log("setting team", team);

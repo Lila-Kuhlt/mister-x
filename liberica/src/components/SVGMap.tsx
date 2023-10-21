@@ -16,16 +16,14 @@ import {
   ICON_OFFSET,
   ICON_OFFSET_TOP,
 } from "components/MapIcons";
-import { WebsocketApi } from "lib/websockts";
 import { getContrastingTextColor } from "lib/util";
-import { useGameState } from "lib/state";
+import { useGameState, useWebsocketStore } from "lib/state";
 
 export interface MapProps {
   trains: Train[];
   teams: Team[];
   mrX?: Team;
   stops: Stop[];
-  ws: WebsocketApi;
 }
 
 const viewBounds: L.LatLngBounds = new L.LatLngBounds(
@@ -132,15 +130,16 @@ export default function SVGMap(props: MapProps) {
   const stops = props.stops;
   const mrX = props.mrX;
   const { setEmbarkedTrain } = useGameState();
+  const { ws } = useWebsocketStore();
 
   function disembark() {
     setEmbarkedTrain(undefined);
-    props.ws.send({ DisembarkTrain: 0 });
+    ws?.send({ DisembarkTrain: 0 });
   }
 
   function embark(train: Train) {
     setEmbarkedTrain(train);
-    props.ws.send({ EmbarkTrain: { train_id: train.line_id } });
+    ws?.send({ EmbarkTrain: { train_id: train.line_id } });
   }
 
   return (
@@ -156,7 +155,11 @@ export default function SVGMap(props: MapProps) {
             {stops.map((stop) => (
               <Circle
                 center={[stop.kvv_stop.lat, stop.kvv_stop.lon]}
-                pathOptions={{ color: "none", fillColor: "blue", opacity: 10.0 }}
+                pathOptions={{
+                  color: "none",
+                  fillColor: "blue",
+                  opacity: 10.0,
+                }}
                 radius={50}
               />
             ))}

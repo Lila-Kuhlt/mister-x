@@ -3,7 +3,6 @@
 import SVGMap from "components/SVGMap";
 import { Train, Team, Stop } from "lib/bindings";
 import { useGameState } from "lib/state";
-import { WebsocketApi } from "lib/websockts";
 import { getStops } from "lib/api";
 import { useEffect, useState } from "react";
 export interface MapProps {
@@ -44,7 +43,7 @@ const defaultProps = {
   },
 };
 
-export function Map(props: { ws: WebsocketApi }) {
+export function Map() {
   const { gameState } = useGameState();
   const [stops, setStops] = useState<Stop[]>([]);
   useEffect(() => {
@@ -57,7 +56,6 @@ export function Map(props: { ws: WebsocketApi }) {
       teams={Object.values(gameState?.teams ?? defaultProps.teams)}
       mrX={gameState?.teams[0] || defaultProps.mrX}
       stops={stops || []}
-      ws={props.ws}
     />
   );
 }
