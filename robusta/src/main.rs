@@ -325,7 +325,7 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
                                 team.on_train = Some(train_id);
                             }
                         }
-                        ClientMessage::DisembarkTrain => {
+                        ClientMessage::DisembarkTrain(_) => {
                             if let Some(team) = state.team_mut_by_client_id(id) {
                                 team.on_train = None;
                             }

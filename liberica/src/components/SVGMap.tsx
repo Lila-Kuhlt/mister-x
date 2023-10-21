@@ -17,6 +17,7 @@ import {
   ICON_OFFSET_TOP,
 } from "components/MapIcons";
 import { WebsocketApi } from "lib/websockts";
+import { useState } from "react";
 
 export interface MapProps {
   trains: Train[];
@@ -90,6 +91,7 @@ export default function SVGMap(props: MapProps) {
   const trains = props.trains;
   const teams = props.teams;
   const mrX = props.mrX;
+  const [embarked, setEmbarked] = useState(false);
 
   function TrainMarker(props: { train: Train }) {
     const train = props.train;
@@ -97,7 +99,7 @@ export default function SVGMap(props: MapProps) {
 
     return (
       <Marker
-        eventHandlers={{ click: () => switchTrain(train) }}
+        eventHandlers={{ click: () => switchTrain(train, !embarked) }}
         icon={TrainIcon}
         position={[train.lat, train.long]}
       >
@@ -112,8 +114,10 @@ export default function SVGMap(props: MapProps) {
   }
 
   // Game Stuff (Needs to be updated to actually change the game state)
-  function switchTrain(train: Train) {
-    props.ws.send({ EmbarkTrain: { train_id: train.line_id } });
+  function switchTrain(train: Train, embark: boolean) {
+    if (embark) props.ws.send({ EmbarkTrain: { train_id: train.line_id } });
+    else props.ws.send({ DisembarkTrain: 0 });
+    setEmbarked(embark);
   }
 
   return (

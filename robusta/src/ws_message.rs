@@ -7,7 +7,7 @@ pub enum ClientMessage {
     Position { long: f32, lat: f32 },
     JoinTeam { team_id: u32 },
     EmbarkTrain { train_id: String },
-    DisembarkTrain,
+    DisembarkTrain(u8),
     Message(String),
 }
 

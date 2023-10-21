@@ -17,7 +17,7 @@ export type Train = { id: number; long: number; lat: number; line_id: string; li
 
 export type GameState = { teams: Team[]; trains: Train[] }
 
-export type ClientMessage = { Position: { long: number; lat: number } } | { JoinTeam: { team_id: number } } | { EmbarkTrain: { train_id: string } } | "DisembarkTrain" | { Message: string }
+export type ClientMessage = { Position: { long: number; lat: number } } | { JoinTeam: { team_id: number } } | { EmbarkTrain: { train_id: string } } | { DisembarkTrain: number } | { Message: string }
 
 export type CreateTeam = { name: string; color: string }
 
