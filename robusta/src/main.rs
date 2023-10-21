@@ -316,8 +316,10 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
                     match msg {
                         ClientMessage::Position { long, lat } => {
                             if let Some(team) = state.team_mut_by_client_id(id) {
-                                team.long = (long + team.long) / 2.;
-                                team.lat = (lat + team.lat) / 2.;
+                                if team.name != "Mr. X" {
+                                    team.long = (long + team.long) / 2.;
+                                    team.lat = (lat + team.lat) / 2.;
+                                }
                             }
                         }
                         ClientMessage::Message(msg) => {
