@@ -359,6 +359,7 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
 
         game_state.trains = trains;
         game_state.teams = state.teams.clone();
+        dbg!(&game_state.teams);
 
         for connection in state.connections.iter_mut() {
             if connection.send.send(game_state.clone()).await.is_err() {
