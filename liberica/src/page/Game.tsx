@@ -1,4 +1,4 @@
-import { ENDPOINTS } from "lib/api";
+import { BASE_URLS, ENDPOINTS } from "lib/api";
 import { WebsocketApi } from "lib/websockts";
 import { useEffect, useState } from "react";
 import { Map } from "page/Map";
@@ -9,7 +9,7 @@ export function Game() {
   const [gameState, setGameState] = useState<GameState | undefined>(undefined);
 
   useEffect(() => {
-    new WebsocketApi(ENDPOINTS.GET_WS, setWs)
+    new WebsocketApi(BASE_URLS.WEBSOCKET + ENDPOINTS.GET_WS, setWs)
       .register((msg) => console.log("Received message", msg))
       .register(setGameState);
   }, []);
@@ -29,5 +29,5 @@ export function Game() {
 
   return (
     <Map gameState={gameState} />
-   );
+  );
 }

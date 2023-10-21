@@ -1,18 +1,25 @@
 use axum::{
+    body::{boxed, Body, BoxBody},
     debug_handler,
     extract::{
         ws::{WebSocket, WebSocketUpgrade},
         State,
     },
+    http::{Request, Uri},
     response::{IntoResponse, Response},
-    routing::{get, post},
+    routing::{get, get_service, post},
     Json, Router,
 };
 use chrono::Local;
 use futures_util::SinkExt;
 use kvv::LineDepartures;
+use reqwest::StatusCode;
 use tokio::sync::mpsc::Sender;
-use tower_http::cors::CorsLayer;
+use tower::util::ServiceExt;
+use tower_http::{
+    cors::CorsLayer,
+    services::{ServeDir, ServeFile},
+};
 use tracing::{error, info, Level};
 use ws_message::{ClientMessage, GameState, Team};
 
@@ -155,6 +162,40 @@ async fn handle_socket(socket: WebSocket, mut client: Client) {
     }
 }
 
+async fn get_static_file(uri: Uri) -> Result<Response<BoxBody>, (StatusCode, String)> {
+    let req = Request::builder().uri(uri).body(Body::empty()).unwrap();
+
+    // `ServeDir` implements `tower::Service` so we can call it with `tower::ServiceExt::oneshot`
+    // When run normally, the root is the workspace root
+    match tower_http::services::ServeDir::new("../liberica/dist")
+        .oneshot(req)
+        .await
+    {
+        Ok(res) => Ok(res.map(boxed)),
+        Err(err) => Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Something went wrong: {}", err),
+        )),
+    }
+}
+
+pub async fn file_handler(uri: Uri) -> Result<Response<BoxBody>, (StatusCode, String)> {
+    dbg!(&uri);
+    let res = get_static_file(uri.clone()).await?;
+    dbg!(&res);
+
+    if res.status() == StatusCode::NOT_FOUND {
+        // try with `.html`
+        // TODO: handle if the Uri has query parameters
+        match format!("{}.html", uri).parse() {
+            Ok(uri_html) => get_static_file(uri_html).await,
+            Err(_) => Err((StatusCode::INTERNAL_SERVER_ERROR, "Invalid URI".to_string())),
+        }
+    } else {
+        Ok(res)
+    }
+}
+
 async fn create_team(
     State(state): State<SharedState>,
     Json(team): Json<ws_message::CreateTeam>,
@@ -229,12 +270,21 @@ async fn main() {
     let app = Router::new()
         .route("/ws", get(handler))
         .nest("/api", api)
+        .nest_service(
+            "/",
+            get_service(
+                ServeDir::new("../liberica/dist")
+                    .fallback(ServeFile::new("../liberica/dist/index.html")),
+            ),
+        )
         .layer(CorsLayer::permissive())
         .with_state(state.clone());
 
     tracing::info!("Starting web server");
+
+    let port = std::env::var("PORT").unwrap_or_else(|_| "3000".to_string());
     // run it with hyper on localhost:3000
-    axum::Server::bind(&"0.0.0.0:3000".parse().unwrap())
+    axum::Server::bind(&format!("0.0.0.0:{}", port).parse().unwrap())
         .serve(app.into_make_service())
         .await
         .unwrap();
