@@ -60,7 +60,7 @@ function TrainMarker(props: { train: Train }) {
       position={[train.lat, train.long]}
     >
       {
-        zoom >= 16 && <Tooltip direction="right" offset={ICON_OFFSET} permanent> {train.line_name} to {train.direction} </Tooltip>
+        zoom >= 16 && <Tooltip direction="right" offset={ICON_OFFSET} permanent> {train.line_name.split(" ")[1]} to {train.direction} </Tooltip>
       }
     </Marker>
   );
@@ -132,7 +132,7 @@ export default function SVGMap(props: MapProps) {
         <LayersControl.Overlay checked name="Detectives">
           <LayerGroup>
             {teams.map((player) => (
-              <DetectiveMarker player={player} />
+              <DetectiveMarker player={player} key={player.id} />
             ))}
           </LayerGroup>
         </LayersControl.Overlay>

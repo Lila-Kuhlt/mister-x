@@ -1,7 +1,7 @@
 import axios from "axios";
 import { Team } from "lib/bindings";
 
-const HOSTNAME_DEV = window.location.host;
+const HOSTNAME_DEV = "misterx.kobert.dev";
 const HOSTNAME_PROD = window.location.host;
 
 export const BASE_URLS = import.meta.env.DEV
@@ -10,7 +10,7 @@ export const BASE_URLS = import.meta.env.DEV
     FETCH: `http://${HOSTNAME_DEV}/api`,
   }
   : {
-    WEBSOCKET: `wss://${HOSTNAME_PROD}`,
+    WEBSOCKET: `ws://${HOSTNAME_PROD}`,
     FETCH: `https://${HOSTNAME_PROD}/api`,
   };
 
