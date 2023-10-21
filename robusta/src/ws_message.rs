@@ -5,6 +5,9 @@ use serde::{Deserialize, Serialize};
 #[derive(specta::Type, Clone, Serialize, Deserialize, Debug)]
 pub enum ClientMessage {
     Position { x: f32, y: f32 },
+    JoinTeam { team_id: u32 },
+    EmbarkTrain { train_id: String },
+    DisembarkTrain,
     Message(String),
 }
 
@@ -43,8 +46,9 @@ pub struct CreateTeam {
 #[derive(specta::Type, Default, Clone, Serialize, Deserialize, Debug)]
 pub struct Team {
     pub id: u32,
-    pub x: f32,
-    pub y: f32,
+    pub long: f32,
+    pub lat: f32,
+    pub on_train: Option<String>,
     pub name: String,
     pub color: String,
 }

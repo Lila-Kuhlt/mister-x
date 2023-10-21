@@ -43,7 +43,6 @@ struct Client {
 struct ClientConnection {
     id: u32,
     team_id: u32,
-    name: String,
     send: tokio::sync::mpsc::Sender<GameState>,
 }
 
@@ -66,6 +65,18 @@ impl AppState {
             team_id_counter: 0,
         }
     }
+
+    fn client(&self, id: u32) -> Option<&ClientConnection> {
+        self.connections.iter().find(|x| x.id == id)
+    }
+    fn client_mut(&mut self, id: u32) -> Option<&mut ClientConnection> {
+        self.connections.iter_mut().find(|x| x.id == id)
+    }
+    fn team_mut_by_client_id(&mut self, id: u32) -> Option<&mut Team> {
+        self.client(id)
+            .map(|x| x.team_id)
+            .and_then(|team_id| self.teams.iter_mut().find(|team| team.id == team_id))
+    }
 }
 
 type SharedState = std::sync::Arc<tokio::sync::Mutex<AppState>>;
@@ -79,7 +90,6 @@ async fn handler(ws: WebSocketUpgrade, State(state): State<SharedState>) -> Resp
         let client_connection = ClientConnection {
             id: state.client_id_counter,
             team_id: 0,
-            name: String::new(),
             send,
         };
         state.connections.push(client_connection);
@@ -117,6 +127,7 @@ async fn handle_socket(socket: WebSocket, mut client: Client) {
                     msg
                 } else {
                     // invalid message
+                    tracing::warn!("Recieved invalid message: {}", msg);
                     continue;
                 }
             } else {
@@ -124,14 +135,6 @@ async fn handle_socket(socket: WebSocket, mut client: Client) {
                 disconnect(client.send, client.id).await;
                 return;
             };
-            match &msg {
-                ClientMessage::Position { x, y } => {
-                    info!("Got position: {}, {}", x, y);
-                }
-                ClientMessage::Message(msg) => {
-                    info!("Got message: {}", msg);
-                }
-            }
 
             client
                 .send
@@ -161,10 +164,9 @@ async fn create_team(
         state.team_id_counter += 1;
         let team = Team {
             id: state.team_id_counter,
-            x: 0.0,
-            y: 0.0,
             color: team.color,
             name: team.name,
+            ..Default::default()
         };
         state.teams.push(team.clone());
         team
@@ -251,15 +253,32 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
             match msg {
                 InputMessage::Client(msg, id) => {
                     info!("Got message from client {}: {:?}", id, msg);
-                    if let Some(team) = state.teams.iter().find(|team| team.id == id) {
-                        match msg {
-                            ClientMessage::Position { x, y } => {
+                    match msg {
+                        ClientMessage::Position { x, y } => {
+                            if let Some(team) = state.team_mut_by_client_id(id) {
                                 let t = game_state.teams.entry(id).or_insert_with(|| team.clone());
-                                t.x = x;
-                                t.y = y;
+                                t.long = x;
+                                t.lat = y;
                             }
-                            ClientMessage::Message(msg) => {
-                                info!("Got message: {}", msg);
+                        }
+                        ClientMessage::Message(msg) => {
+                            info!("Got message: {}", msg);
+                        }
+                        ClientMessage::JoinTeam { team_id } => {
+                            let Some(client) = state.client_mut(id) else {
+                                tracing::warn!("Client {} not found", id);
+                                continue;
+                            };
+                            client.team_id = team_id;
+                        }
+                        ClientMessage::EmbarkTrain { train_id } => {
+                            if let Some(team) = state.team_mut_by_client_id(id) {
+                                team.on_train = Some(train_id);
+                            }
+                        }
+                        ClientMessage::DisembarkTrain => {
+                            if let Some(team) = state.team_mut_by_client_id(id) {
+                                team.on_train = None;
                             }
                         }
                     }
@@ -268,7 +287,18 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
                     *departures = deps;
                 }
                 InputMessage::Server(ServerMessage::ClientDisconnected(id)) => {
+                    tracing::info!("Client {} disconnected", id);
                     state.connections.retain(|x| x.id != id);
+                }
+            }
+        }
+
+        // update positions for players on trains
+        for team in game_state.teams.values_mut() {
+            if let Some(train_id) = &team.on_train {
+                if let Some(train) = game_state.trains.iter().find(|x| &x.line_id == train_id) {
+                    team.long = train.long;
+                    team.lat = train.lat;
                 }
             }
         }

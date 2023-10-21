@@ -16,17 +16,19 @@ const defaultProps = {
   teams: [
     {
       id: 1,
-      x: testPos[0],
-      y: testPos[1] - 0.002,
+      long: testPos[0],
+      lat: testPos[1] - 0.002,
       name: "Default Team (no connection)",
       color: "blue",
+      on_train: null,
     },
   ],
   mrX: {
     id: 0,
-    x: testPos[0],
-    y: testPos[1] + 0.002,
+    long: testPos[0],
+    lat: testPos[1] + 0.002,
     name: "Mr X",
+    on_train: null,
     color: "black"
   },
 };

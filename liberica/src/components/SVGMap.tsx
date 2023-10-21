@@ -71,9 +71,9 @@ function DetectiveMarker(props: { player: Team }) {
   console.log(player)
 
   return (
-    <Marker icon={DetectiveIcon} position={[player.x, player.y]}>
+    <Marker icon={DetectiveIcon} position={[player.long, player.lat]}>
       <Tooltip className={Style.tooltip} direction="top" opacity={1} offset={ICON_OFFSET_TOP} permanent>
-        <a 
+        <a
           style={{
             background: player.color
           }}
@@ -89,7 +89,7 @@ function MrXMarker(props: { player: Team }) {
   const key = player.id;
 
   return (
-    <Marker icon={MrXIcon} position={[player.x, player.y]}>
+    <Marker icon={MrXIcon} position={[player.long, player.lat]}>
       <Tooltip offset={ICON_OFFSET} key={key}>
         {" "}
         Mr X war hier{" "}
@@ -102,7 +102,7 @@ export default function SVGMap(props: MapProps) {
   const trains = props.trains;
   const teams = props.teams;
   const mrX = props.mrX;
-  
+
   return (
     <MapContainer bounds={viewBounds} zoom={13} className={Style.mapContainer}>
       <TileLayer
@@ -123,7 +123,7 @@ export default function SVGMap(props: MapProps) {
         <LayersControl.Overlay checked name="Trains">
           <LayerGroup>
             {trains.map((train) => (
-              <TrainMarker train={train} key={train.line_id} />        
+              <TrainMarker train={train} key={train.line_id} />
             ))}
           </LayerGroup>
         </LayersControl.Overlay>
