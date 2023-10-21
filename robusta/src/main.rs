@@ -239,7 +239,12 @@ async fn main() {
 
     let (send, recv) = tokio::sync::mpsc::channel(100);
 
-    let state = AppState::new(send.clone());
+    let teams = std::fs::read_to_string("teams.json")
+        .map(|x| serde_json::from_str::<Vec<Team>>(&x).unwrap())
+        .unwrap_or_default();
+
+    let mut state = AppState::new(send.clone());
+    state.teams = teams;
 
     let state = std::sync::Arc::new(tokio::sync::Mutex::new(state));
 
@@ -298,6 +303,11 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
         tick += 1;
         tracing::trace!("tick {}", tick);
 
+        std::fs::write(
+            "teams.json",
+            serde_json::to_string_pretty(&game_state.teams).unwrap(),
+        )
+        .unwrap();
         let mut state = state.lock().await;
         while let Ok(msg) = recv.try_recv() {
             match msg {
