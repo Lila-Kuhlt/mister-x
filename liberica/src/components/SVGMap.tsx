@@ -46,50 +46,56 @@ function ResetBoundsButton() {
   );
 }
 
-function DetectiveMarker(props: { player: Team }) {
-  const player = props.player;
-  console.log(player);
-
-  return (
-    <Marker icon={DetectiveIcon} position={[player.lat, player.long]}>
-      <Tooltip
-        className={Style.tooltip}
-        direction="top"
-        opacity={1}
-        offset={ICON_OFFSET_TOP}
-        permanent
-      >
-        <a
-          style={{
-            background: player.color,
-          }}
-          className={Style.detectiveLabel}
-        >
-          {player.name}
-        </a>
-      </Tooltip>
-    </Marker>
-  );
-}
-
-function MrXMarker(props: { player: Team }) {
-  const player = props.player;
-  const key = player.id;
-
-  return (
-    <Marker icon={MrXIcon} position={[player.long, player.lat]}>
-      <Tooltip offset={ICON_OFFSET} key={key}>
-        {" "}
-        Mr X war hier{" "}
-      </Tooltip>
-    </Marker>
-  );
-}
 
 export default function SVGMap(props: MapProps) {
   const trains = props.trains;
   const teams = props.teams;
   const mrX = props.mrX;
+
+  function DetectiveMarker(props: { player: Team }) {
+    const player = props.player;
+    console.log(player);
+
+    return (
+      <Marker icon={DetectiveIcon} position={[player.lat, player.long]}
+        eventHandlers={{ click: () => disembarkTrain() }}
+      >
+        <Tooltip
+          className={Style.tooltip}
+          direction="top"
+          opacity={1}
+          offset={ICON_OFFSET_TOP}
+          permanent
+        >
+          <a
+            style={{
+              background: player.color,
+            }}
+            className={Style.detectiveLabel}
+          >
+            {player.name}
+          </a>
+        </Tooltip>
+      </Marker>
+    );
+  }
+
+  function MrXMarker(props: { player: Team }) {
+    const player = props.player;
+    const key = player.id;
+
+    return (
+      <Marker icon={MrXIcon} position={[player.long, player.lat]}
+        eventHandlers={{ click: () => disembarkTrain() }}
+      >
+        <Tooltip offset={ICON_OFFSET} key={key}>
+          {" "}
+          Mr X war hier{" "}
+        </Tooltip>
+      </Marker>
+    );
+
+  }
 
   function TrainMarker(props: { train: Train; embarked: boolean }) {
     const train = props.train;
@@ -115,6 +121,10 @@ export default function SVGMap(props: MapProps) {
   function switchTrain(train: Train, embark: boolean) {
     if (embark) props.ws.send({ EmbarkTrain: { train_id: train.line_id } });
     else props.ws.send({ DisembarkTrain: 0 });
+  }
+
+  function disembarkTrain() {
+    props.ws.send({ DisembarkTrain: 0 });
   }
 
   return (
