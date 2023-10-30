@@ -1,3 +1,4 @@
+import { Button } from "react-bootstrap";
 import { Train, Team, Stop } from "lib/bindings";
 import Style from "style/SVGMap.module.css";
 import {
@@ -39,10 +40,10 @@ function ResetBoundsButton() {
   const map = useMap();
 
   return (
-    <div className="leaflet-ctop leaflet-enter">
-      <button className="leaflet-control leaflet-bar" onClick={resetBounds}>
+    <div className="leaflet-top leaflet-center">
+      <Button className="leaflet-control leaflet-bar" disabled={false} variant="primary" onClick={resetBounds}>
         Reset Map View
-      </button>
+      </Button>
     </div>
   );
 }
