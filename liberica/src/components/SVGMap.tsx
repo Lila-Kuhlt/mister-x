@@ -39,7 +39,7 @@ function ResetBoundsButton() {
   const map = useMap();
 
   return (
-    <div className="leaflet-ctop leaflet-enter">
+    <div className="leaflet-top leaflet-center">
       <button className="leaflet-control leaflet-bar" onClick={resetBounds}>
         Reset Map View
       </button>
