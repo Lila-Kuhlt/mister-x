@@ -20,11 +20,10 @@ async fn test_fetch_location_information() {
         .await
         .unwrap();
 
-    let DeliveryPayload::LocationInformationResponse(response) = response
-        .service_delivery
-        .unwrap()
-        .delivery_payload else {
-            panic!("Wrong response type");
+    let DeliveryPayload::LocationInformationResponse(response) =
+        response.service_delivery.unwrap().delivery_payload
+    else {
+        panic!("Wrong response type");
     };
     for stop in &response.location_result {
         println!("{:?}", stop);
@@ -53,11 +52,10 @@ async fn test_fetch_stop_event() {
         .await
         .unwrap();
 
-    let DeliveryPayload::StopEventResponse(response) = response
-        .service_delivery
-        .unwrap()
-        .delivery_payload else {
-            panic!("Wrong response type");
+    let DeliveryPayload::StopEventResponse(response) =
+        response.service_delivery.unwrap().delivery_payload
+    else {
+        panic!("Wrong response type");
     };
 
     let result = response[0].stop_event_result.as_ref().unwrap();

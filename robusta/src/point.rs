@@ -15,7 +15,10 @@ impl Point {
     pub fn lerp(self, other: Self, t: f32) -> Self {
         let dx = other.x - self.x;
         let dy = other.y - self.y;
-        Point { x: self.x + t * dx, y: self.y + t * dy }
+        Point {
+            x: self.x + t * dx,
+            y: self.y + t * dy,
+        }
     }
 }
 

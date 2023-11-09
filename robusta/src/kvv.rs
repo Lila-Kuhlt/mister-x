@@ -38,8 +38,6 @@ pub struct Segment {
     pub positions: Vec<Point>,
 }
 
-
-
 const STOPS: &[(&str, &str)] = &[
     ("Arbeitsagentur", "de:08212:64"),
     ("Augartenstraße", "de:08212:74"),
@@ -96,7 +94,10 @@ fn parse_curve(line: &str) -> (String, String, Vec<Point>) {
             let mut coords = point.split(',');
             let latitude = coords.next().unwrap().trim().parse().unwrap();
             let longitude = coords.next().unwrap().trim().parse().unwrap();
-            Point { x: longitude, y: latitude }
+            Point {
+                x: longitude,
+                y: latitude,
+            }
         })
         .collect();
     (start.to_owned(), end.to_owned(), points)
@@ -108,14 +109,8 @@ fn parse_curves() -> Vec<(String, String, Vec<Point>)> {
 
 fn intermediate_points(start_id: &str, end_id: &str) -> Vec<Point> {
     let curves = parse_curves();
-    let start = STOPS
-        .iter()
-        .find(|stop| start_id == stop.1)
-        .unwrap();
-    let end = STOPS
-        .iter()
-        .find(|stop| end_id == stop.1)
-        .unwrap();
+    let start = STOPS.iter().find(|stop| start_id == stop.1).unwrap();
+    let end = STOPS.iter().find(|stop| end_id == stop.1).unwrap();
     let mut points = Vec::new();
 
     if let Some(p) = curves.iter().find(|(s, e, _)| s == start.0 && e == end.0) {
@@ -241,7 +236,8 @@ pub async fn fetch_departures(stops: &[Stop]) -> LineDepartures {
                 };
                 let stop_ref = call.call_at_stop.stop_point_ref.clone();
                 let Some(proper_stop_ref) = find_stop_by_kvv_id(&stop_ref, stops) else {
-                    continue; };
+                    continue;
+                };
                 let short_ref = proper_stop_ref.kvv_stop.id.clone();
                 let current_time = entry.stops.get(&short_ref);
                 if let Some(current_time) = current_time {
@@ -328,7 +324,9 @@ pub fn train_position_per_route(
         let segment_duration = next_time - last_time - chrono::Duration::seconds(30);
         let stop_id = last.0;
         let next_stop_id = next.0;
-        let progress = 1. - (next_time.num_seconds() as f32 / segment_duration.num_seconds() as f32).clamp(0., 1.);
+        let progress = 1.
+            - (next_time.num_seconds() as f32 / segment_duration.num_seconds() as f32)
+                .clamp(0., 1.);
         let points = points_on_route(stop_id, next_stop_id, stops);
         if let Some(position) = interpolate_segment(&points, progress) {
             return Some(Train {
@@ -364,9 +362,12 @@ pub async fn train_positions(
     let mut journeys: Vec<_> = departures_per_line.keys().collect();
     journeys.sort();
     for line_id in journeys {
-        let positions =
-            train_positions_per_route(departures_per_line.clone(), render_time, line_id, stops);
-        trains.extend(positions);
+        trains.extend(train_position_per_route(
+            departures_per_line.clone(),
+            render_time,
+            line_id,
+            stops,
+        ));
     }
     trains
 }
