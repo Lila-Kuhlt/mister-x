@@ -245,7 +245,7 @@ pub async fn fetch_departures(stops: &[Stop]) -> LineDepartures {
                     }
                 };
                 let stop_ref = call.call_at_stop.stop_point_ref.clone();
-                let Some(proper_stop_ref) = find_stop_by_kkv_id(&stop_ref, stops) else { 
+                let Some(proper_stop_ref) = find_stop_by_kvv_id(&stop_ref, stops) else {
                     continue; };
                 let short_ref = proper_stop_ref.kvv_stop.id.clone();
                 let current_time = entry.stops.get(&short_ref);
@@ -264,7 +264,7 @@ pub async fn fetch_departures(stops: &[Stop]) -> LineDepartures {
     jorneys
 }
 
-pub fn find_stop_by_kkv_id<'a>(id: &str, stops: &'a [Stop]) -> Option<&'a Stop> {
+pub fn find_stop_by_kvv_id<'a>(id: &str, stops: &'a [Stop]) -> Option<&'a Stop> {
     // stop ids can have extra information at the end, e.g. "de:08212:3:01" which is not present in
     // the base id "de:08212:3". We want to match the base id.
     let id = format!("{}:", id);
@@ -275,10 +275,10 @@ pub fn find_stop_by_kkv_id<'a>(id: &str, stops: &'a [Stop]) -> Option<&'a Stop> 
 }
 
 pub fn points_on_route(start_stop_id: &str, end_stop_id: &str, stops: &[Stop]) -> Vec<Point> {
-    let Some(start_stop) = find_stop_by_kkv_id(start_stop_id, stops) else {
+    let Some(start_stop) = find_stop_by_kvv_id(start_stop_id, stops) else {
         return Vec::new();
     };
-    let Some(end_stop) = find_stop_by_kkv_id(end_stop_id, stops) else {
+    let Some(end_stop) = find_stop_by_kvv_id(end_stop_id, stops) else {
         return Vec::new();
     };
 

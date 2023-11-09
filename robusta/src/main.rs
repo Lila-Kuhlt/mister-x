@@ -24,9 +24,8 @@ use tower_http::{
 use tracing::{error, info, Level};
 use ws_message::{ClientMessage, GameState, Team};
 
-mod ws_message;
-
 mod kvv;
+mod ws_message;
 
 #[derive(Debug)]
 enum InputMessage {
@@ -135,7 +134,7 @@ async fn handle_socket(socket: WebSocket, mut client: Client) {
                     msg
                 } else {
                     // invalid message
-                    tracing::warn!("Recieved invalid message: {}", msg);
+                    tracing::warn!("Received invalid message: {}", msg);
                     continue;
                 }
             } else {
@@ -300,7 +299,7 @@ async fn main() {
 }
 
 async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, state: SharedState) {
-    let mut tick = 0;
+    let mut tick = 0u64;
     let mut game_state = GameState::new();
     let departures = &mut kvv::fetch_departures_for_region().await;
     let mut log_file = std::fs::OpenOptions::new()
@@ -388,9 +387,9 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
         game_state.trains = trains;
         game_state.teams = state.teams.clone();
 
-        write!(
+        writeln!(
             log_file,
-            "{}, {}\n",
+            "{}, {}",
             time,
             serde_json::to_string(&game_state).unwrap()
         )
