@@ -7,28 +7,27 @@ use chrono::Utc;
 use crate::{RequestPayload, ServiceRequest};
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
 pub struct LocationInformationRequest {
-    #[serde(rename = "InitialInput")]
     pub initial_input: InitialInput,
-    #[serde(rename = "Restrictions")]
     pub restrictions: Restrictions,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
 pub struct InitialInput {
-    #[serde(rename = "LocationName")]
     pub location_name: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
 pub struct Restrictions {
     #[serde(rename = "Type")]
     pub location_type: String, // Using location_type to avoid Rust's reserved word 'type'
-    #[serde(rename = "NumberOfResults")]
     pub number_of_results: u32,
-    #[serde(rename = "IncludePtModes")]
     pub include_pt_modes: bool,
 }
+
 // src/location_request_builder.rs
 
 pub struct LocationInformationRequestBuilder {
@@ -96,65 +95,52 @@ impl LocationInformationRequestBuilder {
 }
 
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
 pub struct LocationResult {
-    #[serde(rename = "Location")]
     location: Location,
-
-    #[serde(rename = "Complete")]
     complete: String,
-
-    #[serde(rename = "Probability")]
     probability: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
 pub struct Location {
-    #[serde(rename = "StopPoint")]
     pub stop_point: StopPoint,
-    #[serde(rename = "LocationName")]
     pub location_name: TextLang,
-    #[serde(rename = "GeoPosition")]
     pub geo_position: GeoPosition,
-    #[serde(rename = "Complete")]
     pub complete: bool,
-    #[serde(rename = "Probability")]
     pub probability: f32,
-    #[serde(rename = "Mode")]
     pub mode: Mode,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
 pub struct StopPoint {
-    #[serde(rename = "StopPointRef")]
     pub stop_point_ref: String,
-    #[serde(rename = "StopPointName")]
     pub stop_point_name: TextLang,
-    #[serde(rename = "LocalityRef")]
     pub locality_ref: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
 pub struct TextLang {
-    #[serde(rename = "Text")]
     pub text: String,
-    #[serde(rename = "Language")]
     pub language: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
 pub struct GeoPosition {
-    #[serde(rename = "Longitude")]
     pub longitude: f32,
-    #[serde(rename = "Latitude")]
     pub latitude: f32,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
 pub struct Mode {
-    #[serde(rename = "PtMode")]
     pub pt_mode: String,
-    #[serde(rename = "RailSubmode", default)]
+    #[serde(default)]
     pub rail_submode: Option<String>,
-    #[serde(rename = "FunicularSubmode", default)]
+    #[serde(default)]
     pub funicular_submode: Option<String>,
 }

@@ -35,7 +35,7 @@ pub async fn post_request(
     //println!("Request: {}", request);
     let response = client
         .post(api_endpoint)
-        .header("Content-Type", "application/xml")
+        .header(reqwest::header::CONTENT_TYPE, "application/xml")
         .body(request.to_string())
         .send()
         .await?

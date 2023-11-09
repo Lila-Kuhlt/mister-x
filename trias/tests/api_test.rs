@@ -1,4 +1,5 @@
-use trias::response::{DeliveryPayload, StopEventResponse};
+use trias::response::DeliveryPayload;
+
 #[tokio::test]
 async fn test_fetch_location_information() {
     dotenv::dotenv().ok();
@@ -21,6 +22,7 @@ async fn test_fetch_location_information() {
 
     let DeliveryPayload::LocationInformationResponse(response) = response
         .service_delivery
+        .unwrap()
         .delivery_payload else {
             panic!("Wrong response type");
     };
@@ -53,11 +55,12 @@ async fn test_fetch_stop_event() {
 
     let DeliveryPayload::StopEventResponse(response) = response
         .service_delivery
+        .unwrap()
         .delivery_payload else {
             panic!("Wrong response type");
     };
 
-    let result = &response[0].stop_event_result;
+    let result = response[0].stop_event_result.as_ref().unwrap();
     assert!(result[0]
         .stop_event
         .this_call

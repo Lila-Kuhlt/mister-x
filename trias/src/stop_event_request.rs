@@ -8,17 +8,15 @@ pub struct StopEventRequest {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "PascalCase")]
 pub struct Location {
-    #[serde(rename = "LocationRef")]
     pub location_ref: LocationRef,
-
-    #[serde(rename = "DepArrTime")]
     pub dep_arr_time: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "PascalCase")]
 pub struct LocationRef {
-    #[serde(rename = "StopPointRef")]
     pub stop_point_ref: String,
 }
 
@@ -120,61 +118,53 @@ use serde::{Deserialize, Serialize};
 use crate::{RequestPayload, ServiceRequest};
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
 pub struct StopEventResult {
-    #[serde(rename = "ResultId")]
     pub result_id: Option<String>,
-    #[serde(rename = "StopEvent")]
     pub stop_event: Option<StopEventDetails>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
 pub struct StopEventDetails {
-    #[serde(rename = "ThisCall")]
     pub this_call: ThisCall,
-    #[serde(rename = "Service")]
     pub service: ServiceDetails,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
 pub struct ThisCall {
-    #[serde(rename = "CallAtStop")]
     pub call_at_stop: CallAtStopDetails,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
 pub struct CallAtStopDetails {
-    #[serde(rename = "StopPointRef")]
     pub stop_point_ref: String,
-    #[serde(rename = "StopPointName")]
     pub stop_point_name: TextLang,
-    #[serde(rename = "PlannedBay")]
     pub planned_bay: TextLang,
-    #[serde(rename = "ServiceDeparture")]
     pub service_departure: ServiceDepartureDetails,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
 pub struct ServiceDepartureDetails {
-    #[serde(rename = "TimetabledTime")]
     pub timetabled_time: String,
-    #[serde(rename = "EstimatedTime")]
     pub estimated_time: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
 pub struct ServiceDetails {
-    #[serde(rename = "OperatingDayRef")]
     pub operating_day_ref: String,
-    #[serde(rename = "JourneyRef")]
     pub journey_ref: String,
     // ... other fields like LineRef, DirectionRef, Mode, etc. ...
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
 pub struct TextLang {
-    #[serde(rename = "Text")]
     pub text: String,
-    #[serde(rename = "Language")]
     pub language: String,
 }
 
