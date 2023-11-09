@@ -292,20 +292,12 @@ pub fn points_on_route(start_stop_id: &str, end_stop_id: &str, stops: &[Stop]) -
     points
 }
 
-#[derive(Debug, Clone)]
-struct TrainPos {
-    stop_id: String,
-    next_stop_id: String,
-    progress: f32,
-}
-
-pub fn train_positions_per_route(
+pub fn train_position_per_route(
     departures_per_line: LineDepartures,
     time: chrono::NaiveDateTime,
     line_id: &str,
     stops: &[Stop],
-) -> Vec<Train> {
-    let mut trains = Vec::new();
+) -> Option<Train> {
     let departures = departures_per_line.get(line_id);
     let mut departures: Vec<_> = departures
         .map(|x| x.stops.iter().collect())
@@ -314,7 +306,7 @@ pub fn train_positions_per_route(
 
     if departures.is_empty() {
         tracing::warn!("no departures for line {}", line_id);
-        return vec![];
+        return None;
     }
 
     let line_name = departures_per_line
@@ -325,37 +317,22 @@ pub fn train_positions_per_route(
         .get(line_id)
         .map(|x| x.destination.clone())
         .unwrap_or_default();
-    //dbg!(&departures);
-    /*println!("departures for line {}", line_id);
-    for departure in departures.iter() {
-        if let Some(stop) = find_stop_by_kkv_id(departure.0, stops) {
-            println!("stop: {} {}", stop.kvv_stop.name, departure.1.time());
-        }
-    }*/
 
     let pos_offset = departures
         .iter()
         .position(|x| x.1 > &time)
         .unwrap_or_default();
-    let mut train_offsets = Vec::new();
     let slice = &departures[(pos_offset.max(1) - 1)..=pos_offset];
     if let [last, next] = slice {
-        // TODO: handle panics
         let last_time = *last.1 - time;
         let next_time = *next.1 - time;
         let segment_duration = next_time - last_time - chrono::Duration::seconds(30);
-        train_offsets.push(TrainPos {
-            stop_id: last.0.clone(),
-            next_stop_id: next.0.clone(),
-            progress: 1.
-                - (next_time.num_seconds() as f32 / segment_duration.num_seconds() as f32)
-                    .clamp(0., 1.),
-        });
-    }
-    for train_offset in train_offsets {
-        let points = points_on_route(&train_offset.stop_id, &train_offset.next_stop_id, stops);
-        if let Some(position) = interpolate_segment(&points, train_offset.progress) {
-            trains.push(Train {
+        let stop_id = last.0;
+        let next_stop_id = next.0;
+        let progress = 1. - (next_time.num_seconds() as f32 / segment_duration.num_seconds() as f32).clamp(0., 1.);
+        let points = points_on_route(stop_id, next_stop_id, stops);
+        if let Some(position) = interpolate_segment(&points, progress) {
+            return Some(Train {
                 id: 0,
                 long: position.x,
                 lat: position.y,
@@ -365,7 +342,7 @@ pub fn train_positions_per_route(
             });
         }
     }
-    trains
+    None
 }
 
 pub static KVV_STOPS: std::sync::OnceLock<Vec<Stop>> = std::sync::OnceLock::new();
