@@ -134,10 +134,9 @@ pub async fn kvv_stops() -> Vec<Stop> {
     let mut futures = Vec::new();
     for stop in STOPS.iter() {
         tracing::trace!("fetching stop id for {}", stop.0);
-        dotenv::dotenv().ok().unwrap();
         let api_endpoint = "https://projekte.kvv-efa.de/koberttrias/trias"; // Replace with your API endpoint
-        let access_token = std::env::var("TRIAS_ACCESS_TOKEN").expect("TRIAS_ACCESS_TOKEN not set");
-        let name = format!("{}", stop.1);
+        let access_token = dotenv::var("TRIAS_ACCESS_TOKEN").expect("TRIAS_ACCESS_TOKEN not set");
+        let name = stop.1.to_string();
 
         let stop = trias::search_stops(name, access_token, api_endpoint, 1);
         futures.push(stop);
