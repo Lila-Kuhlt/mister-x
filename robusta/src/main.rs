@@ -25,6 +25,7 @@ use tracing::{error, info, Level};
 use ws_message::{ClientMessage, GameState, Team};
 
 mod kvv;
+mod point;
 mod ws_message;
 
 #[derive(Debug)]

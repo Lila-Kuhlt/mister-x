@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 // mod api;
 
+use crate::point::{interpolate_segment, Point};
 use crate::ws_message::Train;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, specta::Type)]
@@ -37,11 +38,6 @@ pub struct Segment {
     pub positions: Vec<Point>,
 }
 
-#[derive(Clone, Default, Copy, Debug)]
-pub struct Point {
-    pub x: f32,
-    pub y: f32,
-}
 
 
 const STOPS: &[(&str, &str)] = &[
@@ -93,14 +89,14 @@ const CURVES_STR: &str = include_str!("../data/route_curves.csv");
 
 fn parse_curve(line: &str) -> (String, String, Vec<Point>) {
     let mut parts = line.split(';');
-    let start = parts.next().unwrap();
-    let end = parts.next().unwrap();
+    let start = parts.next().unwrap().trim();
+    let end = parts.next().unwrap().trim();
     let points = parts
         .map(|point| {
             let mut coords = point.split(',');
-            let x = coords.next().unwrap().trim().parse().unwrap();
-            let y = coords.next().unwrap().trim().parse().unwrap();
-            Point { x, y }
+            let latitude = coords.next().unwrap().trim().parse().unwrap();
+            let longitude = coords.next().unwrap().trim().parse().unwrap();
+            Point { x: longitude, y: latitude }
         })
         .collect();
     (start.to_owned(), end.to_owned(), points)
@@ -114,11 +110,11 @@ fn intermediate_points(start_id: &str, end_id: &str) -> Vec<Point> {
     let curves = parse_curves();
     let start = STOPS
         .iter()
-        .find(|stop| start_id.starts_with(stop.1))
+        .find(|stop| start_id == stop.1)
         .unwrap();
     let end = STOPS
         .iter()
-        .find(|stop| end_id.starts_with(stop.1))
+        .find(|stop| end_id == stop.1)
         .unwrap();
     let mut points = Vec::new();
 
@@ -270,8 +266,7 @@ pub fn find_stop_by_kvv_id<'a>(id: &str, stops: &'a [Stop]) -> Option<&'a Stop> 
     let id = format!("{}:", id);
     stops
         .iter()
-        .filter(|stop| id.starts_with(&format!("{}:", stop.kvv_stop.id)))
-        .max_by_key(|stop| stop.kvv_stop.id.len())
+        .find(|stop| id.starts_with(&format!("{}:", stop.kvv_stop.id)))
 }
 
 pub fn points_on_route(start_stop_id: &str, end_stop_id: &str, stops: &[Stop]) -> Vec<Point> {
@@ -302,40 +297,6 @@ struct TrainPos {
     stop_id: String,
     next_stop_id: String,
     progress: f32,
-}
-
-pub fn interpolate_segment(points: &[Point], progress: f32) -> Option<Point> {
-    let total_length = points
-        .windows(2)
-        .map(|slice| {
-            let [start, end] = slice else {
-                panic!("slice has wrong length");
-            };
-            let dx = end.x - start.x;
-            let dy = end.y - start.y;
-            (dx * dx + dy * dy).sqrt()
-        })
-        .sum::<f32>();
-    let length = progress * total_length;
-
-    let mut current_length = 0.0;
-    for slice in points.windows(2) {
-        let [start, end] = slice else {
-            panic!("slice has wrong length");
-        };
-        let dx = end.x - start.x;
-        let dy = end.y - start.y;
-        let segment_length = (dx * dx + dy * dy).sqrt();
-        if current_length + segment_length > length {
-            let progress = (length - current_length) / segment_length;
-            return Some(Point {
-                x: start.x + progress * dx,
-                y: start.y + progress * dy,
-            });
-        }
-        current_length += segment_length;
-    }
-    points.last().map(|end| Point { x: end.x, y: end.y })
 }
 
 pub fn train_positions_per_route(
