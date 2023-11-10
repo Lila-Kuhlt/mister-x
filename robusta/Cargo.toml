@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 axum = { version = "0.6.20", features = ["ws", "tracing", "macros"] }
 chrono = "0.4.31"
-chrono-tz = "0.6"
+chrono-tz = "0.8.4"
 futures-util = "0.3.28"
 kvvliveapi = { git = "https://github.com/TrueDoctor/kvvliveapi-rs", version = "0.1.0" }
 trias = { path = "../trias" }
