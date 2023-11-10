@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::sync::OnceLock;
 
 // mod api;
 
@@ -49,12 +50,11 @@ const STOPS: &[(&str, &str)] = &[
     ("Ettlinger Tor/Staatstheater (U)", "de:08212:1012"),
     ("Karlstor/Bundesgerichtshof", "de:08212:61"),
     ("Kolpingplatz", "de:08212:63"),
-    ("Kongresszentrum", "de:08212:72"),
     ("Kongresszentrum (U)", "de:08212:1013"),
     ("Kronenplatz", "de:08212:80"),
     ("Kronenplatz (U)", "de:08212:1002"),
-    ("Marktplatz (Kaiserstr. U)", "de:08212:1003"),
-    ("Marktplatz (Pyramide U) ", "de:08212:1011"),
+    ("Marktplatz (Kaiserstraße U)", "de:08212:1003"),
+    ("Marktplatz (Pyramide U)", "de:08212:1011"),
     ("Mathystraße", "de:08212:62"),
     ("Mühlburger Tor", "de:08212:39"),
     ("Otto-Sachs-Straße", "de:08212:508"),
@@ -72,51 +72,55 @@ const STOPS: &[(&str, &str)] = &[
     ("Lessingstraße", "de:08212:507"),
     ("Europaplatz/Postgalerie", "de:08212:37"),
     ("Europaplatz/Postgalerie (U)", "de:08212:1004"),
-    ("Marktplatz (Pyramide U)", "de:08212:1011"),
-    ("Marktplatz (Kaiserstraße U)", "de:08212:1003"),
     ("Gottesauer Platz/BGV", "de:08212:6"),
     ("Hauptbahnhof (Vorplatz)", "de:08212:89"),
-    ("Kongresszentrum", "de:08212:72"),
-    ("Kongresszentrum (U)", "de:08212:1013"),
-    ("Kronenplatz", "de:08212:80"),
-    ("Kronenplatz (U)", "de:08212:1002"),
     ("Kunstakademie/Hochschule", "de:08212:7003"),
 ];
 
 const CURVES_STR: &str = include_str!("../data/route_curves.csv");
+static CURVES: OnceLock<Vec<(String, String, Vec<Point>)>> = OnceLock::new();
 
-fn parse_curve(line: &str) -> (String, String, Vec<Point>) {
+fn parse_curve(line: &str) -> Option<(String, String, Vec<Point>)> {
     let mut parts = line.split(';');
-    let start = parts.next().unwrap().trim();
-    let end = parts.next().unwrap().trim();
+    let start = parts.next()?.trim();
+    let end = parts.next()?.trim();
     let points = parts
         .map(|point| {
             let mut coords = point.split(',');
-            let latitude = coords.next().unwrap().trim().parse().unwrap();
-            let longitude = coords.next().unwrap().trim().parse().unwrap();
-            Point {
+            let latitude = coords.next()?.trim().parse().ok()?;
+            let longitude = coords.next()?.trim().parse().ok()?;
+            Some(Point {
                 x: longitude,
                 y: latitude,
-            }
+            })
         })
-        .collect();
-    (start.to_owned(), end.to_owned(), points)
+        .collect::<Option<Vec<_>>>()?;
+    Some((start.to_owned(), end.to_owned(), points))
 }
 
-fn parse_curves() -> Vec<(String, String, Vec<Point>)> {
-    CURVES_STR.lines().map(parse_curve).collect()
+fn get_curves() -> &'static [(String, String, Vec<Point>)] {
+    CURVES.get_or_init(|| {
+        CURVES_STR
+            .lines()
+            .map(parse_curve)
+            .collect::<Option<Vec<_>>>()
+            .unwrap_or_else(|| {
+                tracing::error!("Error parsing curves");
+                Vec::new()
+            })
+    })
 }
 
 fn intermediate_points(start_id: &str, end_id: &str) -> Vec<Point> {
-    let curves = parse_curves();
-    let start = STOPS.iter().find(|stop| start_id == stop.1).unwrap();
-    let end = STOPS.iter().find(|stop| end_id == stop.1).unwrap();
+    let curves = get_curves();
+    let start = STOPS.iter().find(|stop| start_id == stop.1).unwrap().0;
+    let end = STOPS.iter().find(|stop| end_id == stop.1).unwrap().0;
     let mut points = Vec::new();
 
-    if let Some(p) = curves.iter().find(|(s, e, _)| s == start.0 && e == end.0) {
+    if let Some(p) = curves.iter().find(|(s, e, _)| s == start && e == end) {
         points = p.2.clone();
     }
-    if let Some(p) = curves.iter().find(|(s, e, _)| e == start.0 && s == end.0) {
+    if let Some(p) = curves.iter().find(|(s, e, _)| e == start && s == end) {
         points = p.2.clone();
         points.reverse();
     }
@@ -342,7 +346,7 @@ pub fn train_position_per_route(
     None
 }
 
-pub static KVV_STOPS: std::sync::OnceLock<Vec<Stop>> = std::sync::OnceLock::new();
+pub static KVV_STOPS: OnceLock<Vec<Stop>> = OnceLock::new();
 
 pub async fn init() {
     let stops = kvv_stops().await;
