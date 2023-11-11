@@ -8,11 +8,11 @@ fn main() {
     // Build the path to the `liberica` directory
     let liberica_dir = project_dir.parent().unwrap().join("liberica");
 
-    // Change into the `liberica` directory
-    env::set_current_dir(&liberica_dir).unwrap();
-
     // Tell Cargo to only rerun this script if something in `../liberica` changes
     println!("cargo:rerun-if-changed={}", liberica_dir.display());
+
+    // Change into the `liberica` directory
+    env::set_current_dir(&liberica_dir).unwrap();
 
     // Run `npm install`
     let npm_install = Command::new("npm")

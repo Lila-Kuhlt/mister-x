@@ -1,19 +1,21 @@
 use std::collections::HashMap;
 use std::sync::OnceLock;
 
+use serde::Serialize;
+
 // mod api;
 
 use crate::point::{interpolate_segment, Point};
 use crate::ws_message::Train;
 
-#[derive(Debug, serde::Serialize, serde::Deserialize, specta::Type)]
+#[derive(Debug, Serialize, specta::Type)]
 pub struct Stop {
     id: u32,
     kvv_stop: KvvStop,
 }
 
 /// Information about a tram station
-#[derive(Debug, specta::Type, serde::Serialize, serde::Deserialize, PartialEq)]
+#[derive(Debug, Serialize, specta::Type, PartialEq)]
 pub struct KvvStop {
     /// human readable stop name
     pub name: String,
@@ -77,7 +79,6 @@ const STOPS: &[(&str, &str)] = &[
     ("Kunstakademie/Hochschule", "de:08212:7003"),
 ];
 
-const CURVES_STR: &str = include_str!("../data/route_curves.csv");
 static CURVES: OnceLock<Vec<(String, String, Vec<Point>)>> = OnceLock::new();
 
 fn parse_curve(line: &str) -> Option<(String, String, Vec<Point>)> {
@@ -99,6 +100,7 @@ fn parse_curve(line: &str) -> Option<(String, String, Vec<Point>)> {
 }
 
 fn get_curves() -> &'static [(String, String, Vec<Point>)] {
+    const CURVES_STR: &str = include_str!("../data/route_curves.csv");
     CURVES.get_or_init(|| {
         CURVES_STR
             .lines()
@@ -159,7 +161,7 @@ pub async fn kvv_stops() -> Vec<Stop> {
         }
     }).collect()
 }
-#[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Default, Clone)]
 pub struct Journey {
     stops: HashMap<StopRef, chrono::NaiveDateTime>,
     line_name: String,

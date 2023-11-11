@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(specta::Type, Clone, Serialize, Deserialize, Debug)]
+#[derive(specta::Type, Clone, Deserialize, Debug)]
 pub enum ClientMessage {
     Position { long: f32, lat: f32 },
     SetTeamPosition { long: f32, lat: f32, team_id: u32 },
@@ -10,12 +10,7 @@ pub enum ClientMessage {
     Message(String),
 }
 
-#[derive(specta::Type, Clone, Serialize, Deserialize, Debug)]
-pub enum ServerMessage {
-    GameState(GameState),
-}
-
-#[derive(specta::Type, Default, Clone, Serialize, Deserialize, Debug)]
+#[derive(specta::Type, Default, Clone, Serialize, Debug)]
 pub struct GameState {
     pub teams: Vec<Team>,
     pub trains: Vec<Train>,
@@ -29,14 +24,14 @@ impl GameState {
     }
 }
 
-#[derive(specta::Type, Default, Clone, Serialize, Deserialize, Debug)]
+#[derive(Default, Clone, Debug)]
 pub struct Player {
     pub id: u32,
     pub name: String,
     pub team_id: u32,
 }
 
-#[derive(specta::Type, Clone, Serialize, Deserialize, Debug)]
+#[derive(specta::Type, Clone, Deserialize, Debug)]
 pub struct CreateTeam {
     pub name: String,
     pub color: String,
@@ -52,7 +47,7 @@ pub struct Team {
     pub color: String,
 }
 
-#[derive(specta::Type, Default, Clone, Serialize, Deserialize, Debug)]
+#[derive(specta::Type, Default, Clone, Serialize, Debug)]
 pub struct Train {
     pub id: u32,
     pub long: f32,
@@ -62,7 +57,7 @@ pub struct Train {
     pub direction: String,
 }
 
-#[derive(specta::Type, Default, Clone, Serialize, Deserialize, Debug)]
+#[derive(Default, Clone, Debug)]
 pub struct Line {
     pub id: u32,
     pub name: String,
