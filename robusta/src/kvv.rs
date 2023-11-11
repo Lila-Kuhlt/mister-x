@@ -129,7 +129,6 @@ fn intermediate_points(start_id: &str, end_id: &str) -> Vec<Point> {
 }
 
 pub async fn kvv_stops() -> Vec<Stop> {
-    let mut stops = Vec::new();
     let mut futures = Vec::new();
     for stop in STOPS.iter() {
         tracing::trace!("fetching stop id for {}", stop.0);
@@ -142,10 +141,11 @@ pub async fn kvv_stops() -> Vec<Stop> {
     }
     let results = futures_util::future::join_all(futures).await;
 
-    for (id, stop) in results.iter().enumerate() {
-        let stop = stop.as_ref().unwrap().clone();
-        let stop_point = stop[0].stop_point.clone();
-        let position = stop[0].geo_position.clone();
+    results.into_iter().enumerate().map(|(id, stop)| {
+        let stop = stop.unwrap();
+        let first_stop = stop.into_iter().next().unwrap();
+        let stop_point = first_stop.stop_point;
+        let position = first_stop.geo_position;
         let kvv_stop = KvvStop {
             name: stop_point.stop_point_name.text,
             id: stop_point.stop_point_ref,
@@ -153,12 +153,11 @@ pub async fn kvv_stops() -> Vec<Stop> {
             lon: position.longitude.parse().unwrap(),
         };
 
-        stops.push(Stop {
+        Stop {
             id: id as u32,
             kvv_stop,
-        });
-    }
-    stops
+        }
+    }).collect()
 }
 #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Journey {
@@ -238,18 +237,18 @@ pub async fn fetch_departures(stops: &[Stop]) -> LineDepartures {
                         continue;
                     }
                 };
-                let stop_ref = call.call_at_stop.stop_point_ref.clone();
-                let Some(proper_stop_ref) = find_stop_by_kvv_id(&stop_ref, stops) else {
+                let stop_ref = &call.call_at_stop.stop_point_ref;
+                let Some(proper_stop_ref) = find_stop_by_kvv_id(stop_ref, stops) else {
                     continue;
                 };
-                let short_ref = proper_stop_ref.kvv_stop.id.clone();
-                let current_time = entry.stops.get(&short_ref);
+                let short_ref = &proper_stop_ref.kvv_stop.id;
+                let current_time = entry.stops.get(short_ref);
                 if let Some(current_time) = current_time {
                     if *current_time < time {
                         continue;
                     }
                 }
-                entry.stops.insert(short_ref, time);
+                entry.stops.insert(short_ref.clone(), time);
             }
             if entry.stops.len() < 2 {
                 jorneys.remove(journey);
@@ -292,7 +291,7 @@ pub fn points_on_route(start_stop_id: &str, end_stop_id: &str, stops: &[Stop]) -
 }
 
 pub fn train_position_per_route(
-    departures_per_line: LineDepartures,
+    departures_per_line: &LineDepartures,
     time: chrono::NaiveDateTime,
     line_id: &str,
     stops: &[Stop],
@@ -338,8 +337,8 @@ pub fn train_position_per_route(
                 long: position.x,
                 lat: position.y,
                 line_id: line_id.to_owned(),
-                line_name: line_name.to_owned(),
-                direction: destination.to_owned(),
+                line_name,
+                direction: destination,
             });
         }
     }
@@ -352,6 +351,7 @@ pub async fn init() {
     let stops = kvv_stops().await;
     KVV_STOPS.set(stops).expect("failed to set KVV_STOPS");
 }
+
 pub async fn fetch_departures_for_region() -> LineDepartures {
     let stops = KVV_STOPS.get().expect("KVV_STOPS not initialized");
     fetch_departures(stops).await
@@ -367,7 +367,7 @@ pub async fn train_positions(
     journeys.sort();
     for line_id in journeys {
         trains.extend(train_position_per_route(
-            departures_per_line.clone(),
+            departures_per_line,
             render_time,
             line_id,
             stops,

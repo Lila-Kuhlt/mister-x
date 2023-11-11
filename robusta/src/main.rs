@@ -119,7 +119,6 @@ async fn handle_socket(socket: WebSocket, mut client: Client) {
 
     let disconnect = |client_send: Sender<InputMessage>, client_id| async move {
         client_send
-            .clone()
             .send(InputMessage::Server(ServerMessage::ClientDisconnected(
                 client_id,
             )))
@@ -201,18 +200,18 @@ async fn create_team(
     State(state): State<SharedState>,
     Json(team): Json<ws_message::CreateTeam>,
 ) -> impl IntoResponse {
-    let team = {
-        let mut state = state.lock().await;
-        state.team_id_counter += 1;
-        let team = Team {
-            id: state.team_id_counter,
-            color: team.color,
-            name: team.name,
-            ..Default::default()
-        };
-        state.teams.push(team.clone());
-        team
+    let mut state = state.lock().await;
+    if state.teams.iter().any(|t| t.name == team.name) {
+        // TODO: don't allow team creation
+    }
+    state.team_id_counter += 1;
+    let team = Team {
+        id: state.team_id_counter,
+        color: team.color,
+        name: team.name,
+        ..Default::default()
     };
+    state.teams.push(team.clone());
     Json(team)
 }
 

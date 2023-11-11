@@ -49,42 +49,42 @@ impl LocationInformationRequestBuilder {
         }
     }
 
-    pub fn requestor_ref(&mut self, requestor_ref: String) -> &mut Self {
+    pub fn requestor_ref(mut self, requestor_ref: String) -> Self {
         self.requestor_ref = requestor_ref;
         self
     }
 
-    pub fn location_name(&mut self, location_name: String) -> &mut Self {
+    pub fn location_name(mut self, location_name: String) -> Self {
         self.location_name = location_name;
         self
     }
 
-    pub fn location_type(&mut self, location_type: &str) -> &mut Self {
+    pub fn location_type(mut self, location_type: &str) -> Self {
         self.location_type = location_type.to_string();
         self
     }
 
-    pub fn number_of_results(&mut self, number_of_results: u32) -> &mut Self {
+    pub fn number_of_results(mut self, number_of_results: u32) -> Self {
         self.number_of_results = number_of_results;
         self
     }
 
-    pub fn include_pt_modes(&mut self, include_pt_modes: bool) -> &mut Self {
+    pub fn include_pt_modes(mut self, include_pt_modes: bool) -> Self {
         self.include_pt_modes = include_pt_modes;
         self
     }
 
-    pub fn build(&self) -> ServiceRequest {
+    pub fn build(self) -> ServiceRequest {
         ServiceRequest {
             request_timestamp: Utc::now().format("%Y-%m-%dT%H:%M:%S.%3fZ").to_string(),
-            requestor_ref: self.requestor_ref.clone(),
+            requestor_ref: self.requestor_ref,
             request_payload: RequestPayload::LocationInformationRequest(
                 LocationInformationRequest {
                     initial_input: InitialInput {
-                        location_name: self.location_name.clone(),
+                        location_name: self.location_name,
                     },
                     restrictions: Restrictions {
-                        location_type: self.location_type.clone(),
+                        location_type: self.location_type,
                         number_of_results: self.number_of_results,
                         include_pt_modes: self.include_pt_modes,
                     },
