@@ -1,6 +1,5 @@
 use axum::{
     body::{boxed, Body, BoxBody},
-    debug_handler,
     extract::{
         ws::{WebSocket, WebSocketUpgrade},
         State,
@@ -89,7 +88,6 @@ impl AppState {
 
 type SharedState = std::sync::Arc<tokio::sync::Mutex<AppState>>;
 
-#[debug_handler]
 async fn handler(ws: WebSocketUpgrade, State(state): State<SharedState>) -> Response {
     let (send, rec) = tokio::sync::mpsc::channel(100);
     let client = {
@@ -232,7 +230,16 @@ async fn main() {
         .with_span_events(tracing_subscriber::fmt::format::FmtSpan::CLOSE)
         .init();
 
-    specta::export::ts("../liberica/src/lib/bindings.ts").unwrap();
+    const BINDINGS: &str = "../liberica/src/lib/bindings.ts";
+    const TEMP_BINDINGS: &str = "../target/bindings.ts.tmp";
+    specta::export::ts(TEMP_BINDINGS).unwrap();
+    let old = std::fs::read_to_string(BINDINGS).unwrap_or_default();
+    let new = std::fs::read_to_string(TEMP_BINDINGS).unwrap();
+    // Only update bindings if they changed to avoid triggering a recompile of the frontend
+    if old != new {
+        info!("Updating bindings");
+        std::fs::write(BINDINGS, new).unwrap();
+    }
 
     info!("Starting server");
     kvv::init().await;
