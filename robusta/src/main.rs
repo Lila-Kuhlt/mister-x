@@ -22,7 +22,7 @@ use tower_http::{
     cors::CorsLayer,
     services::{ServeDir, ServeFile},
 };
-use tracing::{error, info, Level};
+use tracing::{error, info, trace, warn, Level};
 use ws_message::{ClientMessage, GameState, Team};
 
 mod kvv;
@@ -134,7 +134,7 @@ async fn handle_socket(socket: WebSocket, mut client: Client) {
                     msg
                 } else {
                     // invalid message
-                    tracing::warn!("Received invalid message: {}", msg);
+                    warn!("Received invalid message: {}", msg);
                     continue;
                 }
             } else {
@@ -279,7 +279,7 @@ async fn main() {
         }
     });
 
-    tracing::info!("Starting game loop");
+    info!("Starting game loop");
     tokio::spawn(run_game_loop(recv, state.clone()));
 
     let api = Router::new()
@@ -303,7 +303,7 @@ async fn main() {
         .layer(CorsLayer::permissive())
         .with_state(state.clone());
 
-    tracing::info!("Starting web server");
+    info!("Starting web server");
 
     let port = std::env::var("PORT").unwrap_or_else(|_| "3000".to_string());
     // run it with hyper on localhost:3000
@@ -324,7 +324,7 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
         .unwrap();
     loop {
         tick += 1;
-        tracing::trace!("tick {}", tick);
+        trace!("tick {}", tick);
 
         fs::write(
             "teams.json",
@@ -347,7 +347,7 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
                             }
                         }
                         ClientMessage::SetTeamPosition { long, lat, team_id } => {
-                            if let Some(team) = state.teams.iter_mut().find(|x| x.id == team_id) {
+                            if let Some(team) = state.teams.iter_mut().find(|t| t.id == team_id) {
                                 team.long = long;
                                 team.lat = lat;
                             }
@@ -357,7 +357,7 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
                         }
                         ClientMessage::JoinTeam { team_id } => {
                             let Some(client) = state.client_mut(id) else {
-                                tracing::warn!("Client {} not found", id);
+                                warn!("Client {} not found", id);
                                 continue;
                             };
                             client.team_id = team_id;
@@ -378,13 +378,13 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
                     *departures = deps;
                 }
                 InputMessage::Server(ServerMessage::ClientDisconnected(id)) => {
-                    tracing::info!("Client {} disconnected", id);
+                    info!("Client {} disconnected", id);
                     state.connections.retain(|x| x.id != id);
                 }
             }
         }
 
-        tracing::trace!("updating train positions");
+        trace!("updating train positions");
         let time = Local::now().with_timezone(&chrono_tz::Europe::Berlin);
         let mut trains = kvv::train_positions(departures, time.naive_local()).await;
         trains.retain(|x| !x.line_id.contains("bus"));

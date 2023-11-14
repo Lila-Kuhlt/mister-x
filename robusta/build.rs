@@ -8,14 +8,13 @@ fn main() {
     // Build the path to the `liberica` directory
     let liberica_dir = project_dir.parent().unwrap().join("liberica");
 
-    println!("cargo:rerun-if-changed=../liberica/package.json");
-    println!("cargo:rerun-if-changed=../liberica/src");
-    println!("cargo:rerun-if-changed=../liberica/tsconfig.json");
-    println!("cargo:rerun-if-changed=../liberica/index.html");
+    for path in ["package.json", "src", "tsconfig.json", "index.html"] {
+        println!("cargo:rerun-if-changed={}/{}", liberica_dir.to_string_lossy(), path);
+    }
     println!("cargo:warning=Building Liberica");
 
     // Change into the `liberica` directory
-    env::set_current_dir(&liberica_dir).unwrap();
+    env::set_current_dir(liberica_dir).unwrap();
 
     // Run `npm install`
     let npm_install = Command::new("npm")

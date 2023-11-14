@@ -96,7 +96,6 @@ function TrainMarker(props: {
 
 function DetectiveMarker(props: { player: Team; disembark: () => void }) {
   const player = props.player;
-  console.log(player);
 
   return (
     <Marker
@@ -132,7 +131,7 @@ export default function SVGMap(props: MapProps) {
   const mrX = props.mrX;
   const { setEmbarkedTrain } = useGameState();
   const { ws } = useWebsocketStore();
-  const TS = useTeamStore(); 
+  const TS = useTeamStore();
 
   function disembark() {
     setEmbarkedTrain(undefined);
@@ -157,7 +156,7 @@ export default function SVGMap(props: MapProps) {
             {stops.map((stop) => (
               <Circle
                 eventHandlers={{
-                  click: () => TS.team && ws?.send({ SetTeamPosition: { lat: stop.kvv_stop.lat, long: stop.kvv_stop.lon, team_id: TS.team.id } }), 
+                  click: () => TS.team && ws?.send({ SetTeamPosition: { lat: stop.kvv_stop.lat, long: stop.kvv_stop.lon, team_id: TS.team.id } }),
                 }}
                 center={[stop.kvv_stop.lat, stop.kvv_stop.lon]}
                 pathOptions={{
@@ -201,13 +200,15 @@ export default function SVGMap(props: MapProps) {
         {/* Detectives */}
         <LayersControl.Overlay checked name="Detectives">
           <LayerGroup>
-            {teams.map((player) => (
-              <DetectiveMarker
-                player={player}
-                key={player.id}
-                disembark={disembark}
-              />
-            ))}
+            {teams
+              .filter((player) => player.lat !== 0.0 || player.long !== 0.0)
+              .map((player) => (
+                <DetectiveMarker
+                  player={player}
+                  key={player.id}
+                  disembark={disembark}
+                />
+              ))}
           </LayerGroup>
         </LayersControl.Overlay>
       </LayersControl>
