@@ -60,7 +60,7 @@ function MrXMarker(props: { player: Team; disembark: () => void }) {
     >
       <Tooltip offset={ICON_OFFSET} key={key}>
         {" "}
-        Mr X war hier{" "}
+        Mr. X war hier{" "}
       </Tooltip>
     </Marker>
   );
@@ -170,9 +170,9 @@ export default function SVGMap(props: MapProps) {
           </LayerGroup>
         </LayersControl.Overlay>
 
-        {/* Mr X */}
+        {/* Mr. X */}
         {mrX && (
-          <LayersControl.Overlay checked name="Mr X">
+          <LayersControl.Overlay checked name="Mr. X">
             <LayerGroup>
               <MrXMarker player={mrX} disembark={disembark} />
             </LayerGroup>

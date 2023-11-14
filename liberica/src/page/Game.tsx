@@ -69,7 +69,6 @@ export function Game() {
       <Navbar>
         <Button
           onClick={() => {
-            TS.setTeam(undefined);
             window.location.href = "/";
           }}
         >

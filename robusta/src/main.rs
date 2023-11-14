@@ -129,7 +129,13 @@ async fn handle_socket(socket: WebSocket, mut client: Client) {
     // Propagate ws update to the game logic queue
     tokio::task::spawn(async move {
         while let Some(msg) = recv.next().await {
-            let msg = if let Ok(Ok(msg)) = msg.map(|msg| msg.to_text().map(|msg| msg.to_owned())) {
+            let msg = if let Some(msg) = msg.ok().and_then(|msg| {
+                if matches!(msg, axum::extract::ws::Message::Close(_)) {
+                    None
+                } else {
+                    msg.into_text().ok()
+                }
+            }) {
                 if let Ok(msg) = serde_json::from_str::<ws_message::ClientMessage>(&msg) {
                     msg
                 } else {
