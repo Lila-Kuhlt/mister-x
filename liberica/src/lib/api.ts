@@ -15,7 +15,7 @@ export const BASE_URLS = import.meta.env.DEV
   };
 
 export const ENDPOINTS = {
-  POST_CRATE_TEAM: "/create-team",
+  POST_CREATE_TEAM: "/create-team",
   POST_START_GAME: "/start-game",
   GET_TEAMS: "/teams",
   GET_STOPS: "/stops",
@@ -25,8 +25,8 @@ export const ENDPOINTS = {
 
 export const AXIOS = axios.create({ baseURL: BASE_URLS.FETCH });
 
-export const postCreateTeam = (name: string, color: string): Promise<void> =>
-  AXIOS.post(ENDPOINTS.POST_CRATE_TEAM, { name, color });
+export const postCreateTeam = (name: string, color: string): Promise<Team> =>
+  AXIOS.post(ENDPOINTS.POST_CREATE_TEAM, { name, color });
 
 export const getTeams = (): Promise<Team[]> =>
   AXIOS.get(ENDPOINTS.GET_TEAMS).then((data) => data.data);

@@ -10,12 +10,15 @@ export function CreateTeam() {
 
   const sendRequest = async () => {
     setLoading(true);
-    // form validation
-    if (!name || name.trim() === "" || !color || color.length !== 7) return;
-
     await postCreateTeam(name, color)
-      .then(() => setLoading(false))
-      .then(() => (window.location.href = "/"));
+      .then(() => {
+        setLoading(false);
+        window.location.href = "/";
+      })
+      .catch((err) => {
+        setLoading(false);
+        alert(err.response.data);
+      });
   };
 
   return (

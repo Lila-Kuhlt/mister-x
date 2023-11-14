@@ -1,3 +1,6 @@
+use std::fs;
+use std::io::Write;
+
 use axum::{
     body::{boxed, Body, BoxBody},
     extract::{
@@ -13,7 +16,6 @@ use chrono::Local;
 use futures_util::SinkExt;
 use kvv::LineDepartures;
 use reqwest::StatusCode;
-use std::io::Write;
 use tokio::sync::mpsc::Sender;
 use tower::util::ServiceExt;
 use tower_http::{
@@ -197,20 +199,26 @@ pub async fn file_handler(uri: Uri) -> Result<Response<BoxBody>, (StatusCode, St
 async fn create_team(
     State(state): State<SharedState>,
     Json(team): Json<ws_message::CreateTeam>,
-) -> impl IntoResponse {
+) -> Result<Json<Team>, ws_message::CreateTeamError> {
     let mut state = state.lock().await;
-    if state.teams.iter().any(|t| t.name == team.name) {
-        // TODO: don't allow team creation
+    let team_name = team.name.trim();
+
+    // validation
+    if team_name.is_empty() {
+        return Err(ws_message::CreateTeamError::InvalidName);
+    } else if state.teams.iter().any(|t| t.name == team_name) {
+        return Err(ws_message::CreateTeamError::NameAlreadyExists);
     }
+
     state.team_id_counter += 1;
     let team = Team {
         id: state.team_id_counter,
         color: team.color,
-        name: team.name,
+        name: team_name.to_owned(),
         ..Default::default()
     };
     state.teams.push(team.clone());
-    Json(team)
+    Ok(Json(team))
 }
 
 async fn list_teams(State(state): State<SharedState>) -> Json<Vec<Team>> {
@@ -233,12 +241,12 @@ async fn main() {
     const BINDINGS: &str = "../liberica/src/lib/bindings.ts";
     const TEMP_BINDINGS: &str = "../target/bindings.ts.tmp";
     specta::export::ts(TEMP_BINDINGS).unwrap();
-    let old = std::fs::read_to_string(BINDINGS).unwrap_or_default();
-    let new = std::fs::read_to_string(TEMP_BINDINGS).unwrap();
+    let old = fs::read_to_string(BINDINGS).unwrap_or_default();
+    let new = fs::read_to_string(TEMP_BINDINGS).unwrap();
     // Only update bindings if they changed to avoid triggering a recompile of the frontend
     if old != new {
         info!("Updating bindings");
-        std::fs::write(BINDINGS, new).unwrap();
+        fs::write(BINDINGS, new).unwrap();
     }
 
     info!("Starting server");
@@ -246,7 +254,7 @@ async fn main() {
 
     let (send, recv) = tokio::sync::mpsc::channel(100);
 
-    let teams = std::fs::read_to_string("teams.json")
+    let teams = fs::read_to_string("teams.json")
         .map(|x| serde_json::from_str::<Vec<Team>>(&x).unwrap())
         .unwrap_or_default();
 
@@ -309,7 +317,7 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
     let mut tick = 0u64;
     let mut game_state = GameState::new();
     let departures = &mut kvv::fetch_departures_for_region().await;
-    let mut log_file = std::fs::OpenOptions::new()
+    let mut log_file = fs::OpenOptions::new()
         .append(true)
         .create(true)
         .open("log.csv")
@@ -318,7 +326,7 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
         tick += 1;
         tracing::trace!("tick {}", tick);
 
-        std::fs::write(
+        fs::write(
             "teams.json",
             serde_json::to_string_pretty(&game_state.teams).unwrap(),
         )
