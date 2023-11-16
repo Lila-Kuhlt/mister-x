@@ -130,11 +130,11 @@ pub struct CallAtStop {
     pub service_arrival: Option<Service>,
     pub service_departure: Option<Service>,
     pub stop_seq_number: String,
-    pub demand_stop: String,
-    pub unplanned_stop: String,
-    pub not_serviced_stop: String,
-    pub no_boarding_at_stop: String,
-    pub no_alighting_at_stop: String,
+    pub demand_stop: bool,
+    pub unplanned_stop: bool,
+    pub not_serviced_stop: bool,
+    pub no_boarding_at_stop: bool,
+    pub no_alighting_at_stop: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -153,9 +153,9 @@ pub struct StopEventService {
     pub origin_stop_point_ref: String,
     pub origin_text: LocationName,
     pub destination_text: LocationName,
-    pub unplanned: String,
-    pub cancelled: String,
-    pub deviation: String,
+    pub unplanned: bool,
+    pub cancelled: bool,
+    pub deviation: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -163,7 +163,7 @@ pub struct StopEventService {
 pub struct Attribute {
     pub text: LocationName,
     pub code: String,
-    pub mandatory: String,
+    pub mandatory: bool,
     pub status: Option<String>,
 }
 
