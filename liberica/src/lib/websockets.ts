@@ -50,4 +50,8 @@ export class WebsocketApi {
   public send(msg: ClientMessage) {
     this.connection.send(JSON.stringify(msg));
   }
+
+  public disconnect() {
+    this.connection.close()
+  }
 }

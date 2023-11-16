@@ -1,5 +1,5 @@
 import { BASE_URLS, ENDPOINTS, serverAlive } from "lib/api";
-import { WebsocketApi } from "lib/websockts";
+import { WebsocketApi } from "lib/websockets";
 import { useGameState, useTeamStore, useWebsocketStore } from "lib/state";
 import { PropsWithChildren, useEffect } from "react";
 import { Map } from "page/Map";
@@ -24,24 +24,16 @@ export function WarningPage(props: PropsWithChildren) {
   );
 }
 
-async function reconnect() {
-  if (await serverAlive()) {
-    location.reload();
-  } else {
-    setTimeout(reconnect, 1000);
-  }
-}
-
 export function Game() {
   const { ws, setWebsocket } = useWebsocketStore();
   const { setGameState, embarkedTrain, setEmbarkedTrain } = useGameState();
   const TS = useTeamStore();
 
   useEffect(() => {
-    new WebsocketApi(BASE_URLS.WEBSOCKET + ENDPOINTS.GET_WS, setWebsocket)
+    const socket = new WebsocketApi(BASE_URLS.WEBSOCKET + ENDPOINTS.GET_WS, setWebsocket)
       .register((msg) => console.log("Received message", msg))
       .register(setGameState)
-      .setDisconnectHandler(reconnect);
+    return () => socket.disconnect();
   }, [setGameState, setWebsocket]);
 
   useEffect(() => {

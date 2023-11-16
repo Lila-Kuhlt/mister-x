@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { GameState, Team, Train } from "lib/bindings";
-import { WebsocketApi } from "./websockts";
+import { WebsocketApi } from "./websockets";
 
 export interface TeamStore {
   team?: Team;
