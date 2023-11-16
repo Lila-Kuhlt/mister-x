@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::sync::OnceLock;
+use std::time::Duration;
 
 use serde::Serialize;
 
@@ -7,6 +8,9 @@ use serde::Serialize;
 
 use crate::point::{interpolate_segment, Point};
 use crate::ws_message::Train;
+
+/// The wait time to use when the arrival or departure time is missing.
+const DEFAULT_WAIT_TIME: Duration = Duration::from_secs(30);
 
 #[derive(Debug, Serialize, specta::Type)]
 pub struct Stop {
@@ -130,15 +134,16 @@ fn intermediate_points(start_id: &str, end_id: &str) -> Vec<Point> {
     points
 }
 
+const API_ENDPOINT: &str = "https://projekte.kvv-efa.de/koberttrias/trias";
+static ACCESS_TOKEN: OnceLock<String> = OnceLock::new();
+
 pub async fn kvv_stops() -> Vec<Stop> {
     let mut futures = Vec::new();
     for stop in STOPS.iter() {
         tracing::trace!("fetching stop id for {}", stop.0);
-        let api_endpoint = "https://projekte.kvv-efa.de/koberttrias/trias"; // Replace with your API endpoint
-        let access_token = dotenv::var("TRIAS_ACCESS_TOKEN").expect("TRIAS_ACCESS_TOKEN not set");
         let name = stop.1.to_string();
 
-        let stop = trias::search_stops(name, access_token, api_endpoint, 1);
+        let stop = trias::search_stops(name, ACCESS_TOKEN.get().unwrap().clone(), API_ENDPOINT, 1);
         futures.push(stop);
     }
     let results = futures_util::future::join_all(futures).await;
@@ -161,9 +166,16 @@ pub async fn kvv_stops() -> Vec<Stop> {
         }
     }).collect()
 }
+
+#[derive(Debug, Clone)]
+pub struct Times {
+    arrival: chrono::NaiveDateTime,
+    departure: chrono::NaiveDateTime,
+}
+
 #[derive(Debug, Default, Clone)]
 pub struct Journey {
-    stops: HashMap<StopRef, chrono::NaiveDateTime>,
+    stops: HashMap<StopRef, Times>,
     line_name: String,
     destination: String,
 }
@@ -182,21 +194,33 @@ type JourneyRef = String;
 type StopRef = String;
 pub type LineDepartures = HashMap<JourneyRef, Journey>;
 
-pub fn parse_time(time: &str) -> chrono::NaiveDateTime {
-    chrono::NaiveDateTime::parse_from_str(time, "%Y-%m-%dT%H:%M:%SZ").unwrap()
+pub fn parse_times(call: &trias::response::Call) -> Option<Times> {
+    fn parse_time(time: &str) -> chrono::NaiveDateTime {
+        chrono::NaiveDateTime::parse_from_str(time, "%Y-%m-%dT%H:%M:%SZ").unwrap()
+    }
+
+    let arrival = call.call_at_stop.service_arrival.as_ref().map(|service| parse_time(&service.timetabled_time));
+    let departure = call.call_at_stop.service_departure.as_ref().map(|service| parse_time(&service.timetabled_time));
+    match (arrival, departure) {
+        (Some(arrival), Some(departure)) => Some(Times { arrival, departure }),
+        (Some(arrival), None) => Some(Times { arrival, departure: arrival + DEFAULT_WAIT_TIME }),
+        (None, Some(departure)) => Some(Times { arrival: departure - DEFAULT_WAIT_TIME, departure }),
+        (None, None) => {
+            tracing::warn!("no departure or arrival time");
+            None
+        }
+    }
 }
 
 pub async fn fetch_departures(stops: &[Stop]) -> LineDepartures {
-    let api_endpoint = "https://projekte.kvv-efa.de/koberttrias/trias"; // Replace with your API endpoint
-    let access_token = &std::env::var("TRIAS_ACCESS_TOKEN").expect("TRIAS_ACCESS_TOKEN not set");
+    let access_token = ACCESS_TOKEN.get().unwrap();
 
     let futures: Vec<_> = stops
         .iter()
         .map(|stop| {
             let name = stop.kvv_stop.id.clone();
-            let access_token = access_token.clone();
             Box::pin(async move {
-                trias::stop_events(name, access_token, 10, api_endpoint)
+                trias::stop_events(name, access_token.clone(), 10, API_ENDPOINT)
                     .await
                     .unwrap_or_default()
             })
@@ -229,28 +253,19 @@ pub async fn fetch_departures(stops: &[Stop]) -> LineDepartures {
                 .chain(next_call.clone());
 
             for call in calls {
-                let departure = &call.call_at_stop.service_departure.as_ref();
-                let arrival = &call.call_at_stop.service_arrival.as_ref();
-                let time = match (departure, arrival) {
-                    (Some(departure), _) => parse_time(&departure.timetabled_time),
-                    (_, Some(arrival)) => parse_time(&arrival.timetabled_time),
-                    _ => {
-                        println!("no departure or arrival time");
-                        continue;
-                    }
-                };
+                let Some(times) = parse_times(call) else { continue; };
                 let stop_ref = &call.call_at_stop.stop_point_ref;
                 let Some(proper_stop_ref) = find_stop_by_kvv_id(stop_ref, stops) else {
                     continue;
                 };
                 let short_ref = &proper_stop_ref.kvv_stop.id;
-                let current_time = entry.stops.get(short_ref);
-                if let Some(current_time) = current_time {
-                    if *current_time < time {
+                let current_times = entry.stops.get(short_ref);
+                if let Some(current_times) = current_times {
+                    if current_times.departure < times.departure {
                         continue;
                     }
                 }
-                entry.stops.insert(short_ref.clone(), time);
+                entry.stops.insert(short_ref.clone(), times);
             }
             if entry.stops.len() < 2 {
                 jorneys.remove(journey);
@@ -302,7 +317,7 @@ pub fn train_position_per_route(
     let mut departures: Vec<_> = departures
         .map(|x| x.stops.iter().collect())
         .unwrap_or_default();
-    departures.sort_by_key(|x| x.1);
+    departures.sort_by_key(|x| x.1.departure);
 
     if departures.is_empty() {
         tracing::warn!("no departures for line {}", line_id);
@@ -320,18 +335,15 @@ pub fn train_position_per_route(
 
     let pos_offset = departures
         .iter()
-        .position(|x| x.1 > &time)
+        .position(|x| x.1.departure > time)
         .unwrap_or_default();
     let slice = &departures[(pos_offset.max(1) - 1)..=pos_offset];
     if let [last, next] = slice {
-        let last_time = *last.1 - time;
-        let next_time = *next.1 - time;
-        let segment_duration = next_time - last_time - chrono::Duration::seconds(30);
+        let current_duration = time - last.1.departure;
+        let segment_duration = next.1.arrival - last.1.departure;
         let stop_id = last.0;
         let next_stop_id = next.0;
-        let progress = 1.
-            - (next_time.num_seconds() as f32 / segment_duration.num_seconds() as f32)
-                .clamp(0., 1.);
+        let progress = (current_duration.num_seconds() as f32 / segment_duration.num_seconds() as f32).clamp(0., 1.);
         let points = points_on_route(stop_id, next_stop_id, stops);
         if let Some(position) = interpolate_segment(&points, progress) {
             return Some(Train {
@@ -350,6 +362,8 @@ pub fn train_position_per_route(
 pub static KVV_STOPS: OnceLock<Vec<Stop>> = OnceLock::new();
 
 pub async fn init() {
+    let access_token = dotenv::var("TRIAS_ACCESS_TOKEN").expect("TRIAS_ACCESS_TOKEN not set");
+    ACCESS_TOKEN.set(access_token).expect("failed to set ACCESS_TOKEN");
     let stops = kvv_stops().await;
     KVV_STOPS.set(stops).expect("failed to set KVV_STOPS");
 }
