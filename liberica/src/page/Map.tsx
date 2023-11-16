@@ -5,6 +5,7 @@ import { Train, Team, Stop } from "lib/bindings";
 import { useGameState } from "lib/state";
 import { getStops } from "lib/api";
 import { useEffect, useState } from "react";
+
 export interface MapProps {
   trains: Train[];
   teams: Team[];
