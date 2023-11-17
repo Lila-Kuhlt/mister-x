@@ -1,61 +1,63 @@
-import { useState } from "react";
-import { Button, Form } from "react-bootstrap";
-import Colorful from "@uiw/react-color-colorful";
+import {
+  Button,
+  DropDown,
+  ColorSwatchSelect,
+  TextInput,
+} from "components/InputElements";
 import { postCreateTeam } from "lib/api";
+import { TeamKind } from "lib/bindings";
+import { FormEvent, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export function CreateTeam() {
-  const [color, setColor] = useState("#9900EF");
-  const [name, setName] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [color, setColor] = useState<string>("red-500");
+  const [name, setName] = useState<string>("");
+  const [kind, setKind] = useState<TeamKind>("Detective");
 
-  const sendRequest = async () => {
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+
+  // WARNING! These are preloaded colors (see tailwind configuraton).
+  // If the colors are changed, they have to be "compiled" by tailwind,
+  // thus they need to be added in the tailwind configuration
+  const colors = ["red-500", "pink-500", "lime-500", "cyan-500", "purple-500"];
+
+  const onSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    if (!color || !name || !kind) return;
+
+    console.log("Sending request  ");
     setLoading(true);
-    await postCreateTeam(name, color)
-      .then(() => {
-        setLoading(false);
-        window.location.href = "/";
-      })
-      .catch((err) => {
-        setLoading(false);
-        alert(err.response.data);
-      });
+    postCreateTeam({ color, name, kind })
+      .then(() => setLoading(false))
+      .then(() => navigate("/"));
   };
 
   return (
     <div
-      className="d-flex flex-column justify-content-center align-items-center h-max"
-      style={{ backgroundColor: color }}
+      className={`flex items-center justify-center h-screen bg-${color} transition-colors`}
     >
       <form
-        className="bg-white p-3 rounded shadow-lg"
-        onSubmit={(e) => {
-          e.preventDefault();
-          !loading && sendRequest();
-        }}
+        className="container p-8 bg-white shadow-md rounded-xl w-80"
+        onSubmit={onSubmit}
       >
-        <Form.Control
-          placeholder="Team name"
-          onChange={(item) => setName(item.target.value)}
+        <h2 className="text-2xl font-bold">Create team</h2>
+
+        <TextInput onTextChange={setName} trim="all" />
+        <DropDown<TeamKind>
+          onItemChange={setKind}
+          items={["Detective", "MrX", "Observer"]}
         />
-        <div className="d-flex flex-column justify-content-center align-items-center p-2">
-          <Colorful
-            className="m-2"
-            disableAlpha
-            onChange={(data) => setColor(data.hex)}
-            color={color}
-          />
-        </div>
-        <div className="d-grid gap-2">
-          <Button disabled={loading} variant="primary" onClick={sendRequest}>
-            {!loading ? (
-              <>Create</>
-            ) : (
-              <div className="spinner-border spinner-border-sm" role="status">
-                <span className="visually-hidden">Loading...</span>
-              </div>
-            )}
-          </Button>
-        </div>
+        <ColorSwatchSelect onSelect={setColor} colors={colors} />
+
+        <Button disabled={loading}>
+          {loading ? (
+            <div className="w-4 h-4 border-4 border-dashed rounded-full animate-spin dark:border-white"></div>
+          ) : (
+            <>Create Team</>
+          )}
+        </Button>
       </form>
     </div>
   );

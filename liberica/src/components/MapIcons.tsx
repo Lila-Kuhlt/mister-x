@@ -5,7 +5,6 @@ import TramSVG from "assets/tram1.svg";
 
 import L, { IconOptions } from "leaflet";
 
-// eslint-disable-next-line react-refresh/only-export-components
 export const ICON_OFFSET: [number, number] = [15, 0];
 export const ICON_OFFSET_TOP: [number, number] = [0, -15];
 
@@ -17,26 +16,24 @@ const DEFAULT_SETTINGS: Partial<IconOptions> = {
   popupAnchor: [0, 0], // point from which the popup should open relative to the iconAnchor
 };
 
-const TrainIcon = L.icon({
+export const TrainIcon = L.icon({
   ...DEFAULT_SETTINGS,
   iconUrl: trainSVG,
 });
 
-const DetectiveIcon = L.icon({
+export const DetectiveIcon = L.icon({
   ...DEFAULT_SETTINGS,
   iconUrl: detectiveSVG,
 });
 
-const MrXIcon = L.icon({
+export const MrXIcon = L.icon({
   ...DEFAULT_SETTINGS,
   iconUrl: mrXSVG,
 });
 
-const PersonIcon = new L.Icon({
+export const PersonIcon = new L.Icon({
   iconUrl: TramSVG,
   iconRetinaUrl: TramSVG,
   iconSize: new L.Point(60, 75),
   className: "leaflet-div-icon",
 });
-
-export { TrainIcon, DetectiveIcon, MrXIcon, PersonIcon };

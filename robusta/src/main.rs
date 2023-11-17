@@ -27,6 +27,8 @@ use tracing::{error, info, warn, Level};
 use unique_id::UniqueIdGen;
 use ws_message::{ClientMessage, GameState, Team};
 
+use crate::ws_message::TeamKind;
+
 mod kvv;
 mod point;
 mod unique_id;
@@ -245,6 +247,10 @@ async fn list_stops() -> impl IntoResponse {
     Response::new(serde_json::to_string(&stops).unwrap())
 }
 
+async fn pong() -> impl IntoResponse {
+    "pong"
+}
+
 #[tokio::main]
 async fn main() {
     tracing_subscriber::fmt()
@@ -266,6 +272,13 @@ async fn main() {
     info!("Starting server");
     kvv::init().await;
 
+    let specta_emit_path =
+        std::env::var("SPECTA_EMIT_PATH").unwrap_or("../liberica/src/lib/bindings.ts".to_string());
+
+    if let Err(err) = specta::export::ts(&specta_emit_path) {
+        error!("Could not emit TS types to '{specta_emit_path}': {err}")
+    };
+
     let (send, recv) = tokio::sync::mpsc::channel(100);
 
     let mut teams = fs::read_to_string(TEAMS_FILE)
@@ -276,7 +289,7 @@ async fn main() {
     let mut state = AppState::new(send.clone());
     let max_id = teams.iter().map(|x| x.id).max().unwrap_or(0);
     state.team_id_gen.set_min(max_id + 1);
-    if !teams.iter().any(|team| team.mr_x) {
+    if !teams.iter().any(|team| team.kind == TeamKind::MrX) {
         // no Mr. X present
         teams.push(Team {
             id: state.team_id_gen.next(),
@@ -285,7 +298,7 @@ async fn main() {
             on_train: None,
             name: MRX.to_owned(),
             color: "#FFFFFF".to_owned(),
-            mr_x: true,
+            kind: TeamKind::MrX,
         });
     }
     state.teams = teams;
@@ -428,11 +441,13 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
             "{}, {}",
             time.with_timezone(&chrono_tz::Europe::Berlin).to_rfc3339(),
             serde_json::to_string(&game_state).unwrap()
-        ).unwrap();
+        )
+        .unwrap();
         fs::write(
             TEAMS_FILE,
             serde_json::to_string_pretty(&game_state.teams).unwrap(),
-        ).unwrap();
+        )
+        .unwrap();
 
         for connection in state.connections.iter_mut() {
             if connection.send.send(game_state.clone()).await.is_err() {

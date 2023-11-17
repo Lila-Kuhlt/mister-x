@@ -1,18 +1,18 @@
 import axios from "axios";
-import { Team, Stop } from "lib/bindings";
+import { Team, Stop, CreateTeam } from "lib/bindings";
 
 const HOSTNAME_DEV = window.location.hostname;
 const HOSTNAME_PROD = window.location.host;
 
 export const BASE_URLS = import.meta.env.DEV
   ? {
-    WEBSOCKET: `ws://${HOSTNAME_DEV}:3000`,
-    FETCH: `http://${HOSTNAME_DEV}:3000/api`,
-  }
+      WEBSOCKET: `ws://${HOSTNAME_DEV}:3000`,
+      FETCH: `http://${HOSTNAME_DEV}:3000/api`,
+    }
   : {
-    WEBSOCKET: `wss://${HOSTNAME_PROD}`,
-    FETCH: `https://${HOSTNAME_PROD}/api`,
-  };
+      WEBSOCKET: `wss://${HOSTNAME_PROD}`,
+      FETCH: `https://${HOSTNAME_PROD}/api`,
+    };
 
 export const ENDPOINTS = {
   POST_CREATE_TEAM: "/create-team",
@@ -25,8 +25,8 @@ export const ENDPOINTS = {
 
 export const AXIOS = axios.create({ baseURL: BASE_URLS.FETCH });
 
-export const postCreateTeam = (name: string, color: string): Promise<Team> =>
-  AXIOS.post(ENDPOINTS.POST_CREATE_TEAM, { name, color });
+export const postCreateTeam = (team: CreateTeam): Promise<void> =>
+  AXIOS.post(ENDPOINTS.POST_CREATE_TEAM, team);
 
 export const getTeams = (): Promise<Team[]> =>
   AXIOS.get(ENDPOINTS.GET_TEAMS).then((data) => data.data);

@@ -1,62 +1,23 @@
+import { TeamCard } from "components/TeamCard";
 import { getTeams } from "lib/api";
 import { Team } from "lib/bindings";
-import { useTeamStore, useWebsocketStore } from "lib/state";
-import { opt } from "lib/util";
 import { useEffect, useState } from "react";
-import { Button } from "react-bootstrap";
 
 export function Home() {
   const [teams, setTeams] = useState<Team[]>([]);
-  const [selected, setSelected] = useState<number | undefined>(undefined);
-  const { setWebsocket } = useWebsocketStore();
-  const TS = useTeamStore();
 
   useEffect(() => {
-    setWebsocket(undefined);
-    void getTeams().then(setTeams);
-  }, [setWebsocket]);
-
-  const setTeam = (team: Team) => {
-    console.log("setting team", team);
-    TS.setTeam(team);
-    window.location.href = "/game";
-  };
+    getTeams().then(setTeams);
+  }, []);
 
   return (
-    <div className="d-flex w-max h-max flex-center flex-column">
-      <div className="w-100 text-center" style={{ maxWidth: "330px" }}>
-        <h2 className="p-2">Join a team</h2>
-        <ol className="list-group mb-3">
-          {teams.map((team, index) => (
-            <li
-              key={team.id}
-              className={
-                "list-group-item list-group-item-action d-flex justify-content-between align-items-start " +
-                opt(selected === index, "active")
-              }
-              onClick={() => setSelected(index)}
-            >
-              <div className="ms-2 me-auto">
-                <div className="fw-bold">{team.name}</div>
-              </div>
-            </li>
-          ))}
-        </ol>
-        <Button
-          className="w-100"
-          variant="primary"
-          disabled={selected === undefined}
-          onClick={() => selected !== undefined && setTeam(teams[selected])}
-        >
-          Join
-        </Button>
-        <Button
-          className="w-100 mt-2 link-secondary"
-          variant="link"
-          href="/create"
-        >
-          Create
-        </Button>
+    <div className="flex items-center justify-center h-screen ">
+      <div className="container p-8 bg-white w-80">
+        <h2 className="font-semibold">Join a Team</h2>
+
+        {teams.map((team) => (
+          <TeamCard team={team} />
+        ))}
       </div>
     </div>
   );
