@@ -247,6 +247,10 @@ async fn list_stops() -> impl IntoResponse {
     Response::new(serde_json::to_string(&stops).unwrap())
 }
 
+async fn pong() -> impl IntoResponse {
+    "pong"
+}
+
 #[tokio::main]
 async fn main() {
     tracing_subscriber::fmt()
