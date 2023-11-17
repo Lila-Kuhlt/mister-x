@@ -23,11 +23,16 @@ use tower_http::{
     services::{ServeDir, ServeFile},
 };
 use tracing::{error, info, trace, warn, Level};
+use unique_id::UniqueIdGen;
 use ws_message::{ClientMessage, GameState, Team};
 
 mod kvv;
 mod point;
+mod unique_id;
 mod ws_message;
+
+/// The name used for the Mr. X Team.
+const MRX: &str = "Mr. X";
 
 #[derive(Debug)]
 enum InputMessage {
@@ -48,20 +53,20 @@ struct Client {
     id: u32,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 struct ClientConnection {
     id: u32,
     team_id: u32,
     send: tokio::sync::mpsc::Sender<GameState>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 struct AppState {
     pub teams: Vec<ws_message::Team>,
     pub game_logic_sender: tokio::sync::mpsc::Sender<InputMessage>,
     pub connections: Vec<ClientConnection>,
-    pub client_id_counter: u32,
-    pub team_id_counter: u32,
+    pub client_id_gen: UniqueIdGen,
+    pub team_id_gen: UniqueIdGen,
 }
 
 impl AppState {
@@ -70,8 +75,8 @@ impl AppState {
             teams: Vec::new(),
             game_logic_sender,
             connections: Vec::new(),
-            client_id_counter: 0,
-            team_id_counter: 0,
+            client_id_gen: UniqueIdGen::new(),
+            team_id_gen: UniqueIdGen::new(),
         }
     }
 
@@ -94,9 +99,9 @@ async fn handler(ws: WebSocketUpgrade, State(state): State<SharedState>) -> Resp
     let (send, rec) = tokio::sync::mpsc::channel(100);
     let client = {
         let mut state = state.lock().await;
-        state.client_id_counter += 1;
+        let id = state.client_id_gen.next();
         let client_connection = ClientConnection {
-            id: state.client_id_counter,
+            id,
             team_id: 0,
             send,
         };
@@ -104,7 +109,7 @@ async fn handler(ws: WebSocketUpgrade, State(state): State<SharedState>) -> Resp
         Client {
             recv: rec,
             send: state.game_logic_sender.clone(),
-            id: state.client_id_counter,
+            id,
         }
     };
     ws.on_upgrade(|socket| handle_socket(socket, client))
@@ -216,9 +221,8 @@ async fn create_team(
         return Err(ws_message::CreateTeamError::NameAlreadyExists);
     }
 
-    state.team_id_counter += 1;
     let team = Team {
-        id: state.team_id_counter,
+        id: state.team_id_gen.next(),
         color: team.color,
         name: team_name.to_owned(),
         ..Default::default()
@@ -260,14 +264,27 @@ async fn main() {
 
     let (send, recv) = tokio::sync::mpsc::channel(100);
 
-    let teams = fs::read_to_string("teams.json")
-        .map(|x| serde_json::from_str::<Vec<Team>>(&x).unwrap())
+    let mut teams = fs::read_to_string(TEAMS_FILE)
+        .ok()
+        .and_then(|x| serde_json::from_str::<Vec<Team>>(&x).ok())
         .unwrap_or_default();
 
     let mut state = AppState::new(send.clone());
     let max_id = teams.iter().map(|x| x.id).max().unwrap_or(0);
+    state.team_id_gen.set_min(max_id + 1);
+    if !teams.iter().any(|team| team.mr_x) {
+        // no Mr. X present
+        teams.push(Team {
+            id: state.team_id_gen.next(),
+            long: 0.0,
+            lat: 0.0,
+            on_train: None,
+            name: MRX.to_owned(),
+            color: "#FFFFFF".to_owned(),
+            mr_x: true,
+        });
+    }
     state.teams = teams;
-    state.team_id_counter = max_id;
 
     let state = std::sync::Arc::new(tokio::sync::Mutex::new(state));
 
@@ -346,10 +363,8 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
                     match msg {
                         ClientMessage::Position { long, lat } => {
                             if let Some(team) = state.team_mut_by_client_id(id) {
-                                if team.name != "Mr. X" {
-                                    team.long = (long + team.long) / 2.;
-                                    team.lat = (lat + team.lat) / 2.;
-                                }
+                                team.long = (long + team.long) / 2.;
+                                team.lat = (lat + team.lat) / 2.;
                             }
                         }
                         ClientMessage::SetTeamPosition { long, lat, team_id } => {

@@ -17,14 +17,6 @@ pub struct GameState {
     pub teams: Vec<Team>,
     pub trains: Vec<Train>,
 }
-impl GameState {
-    pub(crate) const fn new() -> GameState {
-        GameState {
-            teams: Vec::new(),
-            trains: Vec::new(),
-        }
-    }
-}
 
 #[derive(Default, Clone, Debug)]
 pub struct Player {
@@ -63,6 +55,7 @@ pub struct Team {
     pub on_train: Option<String>,
     pub name: String,
     pub color: String,
+    pub mr_x: bool,
 }
 
 #[derive(specta::Type, Default, Clone, Serialize, Debug)]

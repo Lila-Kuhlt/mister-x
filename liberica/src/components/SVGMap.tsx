@@ -55,7 +55,7 @@ function MrXMarker(props: { player: Team; disembark: () => void }) {
   return (
     <Marker
       icon={MrXIcon}
-      position={[player.long, player.lat]}
+      position={[player.lat, player.long]}
       eventHandlers={{ click: () => props.disembark() }}
     >
       <Tooltip offset={ICON_OFFSET} key={key}>
@@ -170,15 +170,6 @@ export default function SVGMap(props: MapProps) {
           </LayerGroup>
         </LayersControl.Overlay>
 
-        {/* Mr. X */}
-        {mrX && (
-          <LayersControl.Overlay checked name="Mr. X">
-            <LayerGroup>
-              <MrXMarker player={mrX} disembark={disembark} />
-            </LayerGroup>
-          </LayersControl.Overlay>
-        )}
-
         {/* Trains */}
         <LayersControl.Overlay checked name="Trains">
           <LayerGroup>
@@ -201,11 +192,12 @@ export default function SVGMap(props: MapProps) {
         <LayersControl.Overlay checked name="Detectives">
           <LayerGroup>
             {teams
-              .filter((player) => player.lat !== 0.0 || player.long !== 0.0)
-              .map((player) => (
+              .filter((team) => team.lat !== 0.0 || team.long !== 0.0) // sensible coordinates
+              .filter((team) => !team.mr_x) // team is not Mr. X
+              .map((team) => (
                 <DetectiveMarker
-                  player={player}
-                  key={player.id}
+                  player={team}
+                  key={team.id}
                   disembark={disembark}
                 />
               ))}
