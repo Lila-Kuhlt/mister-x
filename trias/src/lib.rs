@@ -7,6 +7,7 @@ pub use location_information::LocationInformationRequestBuilder;
 use response::{DeliveryPayload, Location, StopEventResponse, TriasResponse};
 pub use stop_event_request::StopEventRequestBuilder;
 
+use serde::Serialize;
 use serde_xml_rs::to_string;
 
 pub fn generate_service_request(builder: ServiceRequest) -> Result<String, &'static str> {
@@ -32,7 +33,6 @@ pub async fn post_request(
     request: &str,
 ) -> Result<TriasResponse, Box<dyn Error>> {
     let client = reqwest::Client::new();
-    //println!("Request: {}", request);
     let response = client
         .post(api_endpoint)
         .header(reqwest::header::CONTENT_TYPE, "application/xml")
@@ -41,10 +41,8 @@ pub async fn post_request(
         .await?
         .text()
         .await?;
-    //println!("{}", &response);
 
     let deserialized: TriasResponse = serde_xml_rs::from_str(&response)?;
-    //println!("{:?}", deserialized);
     Ok(deserialized)
 }
 
@@ -115,9 +113,7 @@ pub async fn stop_events(
     Ok(response)
 }
 
-use serde::{Deserialize, Serialize};
-
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize)]
 pub struct ServiceRequest {
     #[serde(rename = "siri:RequestTimestamp")]
     pub request_timestamp: String, // Will use this to store the current timestamp
@@ -127,7 +123,7 @@ pub struct ServiceRequest {
     pub request_payload: RequestPayload,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize)]
 pub enum RequestPayload {
     LocationInformationRequest(LocationInformationRequest),
     StopEventRequest(stop_event_request::StopEventRequest),

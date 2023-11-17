@@ -31,6 +31,9 @@ mod point;
 mod unique_id;
 mod ws_message;
 
+const LOG_FILE: &str = "log.csv";
+const TEAMS_FILE: &str = "teams.json";
+
 /// The name used for the Mr. X Team.
 const MRX: &str = "Mr. X";
 
@@ -338,22 +341,15 @@ async fn main() {
 
 async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, state: SharedState) {
     let mut tick = 0u64;
-    let mut game_state = GameState::new();
-    let departures = &mut kvv::fetch_departures_for_region().await;
+    let mut departures = kvv::fetch_departures_for_region().await;
     let mut log_file = fs::OpenOptions::new()
         .append(true)
         .create(true)
-        .open("log.csv")
+        .open(LOG_FILE)
         .unwrap();
     loop {
         tick += 1;
         trace!("tick {}", tick);
-
-        fs::write(
-            "teams.json",
-            serde_json::to_string_pretty(&game_state.teams).unwrap(),
-        )
-        .unwrap();
 
         let mut state = state.lock().await;
         while let Ok(msg) = recv.try_recv() {
@@ -396,7 +392,7 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
                     }
                 }
                 InputMessage::Server(ServerMessage::Departures(deps)) => {
-                    *departures = deps;
+                    departures = deps;
                 }
                 InputMessage::Server(ServerMessage::ClientDisconnected(id)) => {
                     info!("Client {} disconnected", id);
@@ -405,9 +401,8 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
             }
         }
 
-        trace!("updating train positions");
         let time = Local::now().with_timezone(&chrono_tz::Europe::Berlin);
-        let mut trains = kvv::train_positions(departures, time.naive_local()).await;
+        let mut trains = kvv::train_positions(&departures, time.naive_local()).await;
         trains.retain(|x| !x.line_id.contains("bus"));
 
         // update positions for players on trains
@@ -420,16 +415,20 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
             }
         }
 
-        game_state.trains = trains;
-        game_state.teams = state.teams.clone();
-
+        let game_state = GameState {
+            teams: state.teams.clone(),
+            trains,
+        };
         writeln!(
             log_file,
             "{}, {}",
             time,
             serde_json::to_string(&game_state).unwrap()
-        )
-        .unwrap();
+        ).unwrap();
+        fs::write(
+            TEAMS_FILE,
+            serde_json::to_string_pretty(&game_state.teams).unwrap(),
+        ).unwrap();
 
         for connection in state.connections.iter_mut() {
             if connection.send.send(game_state.clone()).await.is_err() {

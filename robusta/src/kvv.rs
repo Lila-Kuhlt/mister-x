@@ -379,9 +379,7 @@ pub async fn train_positions(
 ) -> Vec<Train> {
     let stops = KVV_STOPS.get().expect("KVV_STOPS not initialized");
     let mut trains = Vec::new();
-    let mut journeys: Vec<_> = departures_per_line.keys().collect();
-    journeys.sort();
-    for line_id in journeys {
+    for line_id in departures_per_line.keys() {
         trains.extend(train_position_per_route(
             departures_per_line,
             render_time,
