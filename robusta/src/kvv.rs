@@ -7,6 +7,7 @@ use serde::Serialize;
 // mod api;
 
 use crate::point::{interpolate_segment, Point};
+use crate::util::spawn_join;
 use crate::ws_message::Train;
 
 /// The wait time to use when the arrival or departure time is missing.
@@ -137,34 +138,30 @@ fn intermediate_points(start_id: &str, end_id: &str) -> Vec<Point> {
 const API_ENDPOINT: &str = "https://projekte.kvv-efa.de/koberttrias/trias";
 static ACCESS_TOKEN: OnceLock<String> = OnceLock::new();
 
-pub async fn kvv_stops() -> Vec<Stop> {
-    let mut futures = Vec::new();
-    for stop in STOPS.iter() {
-        tracing::trace!("fetching stop id for {}", stop.0);
-        let name = stop.1.to_string();
+async fn kvv_stops() -> Vec<Stop> {
+    spawn_join(STOPS
+        .iter()
+        .enumerate()
+        .map(|(id, stop)| async move {
+            let name = stop.1.to_string();
+            let access_token = ACCESS_TOKEN.get().unwrap().clone();
+            let stops = trias::search_stops(name, access_token, API_ENDPOINT, 1).await.unwrap();
 
-        let stop = trias::search_stops(name, ACCESS_TOKEN.get().unwrap().clone(), API_ENDPOINT, 1);
-        futures.push(stop);
-    }
-    let results = futures_util::future::join_all(futures).await;
+            let first_stop = stops.into_iter().next().unwrap();
+            let stop_point = first_stop.stop_point;
+            let position = first_stop.geo_position;
+            let kvv_stop = KvvStop {
+                name: stop_point.stop_point_name.text,
+                id: stop_point.stop_point_ref,
+                lat: position.latitude.parse().unwrap(),
+                lon: position.longitude.parse().unwrap(),
+            };
 
-    results.into_iter().enumerate().map(|(id, stop)| {
-        let stop = stop.unwrap();
-        let first_stop = stop.into_iter().next().unwrap();
-        let stop_point = first_stop.stop_point;
-        let position = first_stop.geo_position;
-        let kvv_stop = KvvStop {
-            name: stop_point.stop_point_name.text,
-            id: stop_point.stop_point_ref,
-            lat: position.latitude.parse().unwrap(),
-            lon: position.longitude.parse().unwrap(),
-        };
-
-        Stop {
-            id: id as u32,
-            kvv_stop,
-        }
-    }).collect()
+            Stop {
+                id: id as u32,
+                kvv_stop,
+            }
+        })).await
 }
 
 #[derive(Debug, Clone)]
@@ -215,19 +212,18 @@ pub fn parse_times(call: &trias::response::Call) -> Option<Times> {
 pub async fn fetch_departures(stops: &[Stop]) -> LineDepartures {
     let access_token = ACCESS_TOKEN.get().unwrap();
 
-    let futures: Vec<_> = stops
+    let results = spawn_join(stops
         .iter()
         .map(|stop| {
             let name = stop.kvv_stop.id.clone();
-            Box::pin(async move {
-                trias::stop_events(name, access_token.clone(), 10, API_ENDPOINT)
+            let access_token = access_token.clone();
+            async move {
+                trias::stop_events(name, access_token, 10, API_ENDPOINT)
                     .await
                     .unwrap_or_default()
-            })
+            }
         })
-        .collect();
-
-    let results = futures_util::future::join_all(futures).await;
+    ).await;
 
     let mut jorneys = HashMap::new();
 

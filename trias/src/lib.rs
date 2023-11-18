@@ -51,7 +51,7 @@ pub async fn search_stops(
     access_token: String,
     api_endpoint: &str,
     number_of_results: u32,
-) -> Result<Vec<Location>, Box<dyn Error>> {
+) -> Result<Vec<Location>, &'static str> {
     let builder = LocationInformationRequestBuilder::new()
         .location_name(name)
         .requestor_ref(access_token)

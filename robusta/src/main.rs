@@ -31,6 +31,7 @@ use ws_message::{ClientMessage, GameState, Team};
 mod kvv;
 mod point;
 mod unique_id;
+mod util;
 mod ws_message;
 
 const LOG_FILE: &str = "log.csv";
