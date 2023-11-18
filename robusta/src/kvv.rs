@@ -373,7 +373,7 @@ pub async fn fetch_departures_for_region() -> LineDepartures {
     fetch_departures(stops).await
 }
 
-pub async fn train_positions(
+pub fn train_positions(
     departures_per_line: &LineDepartures,
     render_time: chrono::NaiveDateTime,
 ) -> Vec<Train> {

@@ -1,5 +1,7 @@
+use std::collections::HashMap;
 use std::fs;
 use std::io::Write;
+use std::time::Duration;
 
 use axum::{
     body::{boxed, Body, BoxBody},
@@ -293,8 +295,9 @@ async fn main() {
 
     // fetch departures every 5 seconds and send them to the game logic queue
     tokio::spawn(async move {
+        let mut interval = tokio::time::interval(Duration::from_secs(5));
         loop {
-            tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+            interval.tick().await;
             let departures = kvv::fetch_departures_for_region().await;
             if let Err(err) = send
                 .send(InputMessage::Server(ServerMessage::Departures(departures)))
@@ -341,13 +344,15 @@ async fn main() {
 
 async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, state: SharedState) {
     let mut tick = 0u64;
-    let mut departures = kvv::fetch_departures_for_region().await;
+    let mut departures = HashMap::new();
     let mut log_file = fs::OpenOptions::new()
         .append(true)
         .create(true)
         .open(LOG_FILE)
         .unwrap();
+    let mut interval = tokio::time::interval(Duration::from_millis(500));
     loop {
+        interval.tick().await;
         tick += 1;
         trace!("tick {}", tick);
 
@@ -402,7 +407,7 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
         }
 
         let time = Local::now().with_timezone(&chrono_tz::Europe::Berlin);
-        let mut trains = kvv::train_positions(&departures, time.naive_local()).await;
+        let mut trains = kvv::train_positions(&departures, time.naive_local());
         trains.retain(|x| !x.line_id.contains("bus"));
 
         // update positions for players on trains
@@ -435,6 +440,5 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
                 continue;
             }
         }
-        tokio::time::sleep(std::time::Duration::from_millis(500)).await;
     }
 }
