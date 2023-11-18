@@ -1,0 +1,12 @@
+[package]
+name = "cola"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+chrono = { version = "0.4.31", features = ["serde"] }
+clap = { version = "4.4.8", features = ["derive"] }
+humantime = "2.1.0"
+humantime-serde = "1.1.1"
