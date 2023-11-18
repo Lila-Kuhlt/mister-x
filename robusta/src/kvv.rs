@@ -308,36 +308,27 @@ pub fn points_on_route(start_stop_id: &str, end_stop_id: &str, stops: &[Stop]) -
 }
 
 pub fn train_position_per_route(
-    departures_per_line: &LineDepartures,
     time: chrono::NaiveDateTime,
     line_id: &str,
+    departures: &Journey,
     stops: &[Stop],
 ) -> Option<Train> {
-    let departures = departures_per_line.get(line_id);
-    let mut departures: Vec<_> = departures
-        .map(|x| x.stops.iter().collect())
-        .unwrap_or_default();
-    departures.sort_by_key(|x| x.1.departure);
+    let mut line_stops: Vec<_> = departures.stops.iter().collect();
+    line_stops.sort_by_key(|x| x.1.departure);
 
-    if departures.is_empty() {
+    if line_stops.is_empty() {
         tracing::warn!("no departures for line {}", line_id);
         return None;
     }
 
-    let line_name = departures_per_line
-        .get(line_id)
-        .map(|x| x.line_name.clone())
-        .unwrap_or_default();
-    let destination = departures_per_line
-        .get(line_id)
-        .map(|x| x.destination.clone())
-        .unwrap_or_default();
+    let line_name = departures.line_name.clone();
+    let destination = departures.destination.clone();
 
-    let pos_offset = departures
+    let pos_offset = line_stops
         .iter()
         .position(|x| x.1.departure > time)
         .unwrap_or_default();
-    let slice = &departures[(pos_offset.max(1) - 1)..=pos_offset];
+    let slice = &line_stops[(pos_offset.max(1) - 1)..=pos_offset];
     if let [last, next] = slice {
         let current_duration = time - last.1.departure;
         let segment_duration = next.1.arrival - last.1.departure;
@@ -378,14 +369,13 @@ pub fn train_positions(
     render_time: chrono::NaiveDateTime,
 ) -> Vec<Train> {
     let stops = KVV_STOPS.get().expect("KVV_STOPS not initialized");
-    let mut trains = Vec::new();
-    for line_id in departures_per_line.keys() {
-        trains.extend(train_position_per_route(
-            departures_per_line,
+    departures_per_line
+        .iter()
+        .flat_map(|(line_id, departures)| train_position_per_route(
             render_time,
             line_id,
+            departures,
             stops,
-        ));
-    }
-    trains
+        ))
+        .collect()
 }
