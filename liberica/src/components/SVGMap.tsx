@@ -94,12 +94,12 @@ function TrainMarker(props: {
   );
 }
 
-function DetectiveMarker(props: { player: Team; disembark: () => void }) {
+function TeamMarker(props: { player: Team; disembark: () => void }) {
   const player = props.player;
 
   return (
     <Marker
-      icon={DetectiveIcon}
+      icon={player.mr_x ? MrXIcon : DetectiveIcon}
       position={[player.lat, player.long]}
       eventHandlers={{ click: () => props.disembark() }}
     >
@@ -193,9 +193,9 @@ export default function SVGMap(props: MapProps) {
           <LayerGroup>
             {teams
               .filter((team) => team.lat !== 0.0 || team.long !== 0.0) // sensible coordinates
-              .filter((team) => !team.mr_x) // team is not Mr. X
+              .filter((team) => !team.mr_x || TS.team?.mr_x) // team is not Mr. X or the client is Mr. X
               .map((team) => (
-                <DetectiveMarker
+                <TeamMarker
                   player={team}
                   key={team.id}
                   disembark={disembark}
