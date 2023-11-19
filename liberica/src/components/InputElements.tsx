@@ -1,5 +1,3 @@
-import { ColorSwatch } from "./ColorSwatch";
-
 export const TextInput = (
   props:
     | React.InputHTMLAttributes<HTMLInputElement> & {
@@ -54,29 +52,12 @@ export function DropDown<T extends string>(
   );
 }
 
-export const ColorSwatchSelect = (props: {
-  colors: string[];
-  onSelect?: (color: string) => void;
-}) => {
-  return (
-    <div className="flex justify-between gap-3 mt-3">
-      {props.colors.map((color) => (
-        <ColorSwatch
-          color={color}
-          key={color}
-          onClick={() => props.onSelect?.(color)}
-        />
-      ))}
-    </div>
-  );
-};
-
 export const Button = (
   props: React.PropsWithChildren<React.ButtonHTMLAttributes<HTMLButtonElement>>
 ) => {
   return (
     <button
-      className="mt-3 middle none w-full center mr-3 rounded-lg bg-purple-500 text-white shadow-md shadow-pink-500/20 py-3 px-6 font-sans text-xs font-bold uppercase  transition-all hover:shadow-lg hover:shadow-pink-500/40 focus:opacity-[0.85] focus:shadow-none active:opacity-[0.85] active:shadow-none disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none flex justify-center"
+      className="middle none w-full center rounded-lg bg-purple-500 text-white shadow-md shadow-pink-500/20 py-2 px-6 font-sans text-sm font-bold transition-all hover:shadow-lg hover:shadow-pink-500/40 focus:opacity-[0.85] focus:shadow-none active:opacity-[0.85] active:shadow-none disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none flex justify-center"
       {...props}
     >
       {props.children}

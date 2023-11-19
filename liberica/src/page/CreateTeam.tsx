@@ -49,7 +49,15 @@ export function CreateTeam() {
           onItemChange={setKind}
           items={["Detective", "MrX", "Observer"]}
         />
-        <ColorSwatchSelect onSelect={setColor} colors={colors} />
+        <div className="flex justify-between gap-3 mt-3">
+          {colors.map((color) => (
+            <div
+              className={`w-10 h-10 bg-${color} rounded-md`}
+              key={color}
+              onClick={() => setColor(color)}
+            />
+          ))}
+        </div>
 
         <Button disabled={loading}>
           {loading ? (
