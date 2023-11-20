@@ -24,20 +24,19 @@ use tower_http::{
     cors::CorsLayer,
     services::{ServeDir, ServeFile},
 };
-use tracing::{error, info, trace, warn, Level};
+use tracing::{error, info, warn, Level};
 use unique_id::UniqueIdGen;
 use ws_message::{ClientMessage, GameState, Team};
 
 mod kvv;
 mod point;
 mod unique_id;
-mod util;
 mod ws_message;
 
 const LOG_FILE: &str = "log.csv";
 const TEAMS_FILE: &str = "teams.json";
 
-/// The name used for the Mr. X Team.
+/// The name used for the Mr. X team.
 const MRX: &str = "Mr. X";
 
 #[derive(Debug)]
@@ -294,9 +293,9 @@ async fn main() {
 
     let state = std::sync::Arc::new(tokio::sync::Mutex::new(state));
 
-    // fetch departures every 5 seconds and send them to the game logic queue
+    // fetch departures every 60 seconds and send them to the game logic queue
     tokio::spawn(async move {
-        let mut interval = tokio::time::interval(Duration::from_secs(5));
+        let mut interval = tokio::time::interval(Duration::from_secs(60));
         loop {
             interval.tick().await;
             let departures = kvv::fetch_departures_for_region().await;
@@ -344,7 +343,6 @@ async fn main() {
 }
 
 async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, state: SharedState) {
-    let mut tick = 0u64;
     let mut departures = HashMap::new();
     let mut log_file = fs::OpenOptions::new()
         .append(true)
@@ -354,8 +352,6 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
     let mut interval = tokio::time::interval(Duration::from_millis(500));
     loop {
         interval.tick().await;
-        tick += 1;
-        trace!("tick {}", tick);
 
         let mut state = state.lock().await;
         while let Ok(msg) = recv.try_recv() {

@@ -2,12 +2,12 @@ use std::collections::HashMap;
 use std::sync::OnceLock;
 use std::time::Duration;
 
+use futures_util::future::join_all;
 use serde::Serialize;
 
 // mod api;
 
 use crate::point::{interpolate_segment, Point};
-use crate::util::spawn_join;
 use crate::ws_message::Train;
 
 /// The wait time to use when the arrival or departure time is missing.
@@ -139,7 +139,7 @@ const API_ENDPOINT: &str = "https://projekte.kvv-efa.de/koberttrias/trias";
 static ACCESS_TOKEN: OnceLock<String> = OnceLock::new();
 
 async fn kvv_stops() -> Vec<Stop> {
-    spawn_join(STOPS
+    join_all(STOPS
         .iter()
         .enumerate()
         .map(|(id, stop)| async move {
@@ -212,7 +212,7 @@ pub fn parse_times(call: &trias::response::Call) -> Option<Times> {
 pub async fn fetch_departures(stops: &[Stop]) -> LineDepartures {
     let access_token = ACCESS_TOKEN.get().unwrap();
 
-    let results = spawn_join(stops
+    let results = join_all(stops
         .iter()
         .map(|stop| {
             let name = stop.kvv_stop.id.clone();
