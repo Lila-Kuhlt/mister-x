@@ -26,6 +26,7 @@ export function Home() {
         <div>
           {teams.map((team, index) => (
             <TeamCard
+              key={team.id}
               team={team}
               selected={selcted === index}
               onClick={() => setSelected(index)}

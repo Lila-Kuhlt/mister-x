@@ -12,24 +12,39 @@ export type WSHandlerMap<M extends object> = {
   [K in Keys<M>]?: WSHandler<M, K>;
 };
 
+export type WSEvent =
+  | { Disconnect: void }
+  | { Connect: void }
+  | { Error: void };
+
 export class WebsocketApi {
-  lastMessage?: Date;
-  connection: WebSocket;
-  handlers: WSHandlerMap<ClientMessage> = {};
-  errorHandler: WSErrorHandler;
-  disconnectHandler: WSDiconnectHandler;
+  public lastMessage?: Date;
 
-  constructor(endpoint: string, connected: (api: WebsocketApi) => void) {
+  private connection!: WebSocket;
+  private endpoint!: string;
+
+  private handlers: WSHandlerMap<ClientMessage> = {};
+  private metaHandlers: WSHandlerMap<WSEvent> = {};
+
+  constructor(endpoint: string) {
+    this.connect(endpoint);
+  }
+
+  public reconnect(force: boolean = false) {
+    // Don't try to reconnect if there is a connection already
+    if (this.connection?.readyState === this.connection.OPEN && force) return;
+
+    this.disconnect();
+    this.connect(this.endpoint);
+  }
+
+  public connect(endpoint: string) {
+    console.log("Connecting to ", endpoint);
+    this.endpoint = endpoint;
     this.connection = new WebSocket(endpoint);
-
-    this.errorHandler = (x) => console.error("Websocket Error occured", x);
-    this.connection.onerror = this.errorHandler;
-    this.disconnectHandler = () => console.log("Closed WS connection");
-    this.connection.onopen = () => {
-      connected(this);
-      console.log("Established WS connection");
-    };
-    this.connection.onclose = () => this.disconnectHandler();
+    this.connection.onerror = () => this.metaHandlers["Error"]?.();
+    this.connection.onclose = () => this.metaHandlers["Disconnect"]?.();
+    this.connection.onopen = () => this.metaHandlers["Connect"]?.();
     this.connection.onmessage = (e) =>
       this.handleMessage(JSON.parse(e.data as string) as ClientMessage);
   }
@@ -43,15 +58,6 @@ export class WebsocketApi {
     );
   }
 
-  public disconnect() {
-    this.connection.close();
-  }
-
-  public setDisconnectHandler(handler: WSDiconnectHandler): WebsocketApi {
-    this.disconnectHandler = handler;
-    return this;
-  }
-
   public register<T extends Keys<ClientMessage>>(
     type: T,
     handler: WSHandlerMap<ClientMessage>[T]
@@ -60,8 +66,11 @@ export class WebsocketApi {
     return this;
   }
 
-  public setErrorHandler(handler: WSErrorHandler): WebsocketApi {
-    this.errorHandler = handler;
+  public registerEvent<T extends Keys<WSEvent>>(
+    type: T,
+    handler: WSHandlerMap<WSEvent>[T]
+  ) {
+    this.metaHandlers[type] = handler;
     return this;
   }
 
@@ -70,6 +79,6 @@ export class WebsocketApi {
   }
 
   public disconnect() {
-    this.connection.close()
+    this.connection.close();
   }
 }

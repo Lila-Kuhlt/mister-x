@@ -1,19 +1,46 @@
 import { Map } from "components/Map";
 import { BASE_URLS, ENDPOINTS } from "lib/api";
 import { WebsocketApi } from "lib/websockets";
-import { useEffect, useState } from "react";
+import { createContext, useEffect, useState } from "react";
+
+const WebsocketContext = createContext<WebsocketApi | undefined>(undefined);
 
 export function Game() {
   const [ws, setWS] = useState<WebsocketApi | undefined>();
-  useEffect(() => {
-    if (!ws) return;
 
-    const socket = new WebsocketApi(
-      BASE_URLS.WEBSOCKET + ENDPOINTS.GET_WS,
-      setWS
-    ).register("Position", console.log);
+  useEffect(() => {
+    const WS_URL = BASE_URLS.WEBSOCKET + ENDPOINTS.GET_WS;
+    const socket: WebsocketApi = new WebsocketApi(WS_URL);
+
+    socket
+      .registerEvent("Connect", () => setWS(socket))
+      .registerEvent("Disconnect", () => setWS(undefined))
+      .registerEvent("Error", () => setTimeout(() => socket.reconnect(), 1000));
+
+    socket.register("Position", console.log);
 
     return () => socket.disconnect();
   }, []);
-  return <Map></Map>;
+
+  // Loading page
+  const LOADER = () => (
+    <div className="flex flex-col items-center justify-center gap-5 w-max h-max">
+      <div className="flex flex-col items-center">
+        <span className="italic text-slate-400">
+          Connection to Gameserver lost
+        </span>
+        <span className="italic text-slate-400">
+          Attempting to reconnect...
+        </span>
+      </div>
+    </div>
+  );
+
+  const MAP = () => (
+    <WebsocketContext.Provider value={ws}>
+      <Map></Map>
+    </WebsocketContext.Provider>
+  );
+
+  return ws ? MAP() : LOADER();
 }
