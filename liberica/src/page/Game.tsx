@@ -3,7 +3,9 @@ import { BASE_URLS, ENDPOINTS } from "lib/api";
 import { WebsocketApi } from "lib/websockets";
 import { createContext, useEffect, useState } from "react";
 
-const WebsocketContext = createContext<WebsocketApi | undefined>(undefined);
+export const WebsocketContext = createContext<WebsocketApi | undefined>(
+  undefined
+);
 
 export function Game() {
   const [ws, setWS] = useState<WebsocketApi | undefined>();
@@ -17,7 +19,7 @@ export function Game() {
       .registerEvent("Disconnect", () => setWS(undefined))
       .registerEvent("Error", () => setTimeout(() => socket.reconnect(), 1000));
 
-    socket.register("Position", console.log);
+    socket.register("GameState", (gs) => console.log("GameState: ", gs));
 
     return () => socket.disconnect();
   }, []);

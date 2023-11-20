@@ -1,4 +1,4 @@
-import { ClientMessage } from "lib/bindings";
+import { ClientMessage, ServerMessage } from "lib/bindings";
 
 export type Keys<T> = T extends T ? keyof T : never;
 export type Concrete<T, K extends Keys<T>> = T extends { [P in K]: infer V }
@@ -23,7 +23,7 @@ export class WebsocketApi {
   private connection!: WebSocket;
   private endpoint!: string;
 
-  private handlers: WSHandlerMap<ClientMessage> = {};
+  private handlers: WSHandlerMap<ServerMessage> = {};
   private metaHandlers: WSHandlerMap<WSEvent> = {};
 
   constructor(endpoint: string) {
@@ -34,7 +34,7 @@ export class WebsocketApi {
     // Don't try to reconnect if there is a connection already
     if (this.connection?.readyState === this.connection.OPEN && force) return;
 
-    this.disconnect();
+    this?.disconnect();
     this.connect(this.endpoint);
   }
 
@@ -46,21 +46,21 @@ export class WebsocketApi {
     this.connection.onclose = () => this.metaHandlers["Disconnect"]?.();
     this.connection.onopen = () => this.metaHandlers["Connect"]?.();
     this.connection.onmessage = (e) =>
-      this.handleMessage(JSON.parse(e.data as string) as ClientMessage);
+      this.handleMessage(JSON.parse(e.data as string) as ServerMessage);
   }
 
-  private handleMessage(msg: ClientMessage) {
+  private handleMessage(msg: ServerMessage) {
     this.lastMessage = new Date();
-    Object.keys(msg).forEach((key) =>
-      this.handlers[key as Keys<ClientMessage>]?.(
-        msg[key as keyof ClientMessage]
-      )
-    );
+    for (const key in Object.keys(msg)) {
+      this.handlers[key as Keys<ServerMessage>]?.(
+        msg[key as keyof ServerMessage]
+      );
+    }
   }
 
-  public register<T extends Keys<ClientMessage>>(
+  public register<T extends Keys<ServerMessage>>(
     type: T,
-    handler: WSHandlerMap<ClientMessage>[T]
+    handler: WSHandlerMap<ServerMessage>[T]
   ): WebsocketApi {
     this.handlers[type] = handler;
     return this;
