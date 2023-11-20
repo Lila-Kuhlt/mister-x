@@ -424,7 +424,7 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
         writeln!(
             log_file,
             "{}, {}",
-            time,
+            time.to_rfc3339(),
             serde_json::to_string(&game_state).unwrap()
         ).unwrap();
         fs::write(

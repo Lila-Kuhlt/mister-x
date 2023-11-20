@@ -12,7 +12,7 @@ pub enum ClientMessage {
     Message(String),
 }
 
-#[derive(specta::Type, Default, Clone, Serialize, Debug)]
+#[derive(specta::Type, Default, Clone, Serialize, Deserialize, Debug)]
 pub struct GameState {
     pub teams: Vec<Team>,
     pub trains: Vec<Train>,
@@ -58,7 +58,7 @@ pub struct Team {
     pub mr_x: bool,
 }
 
-#[derive(specta::Type, Default, Clone, Serialize, Debug)]
+#[derive(specta::Type, Default, Clone, Serialize, Deserialize, Debug)]
 pub struct Train {
     pub id: u32,
     pub long: f32,
