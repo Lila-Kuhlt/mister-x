@@ -11,6 +11,7 @@ Play a game of Scotland Yard with your friends using public transport.
 
 To be able to use the TRIAS API, you need an API Token which you can put into a file called `robusta/.env` with the following structure:
 ```
+TRIAS_API_ENDPOINT=YOUR_API_ENDPOINT
 TRIAS_ACCESS_TOKEN=YOUR_TOKEN
 ```
 

@@ -135,17 +135,18 @@ fn intermediate_points(start_id: &str, end_id: &str) -> Vec<Point> {
     points
 }
 
-const API_ENDPOINT: &str = "https://projekte.kvv-efa.de/koberttrias/trias";
+static API_ENDPOINT: OnceLock<String> = OnceLock::new();
 static ACCESS_TOKEN: OnceLock<String> = OnceLock::new();
 
 async fn kvv_stops() -> Vec<Stop> {
+    let access_token = ACCESS_TOKEN.get().unwrap();
+    let api_endpoint = API_ENDPOINT.get().unwrap();
     join_all(STOPS
         .iter()
         .enumerate()
         .map(|(id, stop)| async move {
             let name = stop.1.to_string();
-            let access_token = ACCESS_TOKEN.get().unwrap().clone();
-            let stops = trias::search_stops(name, access_token, API_ENDPOINT, 1).await.unwrap();
+            let stops = trias::search_stops(name, access_token.clone(), api_endpoint, 1).await.unwrap();
 
             let first_stop = stops.into_iter().next().unwrap();
             let stop_point = first_stop.stop_point;
@@ -211,6 +212,7 @@ pub fn parse_times(call: &trias::response::Call) -> Option<Times> {
 
 pub async fn fetch_departures(stops: &[Stop]) -> LineDepartures {
     let access_token = ACCESS_TOKEN.get().unwrap();
+    let api_endpoint = API_ENDPOINT.get().unwrap();
 
     let results = join_all(stops
         .iter()
@@ -218,7 +220,7 @@ pub async fn fetch_departures(stops: &[Stop]) -> LineDepartures {
             let name = stop.kvv_stop.id.clone();
             let access_token = access_token.clone();
             async move {
-                trias::stop_events(name, access_token, 10, API_ENDPOINT)
+                trias::stop_events(name, access_token, 10, api_endpoint)
                     .await
                     .unwrap_or_default()
             }
@@ -349,6 +351,8 @@ pub fn train_position_per_route(
 pub static KVV_STOPS: OnceLock<Vec<Stop>> = OnceLock::new();
 
 pub async fn init() {
+    let api_endpoint = dotenv::var("TRIAS_API_ENDPOINT").expect("TRIAS_API_ENDPOINT not set");
+    API_ENDPOINT.set(api_endpoint).expect("failed to set API_ENDPOINT");
     let access_token = dotenv::var("TRIAS_ACCESS_TOKEN").expect("TRIAS_ACCESS_TOKEN not set");
     ACCESS_TOKEN.set(access_token).expect("failed to set ACCESS_TOKEN");
     let stops = kvv_stops().await;
