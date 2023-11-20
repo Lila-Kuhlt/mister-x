@@ -9,7 +9,7 @@ export const TextInput = (
     <input
       {...props}
       type="text"
-      className="block w-full px-3 py-2 mt-3 bg-white border rounded-md shadow-sm border-slate-300 placeholder-slate-400 focus:outline-none focus:border-purple-500 focus:ring-purple-500 sm:text-sm focus:ring-1"
+      className="block w-full px-3 py-2 bg-white border rounded-md shadow-sm border-slate-300 placeholder-slate-400 focus:outline-none focus:border-purple-500 focus:ring-purple-500 sm:text-sm focus:ring-1"
       placeholder="Lila Pause"
       onChange={(e) => {
         const fn = {
@@ -38,7 +38,7 @@ export function DropDown<T extends string>(
 
   return (
     <select
-      className="block w-full px-3 py-2 mt-3 bg-white border rounded-md shadow-sm border-slate-300 placeholder-slate-400 focus:outline-none focus:border-purple-500 focus:ring-purple-500 sm:text-sm focus:ring-1"
+      className="block w-full px-3 py-2 bg-white border rounded-md shadow-sm border-slate-300 placeholder-slate-400 focus:outline-none focus:border-purple-500 focus:ring-purple-500 sm:text-sm focus:ring-1"
       onChange={(item) =>
         props.onItemChange?.(props.items[item.currentTarget.selectedIndex])
       }

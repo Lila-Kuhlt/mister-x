@@ -1,9 +1,4 @@
-import {
-  Button,
-  DropDown,
-  ColorSwatchSelect,
-  TextInput,
-} from "components/InputElements";
+import { Button, DropDown, TextInput } from "components/InputElements";
 import { postCreateTeam } from "lib/api";
 import { TeamKind } from "lib/bindings";
 import { FormEvent, useState } from "react";
@@ -39,17 +34,19 @@ export function CreateTeam() {
       className={`flex items-center justify-center h-screen bg-${color} transition-colors`}
     >
       <form
-        className="container p-8 bg-white shadow-md rounded-xl w-80"
+        className="container flex flex-col gap-3 p-8 bg-white shadow-md rounded-xl w-80"
         onSubmit={onSubmit}
       >
-        <h2 className="text-2xl font-bold">Create team</h2>
+        <h2 className="text-xl font-bold">Create team</h2>
 
         <TextInput onTextChange={setName} trim="all" />
+
         <DropDown<TeamKind>
           onItemChange={setKind}
           items={["Detective", "MrX", "Observer"]}
         />
-        <div className="flex justify-between gap-3 mt-3">
+
+        <div className="flex justify-between gap-3">
           {colors.map((color) => (
             <div
               className={`w-10 h-10 bg-${color} rounded-md`}

@@ -1,15 +1,13 @@
 import { Button } from "components/InputElements";
-import { Spinner } from "components/Spinner";
 import { TeamCard } from "components/TeamCard";
 import { getTeams } from "lib/api";
 import { Team } from "lib/bindings";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 export function Home() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [selcted, setSelected] = useState<number | undefined>();
-  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -39,11 +37,11 @@ export function Home() {
           type="button"
           onClick={() => void process()}
         >
-          "Join Team"
+          Join Team
         </Button>
-        <a className="text-center underline text-slate-400" href="/create">
+        <Link className="text-center underline text-slate-400" to="/create">
           Create one instead
-        </a>
+        </Link>
       </div>
     </form>
   );
