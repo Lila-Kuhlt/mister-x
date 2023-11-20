@@ -216,7 +216,6 @@ dependencies = [
  "iana-time-zone",
  "js-sys",
  "num-traits",
- "serde",
  "wasm-bindgen",
  "windows-targets",
 ]
@@ -230,7 +229,6 @@ dependencies = [
  "chrono",
  "chrono-tz-build",
  "phf",
- "serde",
 ]
 
 [[package]]
@@ -652,21 +650,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "54c0c35952f67de54bb584e9fd912b3023117cbafc0a77d8f3dee1fb5f572fe8"
 dependencies = [
  "wasm-bindgen",
-]
-
-[[package]]
-name = "kvvliveapi"
-version = "0.1.0"
-source = "git+https://github.com/TrueDoctor/kvvliveapi-rs#6664153c3c2b1a7cf6cdb8dffa8e7ada05f9dea7"
-dependencies = [
- "chrono",
- "chrono-tz",
- "regex",
- "reqwest",
- "serde",
- "serde_derive",
- "serde_json",
- "url",
 ]
 
 [[package]]
@@ -1128,7 +1111,6 @@ dependencies = [
  "chrono-tz",
  "dotenv",
  "futures-util",
- "kvvliveapi",
  "reqwest",
  "serde",
  "serde_json",
