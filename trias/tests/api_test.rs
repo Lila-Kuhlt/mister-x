@@ -6,9 +6,7 @@ async fn test_fetch_location_information() {
     let api_endpoint = "https://projekte.kvv-efa.de/koberttrias/trias"; // Replace with your API endpoint
     let access_token = std::env::var("TRIAS_ACCESS_TOKEN").expect("TRIAS_ACCESS_TOKEN not set");
 
-    let builder = trias::LocationInformationRequestBuilder::new()
-        .location_name("Karlsruhe Hauptbahnhof".to_string())
-        .requestor_ref(access_token.to_string())
+    let builder = trias::LocationInformationRequestBuilder::new(access_token.to_owned(), "Karlsruhe Hauptbahnhof".to_owned())
         .number_of_results(2)
         .include_pt_modes(false)
         .build()

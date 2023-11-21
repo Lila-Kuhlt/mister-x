@@ -52,9 +52,7 @@ pub async fn search_stops(
     api_endpoint: &str,
     number_of_results: u32,
 ) -> Result<Vec<Location>, &'static str> {
-    let builder = LocationInformationRequestBuilder::new()
-        .location_name(name)
-        .requestor_ref(access_token)
+    let builder = LocationInformationRequestBuilder::new(access_token, name)
         .number_of_results(number_of_results)
         .include_pt_modes(false)
         .build();

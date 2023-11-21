@@ -39,11 +39,11 @@ pub struct LocationInformationRequestBuilder {
 }
 
 impl LocationInformationRequestBuilder {
-    pub fn new() -> Self {
+    pub fn new(requestor_ref: String, location_name: String) -> Self {
         LocationInformationRequestBuilder {
-            requestor_ref: "API-Explorer".to_string(),
-            location_name: "Karlsruhe Hauptbahnhof".to_string(),
-            location_type: "stop".to_string(),
+            requestor_ref,
+            location_name,
+            location_type: "stop".to_owned(),
             number_of_results: 2,
             include_pt_modes: false,
         }
