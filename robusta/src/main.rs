@@ -247,10 +247,6 @@ async fn list_stops() -> impl IntoResponse {
     Response::new(serde_json::to_string(&stops).unwrap())
 }
 
-async fn pong() -> impl IntoResponse {
-    "pong"
-}
-
 #[tokio::main]
 async fn main() {
     tracing_subscriber::fmt()
@@ -260,6 +256,7 @@ async fn main() {
 
     const BINDINGS: &str = "../liberica/src/lib/bindings.ts";
     const TEMP_BINDINGS: &str = "../target/bindings.ts.tmp";
+
     specta::export::ts(TEMP_BINDINGS).unwrap();
     let old = fs::read_to_string(BINDINGS).unwrap_or_default();
     let new = fs::read_to_string(TEMP_BINDINGS).unwrap();
