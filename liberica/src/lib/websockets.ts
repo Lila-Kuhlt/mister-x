@@ -1,17 +1,15 @@
-import { ClientMessage, GameState } from "lib/bindings";
-
-export type WSHandler = (msg: GameState) => void;
+export type WSHandler<R> = (msg: R) => void;
 export type WSDiconnectHandler = () => void;
 export type WSErrorHandler = (error?: string | Error | object) => void;
 
-export class WebsocketApi {
+export class WebsocketApi<R, S> {
   lastMessage?: Date;
   connection: WebSocket;
-  handlers: WSHandler[];
+  handlers: WSHandler<R>[];
   errorHandler: WSErrorHandler;
   disconnectHandler: WSDiconnectHandler;
 
-  constructor(endpoint: string, connected: (api: WebsocketApi) => void) {
+  constructor(endpoint: string, connected: (api: WebsocketApi<R, S>) => void) {
     this.connection = new WebSocket(endpoint);
 
     this.handlers = [];
@@ -28,26 +26,26 @@ export class WebsocketApi {
     this.connection.onmessage = (e) => {
       const json = JSON.parse(e.data as string);
       this.lastMessage = new Date();
-      this.handlers.forEach((handler) => handler(json as GameState));
+      this.handlers.forEach((handler) => handler(json as R));
     };
   }
 
-  public setDisconnectHandler(handler: WSDiconnectHandler): WebsocketApi {
+  public setDisconnectHandler(handler: WSDiconnectHandler): WebsocketApi<R, S> {
     this.disconnectHandler = handler;
     return this;
   }
 
-  public register(handler: WSHandler): WebsocketApi {
+  public register(handler: WSHandler<R>): WebsocketApi<R, S> {
     this.handlers.push(handler);
     return this;
   }
 
-  public setErrorHandler(handler: WSErrorHandler): WebsocketApi {
+  public setErrorHandler(handler: WSErrorHandler): WebsocketApi<R, S> {
     this.errorHandler = handler;
     return this;
   }
 
-  public send(msg: ClientMessage) {
+  public send(msg: S) {
     this.connection.send(JSON.stringify(msg));
   }
 

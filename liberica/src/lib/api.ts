@@ -21,6 +21,7 @@ export const ENDPOINTS = {
   GET_STOPS: "/stops",
   GET_PING: "/ping",
   GET_WS: "/ws",
+  GET_REPLAY: "/replay",
 };
 
 export const AXIOS = axios.create({ baseURL: BASE_URLS.FETCH });

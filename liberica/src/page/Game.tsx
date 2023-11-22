@@ -1,6 +1,7 @@
-import { BASE_URLS, ENDPOINTS, serverAlive } from "lib/api";
+import { BASE_URLS, ENDPOINTS } from "lib/api";
+import { ClientMessage, GameState } from "lib/bindings";
 import { WebsocketApi } from "lib/websockets";
-import { useGameState, useTeamStore, useWebsocketStore } from "lib/state";
+import { useGameState, useTeamStore, useGameWebsocketStore } from "lib/state";
 import { PropsWithChildren, useEffect } from "react";
 import { Map } from "page/Map";
 import { Button } from "react-bootstrap";
@@ -25,12 +26,12 @@ export function WarningPage(props: PropsWithChildren) {
 }
 
 export function Game() {
-  const { ws, setWebsocket } = useWebsocketStore();
+  const { ws, setWebsocket } = useGameWebsocketStore();
   const { setGameState, embarkedTrain, setEmbarkedTrain } = useGameState();
   const TS = useTeamStore();
 
   useEffect(() => {
-    const socket = new WebsocketApi(BASE_URLS.WEBSOCKET + ENDPOINTS.GET_WS, setWebsocket)
+    const socket = new WebsocketApi<GameState, ClientMessage>(BASE_URLS.WEBSOCKET + ENDPOINTS.GET_WS, setWebsocket)
       .register((msg) => console.log("Received message", msg))
       .register(setGameState)
     return () => socket.disconnect();

@@ -16,8 +16,9 @@ use axum::{
 };
 use futures_util::SinkExt;
 use kvv::LineDepartures;
+use replay::{ReplayResponse, ReplayMessage};
 use reqwest::StatusCode;
-use tokio::sync::mpsc::Sender;
+use tokio::sync::mpsc::{Receiver, Sender};
 use tower::util::ServiceExt;
 use tower_http::{
     cors::CorsLayer,
@@ -29,6 +30,7 @@ use ws_message::{ClientMessage, GameState, Team};
 
 mod kvv;
 mod point;
+mod replay;
 mod unique_id;
 mod ws_message;
 
@@ -52,8 +54,8 @@ enum ServerMessage {
 
 #[derive(Debug)]
 struct Client {
-    recv: tokio::sync::mpsc::Receiver<GameState>,
-    send: tokio::sync::mpsc::Sender<InputMessage>,
+    recv: Receiver<GameState>,
+    send: Sender<InputMessage>,
     id: u32,
 }
 
@@ -61,20 +63,20 @@ struct Client {
 struct ClientConnection {
     id: u32,
     team_id: u32,
-    send: tokio::sync::mpsc::Sender<GameState>,
+    send: Sender<GameState>,
 }
 
 #[derive(Debug)]
 struct AppState {
     pub teams: Vec<ws_message::Team>,
-    pub game_logic_sender: tokio::sync::mpsc::Sender<InputMessage>,
+    pub game_logic_sender: Sender<InputMessage>,
     pub connections: Vec<ClientConnection>,
     pub client_id_gen: UniqueIdGen,
     pub team_id_gen: UniqueIdGen,
 }
 
 impl AppState {
-    const fn new(game_logic_sender: tokio::sync::mpsc::Sender<InputMessage>) -> Self {
+    const fn new(game_logic_sender: Sender<InputMessage>) -> Self {
         Self {
             teams: Vec::new(),
             game_logic_sender,
@@ -175,6 +177,69 @@ async fn handle_socket(socket: WebSocket, mut client: Client) {
 
         if send.send(msg.into()).await.is_err() {
             disconnect(client_send, client_id).await;
+            return;
+        }
+    }
+}
+
+async fn replay_handler(ws: WebSocketUpgrade) -> Response {
+    let (msg_send, msg_recv) = tokio::sync::mpsc::channel(100);
+    let (resp_send, resp_recv) = tokio::sync::mpsc::channel(100);
+    tokio::spawn(replay::replay("replays/game1.csv", msg_recv, resp_send));
+    ws.on_upgrade(|socket| handle_replay_socket(socket, resp_recv, msg_send))
+}
+
+async fn handle_replay_socket(socket: WebSocket, mut client_recv: Receiver<ReplayResponse>, client_send: Sender<ReplayMessage>) {
+    use futures_util::stream::StreamExt;
+
+    let (mut send, mut recv) = socket.split();
+
+    let disconnect = |client_send: Sender<ReplayMessage>| async move {
+        client_send
+            .send(ReplayMessage::Disconnected)
+            .await
+            .expect("replay logic queue disconnected");
+    };
+
+    {
+        // Propagate ws update to the replay logic queue
+        let client_send = client_send.clone();
+        tokio::task::spawn(async move {
+            while let Some(msg) = recv.next().await {
+                let msg = if let Some(msg) = msg.ok().and_then(|msg| {
+                    if matches!(msg, axum::extract::ws::Message::Close(_)) {
+                        None
+                    } else {
+                        msg.into_text().ok()
+                    }
+                }) {
+                    if let Ok(msg) = serde_json::from_str::<ReplayMessage>(&msg) {
+                        msg
+                    } else {
+                        // invalid message
+                        warn!("Received invalid message: {}", msg);
+                        continue;
+                    }
+                } else {
+                    // client disconnected
+                    disconnect(client_send).await;
+                    return;
+                };
+
+                client_send
+                    .send(msg)
+                    .await
+                    .expect("replay logic queue disconnected");
+            }
+        });
+    }
+
+    // Push game updates to the ws stream
+    while let Some(update) = client_recv.recv().await {
+        let msg = serde_json::to_string(&update).unwrap();
+
+        if send.send(msg.into()).await.is_err() {
+            disconnect(client_send).await;
             return;
         }
     }
@@ -326,6 +391,7 @@ async fn main() {
     // build our application with a single route
     let app = Router::new()
         .route("/ws", get(handler))
+        .route("/replay", get(replay_handler))
         .nest("/api", api)
         .nest_service(
             "/",
@@ -347,7 +413,7 @@ async fn main() {
         .unwrap();
 }
 
-async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, state: SharedState) {
+async fn run_game_loop(mut recv: Receiver<InputMessage>, state: SharedState) {
     let mut departures = HashMap::new();
     let mut log_file = fs::OpenOptions::new()
         .append(true)
