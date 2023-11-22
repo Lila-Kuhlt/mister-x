@@ -12,6 +12,11 @@ pub enum ClientMessage {
     Message(String),
 }
 
+#[derive(specta::Type, Clone, Serialize, Deserialize, Debug)]
+pub enum ServerMessage {
+    GameState(GameState),
+}
+
 #[derive(specta::Type, Default, Clone, Serialize, Deserialize, Debug)]
 pub struct GameState {
     pub teams: Vec<Team>,

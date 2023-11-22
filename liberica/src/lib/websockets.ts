@@ -15,7 +15,7 @@ export type WSHandlerMap<M extends object> = {
 export type WSEvent =
   | { Disconnect: void }
   | { Connect: void }
-  | { Error: void };
+  | { Error: unknown }; // Todo: Better error types
 
 export class WebsocketApi {
   public lastMessage?: Date;
@@ -42,19 +42,32 @@ export class WebsocketApi {
     console.log("Connecting to ", endpoint);
     this.endpoint = endpoint;
     this.connection = new WebSocket(endpoint);
-    this.connection.onerror = () => this.metaHandlers["Error"]?.();
+    this.connection.onerror = (e) => this.metaHandlers["Error"]?.(e);
     this.connection.onclose = () => this.metaHandlers["Disconnect"]?.();
     this.connection.onopen = () => this.metaHandlers["Connect"]?.();
-    this.connection.onmessage = (e) =>
-      this.handleMessage(JSON.parse(e.data as string) as ServerMessage);
+    this.connection.onmessage = (e) => {
+      const res = this.parseMsg(e.data);
+      if (res) this.handleMessage(res);
+    };
+  }
+
+  private parseMsg(msg: string): ServerMessage | undefined {
+    try {
+      const json = JSON.parse(msg) as ServerMessage;
+      return json;
+    } catch (e) {
+      this.metaHandlers.Error?.(e);
+      return undefined;
+    }
   }
 
   private handleMessage(msg: ServerMessage) {
     this.lastMessage = new Date();
-    for (const key in Object.keys(msg)) {
-      this.handlers[key as Keys<ServerMessage>]?.(
-        msg[key as keyof ServerMessage]
-      );
+    for (const key in msg) {
+      const handler = key as Keys<ServerMessage>;
+      if (!this.handlers[handler])
+        console.warn("No message handler found for message type " + handler);
+      this.handlers[handler]?.(msg[key as keyof ServerMessage]);
     }
   }
 

@@ -17,9 +17,12 @@ export function Game() {
     socket
       .registerEvent("Connect", () => setWS(socket))
       .registerEvent("Disconnect", () => setWS(undefined))
-      .registerEvent("Error", () => setTimeout(() => socket.reconnect(), 1000));
+      .registerEvent("Error", (e) => {
+        console.error("Websocket error (reconnect in 1s): ", e);
+        setTimeout(() => socket.reconnect(), 1000);
+      });
 
-    socket.register("GameState", (gs) => console.log("GameState: ", gs));
+    socket.register("GameState", (gs) => console.log("GS:", gs));
 
     return () => socket.disconnect();
   }, []);

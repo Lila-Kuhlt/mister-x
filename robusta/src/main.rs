@@ -54,7 +54,7 @@ enum ServerMessage {
 
 #[derive(Debug)]
 struct Client {
-    recv: tokio::sync::mpsc::Receiver<GameState>,
+    recv: tokio::sync::mpsc::Receiver<ws_message::ServerMessage>,
     send: tokio::sync::mpsc::Sender<InputMessage>,
     id: u32,
 }
@@ -63,7 +63,7 @@ struct Client {
 struct ClientConnection {
     id: u32,
     team_id: u32,
-    send: tokio::sync::mpsc::Sender<GameState>,
+    send: tokio::sync::mpsc::Sender<ws_message::ServerMessage>,
 }
 
 #[derive(Debug)]
@@ -245,10 +245,6 @@ async fn list_teams(State(state): State<SharedState>) -> Json<Vec<Team>> {
 async fn list_stops() -> impl IntoResponse {
     let stops = kvv::KVV_STOPS.get().unwrap();
     Response::new(serde_json::to_string(&stops).unwrap())
-}
-
-async fn pong() -> impl IntoResponse {
-    "pong"
 }
 
 #[tokio::main]
@@ -450,8 +446,9 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
         )
         .unwrap();
 
+        let server_message = ws_message::ServerMessage::GameState(game_state);
         for connection in state.connections.iter_mut() {
-            if connection.send.send(game_state.clone()).await.is_err() {
+            if connection.send.send(server_message.clone()).await.is_err() {
                 continue;
             }
         }
