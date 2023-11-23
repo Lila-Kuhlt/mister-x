@@ -299,6 +299,9 @@ async fn main() {
         loop {
             interval.tick().await;
             let departures = kvv::fetch_departures_for_region().await;
+            if departures.is_empty() {
+                warn!("Fetched no departures");
+            }
             if let Err(err) = send
                 .send(InputMessage::Server(ServerMessage::Departures(departures)))
                 .await
