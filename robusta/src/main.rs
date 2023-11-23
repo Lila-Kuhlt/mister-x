@@ -1,5 +1,4 @@
 use std::fs;
-use std::io::Write;
 use std::time::Duration;
 use std::{collections::HashMap, ops::ControlFlow};
 
@@ -14,9 +13,9 @@ use axum::{
     routing::{get, get_service, post},
     Json, Router,
 };
-use chai::kvv;
 use chai::unique_id::UniqueIdGen;
-use chai::ws_message::{GameState, Team};
+use chai::ws_message::Team;
+use chai::{kvv, ServerResponse};
 use chai::{ws_message, InputMessage, ServerMessage};
 use futures_util::SinkExt;
 use reqwest::StatusCode;
@@ -28,7 +27,6 @@ use tower_http::{
 };
 use tracing::{error, info, warn, Level};
 
-const LOG_FILE: &str = "log.csv";
 const TEAMS_FILE: &str = "teams.json";
 
 /// The name used for the Mr. X team.
@@ -43,6 +41,7 @@ struct Client {
 
 #[derive(Debug)]
 struct ClientConnection {
+    id: u32,
     send: tokio::sync::mpsc::Sender<String>,
 }
 
@@ -74,7 +73,7 @@ async fn handler(ws: WebSocketUpgrade, State(state): State<SharedState>) -> Resp
     let client = {
         let mut state = state.lock().await;
         let id = state.client_id_gen.next();
-        let client_connection = ClientConnection { send };
+        let client_connection = ClientConnection { id, send };
         state.connections.push(client_connection);
         Client {
             recv: rec,
@@ -306,17 +305,13 @@ async fn main() {
 
 async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, state: SharedState) {
     let mut departures = HashMap::new();
-    let mut log_file = fs::OpenOptions::new()
-        .append(true)
-        .create(true)
-        .open(LOG_FILE)
-        .unwrap();
     let mut interval = tokio::time::interval(Duration::from_millis(500));
     loop {
         interval.tick().await;
 
         let mut state = state.lock().await;
         while let Ok(msg) = recv.try_recv() {
+            // TODO: this does not do anything yet
             if let ControlFlow::Break(_) =
                 chai::process_message(msg, &mut state.teams_state, &mut departures)
             {
@@ -324,42 +319,28 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
             }
         }
 
-        let time = chrono::Utc::now();
-        let mut trains = kvv::train_positions(&departures, time);
-        trains.retain(|x| !x.line_id.contains("bus"));
+        let msg = chai::generate_respone(&departures, &mut state.teams_state);
 
-        // update positions for players on trains
-        for team in state.teams_state.teams.iter_mut() {
-            if let Some(train_id) = &team.on_train {
-                if let Some(train) = trains.iter().find(|x| &x.line_id == train_id) {
-                    team.long = train.long;
-                    team.lat = train.lat;
-                }
-            }
-        }
-
-        let game_state = GameState {
-            teams: state.teams_state.teams.clone(),
-            trains,
-        };
-
-        writeln!(
-            log_file,
-            "{}, {}",
-            time.with_timezone(&chrono_tz::Europe::Berlin).to_rfc3339(),
-            serde_json::to_string(&game_state).unwrap()
-        )
-        .unwrap();
         fs::write(
             TEAMS_FILE,
-            serde_json::to_string_pretty(&game_state.teams).unwrap(),
+            serde_json::to_string_pretty(&state.teams_state.teams).unwrap(),
         )
         .unwrap();
 
-        let msg = serde_json::to_string(&game_state).unwrap();
-        for connection in state.connections.iter_mut() {
-            if connection.send.send(msg.clone()).await.is_err() {
-                continue;
+        match msg {
+            ServerResponse::Broadcast(msg) => {
+                for connection in state.connections.iter_mut() {
+                    if connection.send.send(msg.clone()).await.is_err() {
+                        continue;
+                    }
+                }
+            }
+            ServerResponse::P2P(msg, id) => {
+                if let Some(connection) = state.connections.iter_mut().find(|x| x.id == id) {
+                    if connection.send.send(msg).await.is_err() {
+                        continue;
+                    }
+                }
             }
         }
     }
