@@ -15,10 +15,9 @@ use axum::{
     Json, Router,
 };
 use chai::kvv;
-use chai::kvv::LineDepartures;
 use chai::unique_id::UniqueIdGen;
-use chai::ws_message;
-use chai::ws_message::{ClientMessage, GameState, Team};
+use chai::ws_message::{GameState, Team};
+use chai::{ws_message, InputMessage, ServerMessage};
 use futures_util::SinkExt;
 use reqwest::StatusCode;
 use tokio::sync::mpsc::Sender;
@@ -36,18 +35,6 @@ const TEAMS_FILE: &str = "teams.json";
 const MRX: &str = "Mr. X";
 
 #[derive(Debug)]
-enum InputMessage {
-    Client(ClientMessage, u32),
-    Server(ServerMessage),
-}
-
-#[derive(Debug)]
-enum ServerMessage {
-    Departures(LineDepartures),
-    ClientDisconnected(u32),
-}
-
-#[derive(Debug)]
 struct Client {
     recv: tokio::sync::mpsc::Receiver<GameState>,
     send: tokio::sync::mpsc::Sender<InputMessage>,
@@ -63,7 +50,7 @@ struct ClientConnection {
 
 #[derive(Debug)]
 struct AppState {
-    pub teams: Vec<chai::ws_message::Team>,
+    pub teams_state: chai::AppState,
     pub game_logic_sender: tokio::sync::mpsc::Sender<InputMessage>,
     pub connections: Vec<ClientConnection>,
     pub client_id_gen: UniqueIdGen,
@@ -71,26 +58,14 @@ struct AppState {
 }
 
 impl AppState {
-    const fn new(game_logic_sender: tokio::sync::mpsc::Sender<InputMessage>) -> Self {
+    fn new(game_logic_sender: tokio::sync::mpsc::Sender<InputMessage>) -> Self {
         Self {
-            teams: Vec::new(),
+            teams_state: Default::default(),
             game_logic_sender,
             connections: Vec::new(),
             client_id_gen: UniqueIdGen::new(),
             team_id_gen: UniqueIdGen::new(),
         }
-    }
-
-    fn client(&self, id: u32) -> Option<&ClientConnection> {
-        self.connections.iter().find(|x| x.id == id)
-    }
-    fn client_mut(&mut self, id: u32) -> Option<&mut ClientConnection> {
-        self.connections.iter_mut().find(|x| x.id == id)
-    }
-    fn team_mut_by_client_id(&mut self, id: u32) -> Option<&mut Team> {
-        self.client(id)
-            .map(|x| x.team_id)
-            .and_then(|team_id| self.teams.iter_mut().find(|team| team.id == team_id))
     }
 }
 
@@ -218,7 +193,7 @@ async fn create_team(
     // validation
     if team_name.is_empty() {
         return Err(ws_message::CreateTeamError::InvalidName);
-    } else if state.teams.iter().any(|t| t.name == team_name) {
+    } else if state.teams_state.teams.iter().any(|t| t.name == team_name) {
         return Err(ws_message::CreateTeamError::NameAlreadyExists);
     }
 
@@ -228,13 +203,13 @@ async fn create_team(
         name: team_name.to_owned(),
         ..Default::default()
     };
-    state.teams.push(team.clone());
+    state.teams_state.teams.push(team.clone());
     Ok(Json(team))
 }
 
 async fn list_teams(State(state): State<SharedState>) -> Json<Vec<Team>> {
     let state = state.lock().await;
-    Json(state.teams.clone())
+    Json(state.teams_state.teams.clone())
 }
 
 async fn list_stops() -> impl IntoResponse {
@@ -285,7 +260,7 @@ async fn main() {
             mr_x: true,
         });
     }
-    state.teams = teams;
+    state.teams_state.teams = teams;
 
     let state = std::sync::Arc::new(tokio::sync::Mutex::new(state));
 
@@ -354,7 +329,9 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
 
         let mut state = state.lock().await;
         while let Ok(msg) = recv.try_recv() {
-            if let ControlFlow::Break(_) = process_message(msg, &mut state, &mut departures) {
+            if let ControlFlow::Break(_) =
+                chai::process_message(msg, &mut state.teams_state, &mut departures)
+            {
                 continue;
             }
         }
@@ -364,7 +341,7 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
         trains.retain(|x| !x.line_id.contains("bus"));
 
         // update positions for players on trains
-        for team in state.teams.iter_mut() {
+        for team in state.teams_state.teams.iter_mut() {
             if let Some(train_id) = &team.on_train {
                 if let Some(train) = trains.iter().find(|x| &x.line_id == train_id) {
                     team.long = train.long;
@@ -374,7 +351,7 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
         }
 
         let game_state = GameState {
-            teams: state.teams.clone(),
+            teams: state.teams_state.teams.clone(),
             trains,
         };
 
@@ -397,58 +374,4 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
             }
         }
     }
-}
-
-fn process_message(
-    msg: InputMessage,
-    state: &mut tokio::sync::MutexGuard<'_, AppState>,
-    departures: &mut HashMap<String, kvv::Journey>,
-) -> ControlFlow<()> {
-    match msg {
-        InputMessage::Client(msg, id) => {
-            info!("Got message from client {}: {:?}", id, msg);
-            match msg {
-                ClientMessage::Position { long, lat } => {
-                    if let Some(team) = state.team_mut_by_client_id(id) {
-                        team.long = (long + team.long) / 2.;
-                        team.lat = (lat + team.lat) / 2.;
-                    }
-                }
-                ClientMessage::SetTeamPosition { long, lat, team_id } => {
-                    if let Some(team) = state.teams.iter_mut().find(|t| t.id == team_id) {
-                        team.long = long;
-                        team.lat = lat;
-                    }
-                }
-                ClientMessage::Message(msg) => {
-                    info!("Got message: {}", msg);
-                }
-                ClientMessage::JoinTeam { team_id } => {
-                    let Some(client) = state.client_mut(id) else {
-                        warn!("Client {} not found", id);
-                        return ControlFlow::Break(());
-                    };
-                    client.team_id = team_id;
-                }
-                ClientMessage::EmbarkTrain { train_id } => {
-                    if let Some(team) = state.team_mut_by_client_id(id) {
-                        team.on_train = Some(train_id);
-                    }
-                }
-                ClientMessage::DisembarkTrain(_) => {
-                    if let Some(team) = state.team_mut_by_client_id(id) {
-                        team.on_train = None;
-                    }
-                }
-            }
-        }
-        InputMessage::Server(ServerMessage::Departures(deps)) => {
-            *departures = deps;
-        }
-        InputMessage::Server(ServerMessage::ClientDisconnected(id)) => {
-            info!("Client {} disconnected", id);
-            state.connections.retain(|x| x.id != id);
-        }
-    }
-    ControlFlow::Continue(())
 }
