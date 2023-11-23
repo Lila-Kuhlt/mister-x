@@ -36,16 +36,14 @@ const MRX: &str = "Mr. X";
 
 #[derive(Debug)]
 struct Client {
-    recv: tokio::sync::mpsc::Receiver<GameState>,
+    recv: tokio::sync::mpsc::Receiver<String>,
     send: tokio::sync::mpsc::Sender<InputMessage>,
     id: u32,
 }
 
 #[derive(Debug)]
 struct ClientConnection {
-    id: u32,
-    team_id: u32,
-    send: tokio::sync::mpsc::Sender<GameState>,
+    send: tokio::sync::mpsc::Sender<String>,
 }
 
 #[derive(Debug)]
@@ -76,11 +74,7 @@ async fn handler(ws: WebSocketUpgrade, State(state): State<SharedState>) -> Resp
     let client = {
         let mut state = state.lock().await;
         let id = state.client_id_gen.next();
-        let client_connection = ClientConnection {
-            id,
-            team_id: 0,
-            send,
-        };
+        let client_connection = ClientConnection { send };
         state.connections.push(client_connection);
         Client {
             recv: rec,
@@ -117,13 +111,7 @@ async fn handle_socket(socket: WebSocket, mut client: Client) {
                     msg.into_text().ok()
                 }
             }) {
-                if let Ok(msg) = serde_json::from_str::<chai::ws_message::ClientMessage>(&msg) {
-                    msg
-                } else {
-                    // invalid message
-                    warn!("Received invalid message: {}", msg);
-                    continue;
-                }
+                msg
             } else {
                 // client disconnected
                 disconnect(client.send, client.id).await;
@@ -140,7 +128,7 @@ async fn handle_socket(socket: WebSocket, mut client: Client) {
 
     // Push game updates to the ws stream
     while let Some(update) = client.recv.recv().await {
-        let msg = serde_json::to_string(&update).unwrap();
+        let msg = update;
 
         if send.send(msg.into()).await.is_err() {
             disconnect(client_send, client_id).await;
@@ -368,8 +356,9 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
         )
         .unwrap();
 
+        let msg = serde_json::to_string(&game_state).unwrap();
         for connection in state.connections.iter_mut() {
-            if connection.send.send(game_state.clone()).await.is_err() {
+            if connection.send.send(msg.clone()).await.is_err() {
                 continue;
             }
         }

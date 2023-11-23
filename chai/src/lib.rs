@@ -13,7 +13,7 @@ pub mod ws_message;
 
 #[derive(Debug)]
 pub enum InputMessage {
-    Client(ClientMessage, u32),
+    Client(String, u32),
     Server(ServerMessage),
 }
 
@@ -60,6 +60,7 @@ pub fn process_message(
 ) -> ControlFlow<()> {
     match msg {
         InputMessage::Client(msg, id) => {
+            let msg = serde_json::from_str(&msg).unwrap();
             info!("Got message from client {}: {:?}", id, msg);
             match msg {
                 ClientMessage::Position { long, lat } => {
