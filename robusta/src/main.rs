@@ -14,7 +14,6 @@ use axum::{
     routing::{get, get_service, post},
     Json, Router,
 };
-use chrono::Local;
 use futures_util::SinkExt;
 use kvv::LineDepartures;
 use reqwest::StatusCode;
@@ -406,8 +405,8 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
             }
         }
 
-        let time = Local::now().with_timezone(&chrono_tz::Europe::Berlin);
-        let mut trains = kvv::train_positions(&departures, time.naive_local());
+        let time = chrono::Utc::now();
+        let mut trains = kvv::train_positions(&departures, time);
         trains.retain(|x| !x.line_id.contains("bus"));
 
         // update positions for players on trains
@@ -427,7 +426,7 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
         writeln!(
             log_file,
             "{}, {}",
-            time.to_rfc3339(),
+            time.with_timezone(&chrono_tz::Europe::Berlin).to_rfc3339(),
             serde_json::to_string(&game_state).unwrap()
         ).unwrap();
         fs::write(

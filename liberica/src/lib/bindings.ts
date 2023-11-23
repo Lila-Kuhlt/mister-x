@@ -6,14 +6,14 @@ export type Team = { id: number; long: number; lat: number; on_train: string | n
 
 export type GameState = { teams: Team[]; trains: Train[] }
 
-/**
- * Information about a tram station
- */
-export type KvvStop = { name: string; id: string; lat: number; lon: number }
-
 export type CreateTeam = { name: string; color: string }
 
 export type ClientMessage = { Position: { long: number; lat: number } } | { SetTeamPosition: { long: number; lat: number; team_id: number } } | { JoinTeam: { team_id: number } } | { EmbarkTrain: { train_id: string } } | { DisembarkTrain: number } | { Message: string }
 
 export type Train = { id: number; long: number; lat: number; line_id: string; line_name: string; direction: string }
+
+/**
+ * Information about a tram station
+ */
+export type KvvStop = { name: string; id: string; lat: number; lon: number }
 

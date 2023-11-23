@@ -1,5 +1,7 @@
 // src/stop_event_request.rs
 
+use chrono::Utc;
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "PascalCase")]
 pub struct StopEventRequest {
@@ -52,8 +54,7 @@ pub struct StopEventRequestBuilder {
 
 impl StopEventRequestBuilder {
     pub fn new() -> Self {
-        let timestamp = Local::now()
-            .with_timezone(&chrono_tz::Europe::Berlin)
+        let timestamp = Utc::now()
             .format("%Y-%m-%dT%H:%M:%S.%3fZ")
             .to_string();
         Self {
@@ -112,7 +113,6 @@ impl Default for StopEventRequestBuilder {
 
 // src/stop_event_response.rs
 
-use chrono::Local;
 use serde::{Deserialize, Serialize};
 
 use crate::{RequestPayload, ServiceRequest};

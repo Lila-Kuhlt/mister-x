@@ -1,9 +1,10 @@
+use chrono::{DateTime, Utc};
+use futures_util::future::join_all;
+use serde::Serialize;
+
 use std::collections::HashMap;
 use std::sync::OnceLock;
 use std::time::Duration;
-
-use futures_util::future::join_all;
-use serde::Serialize;
 
 // mod api;
 
@@ -167,8 +168,8 @@ async fn kvv_stops() -> Vec<Stop> {
 
 #[derive(Debug, Clone)]
 pub struct Times {
-    arrival: chrono::NaiveDateTime,
-    departure: chrono::NaiveDateTime,
+    arrival: DateTime<Utc>,
+    departure: DateTime<Utc>,
 }
 
 #[derive(Debug, Default, Clone)]
@@ -193,12 +194,16 @@ type StopRef = String;
 pub type LineDepartures = HashMap<JourneyRef, Journey>;
 
 pub fn parse_times(call: &trias::response::Call) -> Option<Times> {
-    fn parse_time(time: &str) -> chrono::NaiveDateTime {
-        chrono::NaiveDateTime::parse_from_str(time, "%Y-%m-%dT%H:%M:%SZ").unwrap()
-    }
-
-    let arrival = call.call_at_stop.service_arrival.as_ref().map(|service| parse_time(&service.timetabled_time));
-    let departure = call.call_at_stop.service_departure.as_ref().map(|service| parse_time(&service.timetabled_time));
+    let arrival = call
+        .call_at_stop
+        .service_arrival
+        .as_ref()
+        .map(|service| service.timetabled_time.parse().unwrap());
+    let departure = call
+        .call_at_stop
+        .service_departure
+        .as_ref()
+        .map(|service| service.timetabled_time.parse().unwrap());
     match (arrival, departure) {
         (Some(arrival), Some(departure)) => Some(Times { arrival, departure }),
         (Some(arrival), None) => Some(Times { arrival, departure: arrival + DEFAULT_WAIT_TIME }),
@@ -306,7 +311,7 @@ pub fn points_on_route(start_stop_id: &str, end_stop_id: &str, stops: &[Stop]) -
 }
 
 pub fn train_position_per_route(
-    time: chrono::NaiveDateTime,
+    time: DateTime<Utc>,
     line_id: &str,
     departures: &Journey,
     stops: &[Stop],
@@ -366,7 +371,7 @@ pub async fn fetch_departures_for_region() -> LineDepartures {
 
 pub fn train_positions(
     departures_per_line: &LineDepartures,
-    render_time: chrono::NaiveDateTime,
+    render_time: DateTime<Utc>,
 ) -> Vec<Train> {
     let stops = KVV_STOPS.get().expect("KVV_STOPS not initialized");
     departures_per_line
