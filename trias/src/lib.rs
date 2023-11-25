@@ -89,12 +89,9 @@ pub async fn stop_events(
         include_onward_calls: true,
         ..Default::default()
     };
-    let builder = StopEventRequestBuilder::new()
-        .location_ref(location_ref)
-        .requestor_ref(access_token)
+    let builder = StopEventRequestBuilder::new(access_token, location_ref)
         .params(params)
         .build()
-        .unwrap()
         //... set other fields ...
         ;
 

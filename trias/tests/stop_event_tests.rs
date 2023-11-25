@@ -6,11 +6,9 @@ mod tests {
 
     #[test]
     fn test_stop_event_request_builder() {
-        let request = StopEventRequestBuilder::new()
-            .location_ref("8507000".to_string())
-            .dep_arr_time("2023-10-11T11:24:28".to_string())
-            .build()
-            .unwrap();
+        let request = StopEventRequestBuilder::new("API-Explorer".to_owned(), "8507000".to_owned())
+            .dep_arr_time("2023-10-11T11:24:28".to_owned())
+            .build();
 
         if let RequestPayload::StopEventRequest(request) = request.request_payload {
             assert_eq!(request.location.location_ref.stop_point_ref, "8507000");
@@ -21,18 +19,10 @@ mod tests {
     }
 
     #[test]
-    fn test_stop_event_request_builder_missing_fields() {
-        let request = StopEventRequestBuilder::new().build();
-        assert!(request.is_err());
-    }
-
-    #[test]
     fn test_stop_event_request_serialization() {
-        let builder = StopEventRequestBuilder::new()
-            .location_ref("8507000".to_string())
-            .dep_arr_time("2023-10-11T11:24:28".to_string())
-            .build()
-            .unwrap();
+        let builder = StopEventRequestBuilder::new("API-Explorer".to_owned(), "8507000".to_owned())
+            .dep_arr_time("2023-10-11T11:24:28".to_owned())
+            .build();
 
         let xml_output = generate_service_request(builder).unwrap();
 

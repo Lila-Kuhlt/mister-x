@@ -35,12 +35,9 @@ async fn test_fetch_stop_event() {
     let api_endpoint = "https://projekte.kvv-efa.de/koberttrias/trias"; // Replace with your API endpoint
     let access_token = std::env::var("TRIAS_ACCESS_TOKEN").expect("TRIAS_ACCESS_TOKEN not set");
 
-    let builder = trias::StopEventRequestBuilder::new()
-        .location_ref("de:08212:7".to_string())
-        .dep_arr_time("2023-10-13T00:24:28".to_string())
-        .requestor_ref(access_token)
+    let builder = trias::StopEventRequestBuilder::new(access_token, "de:08212:7".to_owned())
+        .dep_arr_time("2023-10-13T00:24:28".to_owned())
         .build()
-        .unwrap()
         //... set other fields ...
         ;
 

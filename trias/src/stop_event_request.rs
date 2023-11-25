@@ -48,19 +48,19 @@ impl Default for StopEventParams {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct StopEventRequestBuilder {
     requestor_ref: String,
-    location_ref: Option<String>,
+    location_ref: String,
     dep_arr_time: String,
     params: Option<StopEventParams>,
 }
 
 impl StopEventRequestBuilder {
-    pub fn new() -> Self {
+    pub fn new(requestor_ref: String, location_ref: String) -> Self {
         let timestamp = Utc::now()
             .format("%Y-%m-%dT%H:%M:%S.%3fZ")
             .to_string();
         Self {
-            location_ref: None,
-            requestor_ref: "API-Explorer".to_string(),
+            requestor_ref,
+            location_ref,
             dep_arr_time: timestamp,
             params: None,
         }
@@ -72,7 +72,7 @@ impl StopEventRequestBuilder {
     }
 
     pub fn location_ref(mut self, location_ref: String) -> Self {
-        self.location_ref = Some(location_ref);
+        self.location_ref = location_ref;
         self
     }
 
@@ -86,28 +86,19 @@ impl StopEventRequestBuilder {
         self
     }
 
-    pub fn build(self) -> Result<ServiceRequest, &'static str> {
-        if self.location_ref.is_none() {
-            return Err("Missing required fields");
-        }
-        Ok(ServiceRequest {
+    pub fn build(self) -> ServiceRequest {
+        ServiceRequest {
             request_timestamp: self.dep_arr_time.clone(),
             requestor_ref: self.requestor_ref,
             request_payload: RequestPayload::StopEventRequest(StopEventRequest {
                 location: Location {
                     location_ref: LocationRef {
-                        stop_point_ref: self.location_ref.unwrap(),
+                        stop_point_ref: self.location_ref,
                     },
                     dep_arr_time: self.dep_arr_time,
                 },
                 params: self.params.unwrap_or_default(),
             }),
-        })
-    }
-}
-
-impl Default for StopEventRequestBuilder {
-    fn default() -> Self {
-        Self::new()
+        }
     }
 }
