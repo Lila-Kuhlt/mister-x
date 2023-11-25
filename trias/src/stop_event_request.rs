@@ -1,6 +1,7 @@
-// src/stop_event_request.rs
-
 use chrono::Utc;
+use serde::{Deserialize, Serialize};
+
+use crate::{RequestPayload, ServiceRequest};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "PascalCase")]
@@ -36,7 +37,7 @@ impl Default for StopEventParams {
     fn default() -> Self {
         Self {
             number_of_results: 10,
-            stop_event_type: "departure".to_string(),
+            stop_event_type: "both".to_owned(),
             include_previous_calls: false,
             include_onward_calls: false,
             include_realtime_data: true,
@@ -110,62 +111,3 @@ impl Default for StopEventRequestBuilder {
         Self::new()
     }
 }
-
-// src/stop_event_response.rs
-
-use serde::{Deserialize, Serialize};
-
-use crate::{RequestPayload, ServiceRequest};
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "PascalCase")]
-pub struct StopEventResult {
-    pub result_id: Option<String>,
-    pub stop_event: Option<StopEventDetails>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "PascalCase")]
-pub struct StopEventDetails {
-    pub this_call: ThisCall,
-    pub service: ServiceDetails,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "PascalCase")]
-pub struct ThisCall {
-    pub call_at_stop: CallAtStopDetails,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "PascalCase")]
-pub struct CallAtStopDetails {
-    pub stop_point_ref: String,
-    pub stop_point_name: TextLang,
-    pub planned_bay: TextLang,
-    pub service_departure: ServiceDepartureDetails,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "PascalCase")]
-pub struct ServiceDepartureDetails {
-    pub timetabled_time: String,
-    pub estimated_time: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "PascalCase")]
-pub struct ServiceDetails {
-    pub operating_day_ref: String,
-    pub journey_ref: String,
-    // ... other fields like LineRef, DirectionRef, Mode, etc. ...
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "PascalCase")]
-pub struct TextLang {
-    pub text: String,
-    pub language: String,
-}
-
-// You can expand upon these structs if the API has more detailed responses or other nested elements.

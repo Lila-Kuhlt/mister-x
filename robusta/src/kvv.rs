@@ -198,12 +198,12 @@ pub fn parse_times(call: &trias::response::Call) -> Option<Times> {
         .call_at_stop
         .service_arrival
         .as_ref()
-        .map(|service| service.timetabled_time.parse().unwrap());
+        .map(|service| service.estimated_time.as_ref().unwrap_or(&service.timetabled_time).parse().unwrap());
     let departure = call
         .call_at_stop
         .service_departure
         .as_ref()
-        .map(|service| service.timetabled_time.parse().unwrap());
+        .map(|service| service.estimated_time.as_ref().unwrap_or(&service.timetabled_time).parse().unwrap());
     match (arrival, departure) {
         (Some(arrival), Some(departure)) => Some(Times { arrival, departure }),
         (Some(arrival), None) => Some(Times { arrival, departure: arrival + DEFAULT_WAIT_TIME }),
@@ -241,6 +241,9 @@ pub async fn fetch_departures(stops: &[Stop]) -> LineDepartures {
     {
         for stop in stop_events {
             let service = &stop.stop_event.service;
+            if service.cancelled {
+                continue;
+            }
             let journey = &service.journey_ref;
             let line_name = service.service_section.published_line_name.text.clone();
             let destination = service.destination_text.text.clone();

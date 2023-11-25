@@ -1,5 +1,3 @@
-// src/location_information.rs
-
 use serde::{Deserialize, Serialize};
 
 use chrono::Utc;
@@ -27,8 +25,6 @@ pub struct Restrictions {
     pub number_of_results: u32,
     pub include_pt_modes: bool,
 }
-
-// src/location_request_builder.rs
 
 pub struct LocationInformationRequestBuilder {
     requestor_ref: String,
@@ -92,55 +88,4 @@ impl LocationInformationRequestBuilder {
             ),
         }
     }
-}
-
-#[derive(Serialize, Deserialize)]
-#[serde(rename_all = "PascalCase")]
-pub struct LocationResult {
-    location: Location,
-    complete: String,
-    probability: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "PascalCase")]
-pub struct Location {
-    pub stop_point: StopPoint,
-    pub location_name: TextLang,
-    pub geo_position: GeoPosition,
-    pub complete: bool,
-    pub probability: f32,
-    pub mode: Mode,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "PascalCase")]
-pub struct StopPoint {
-    pub stop_point_ref: String,
-    pub stop_point_name: TextLang,
-    pub locality_ref: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "PascalCase")]
-pub struct TextLang {
-    pub text: String,
-    pub language: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "PascalCase")]
-pub struct GeoPosition {
-    pub longitude: f32,
-    pub latitude: f32,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "PascalCase")]
-pub struct Mode {
-    pub pt_mode: String,
-    #[serde(default)]
-    pub rail_submode: Option<String>,
-    #[serde(default)]
-    pub funicular_submode: Option<String>,
 }

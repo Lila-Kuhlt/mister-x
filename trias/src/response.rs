@@ -72,13 +72,6 @@ pub struct StopPoint {
     pub covered: String,
 }
 
-/*
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub enum StopEventResponse {
-    StopEventResult(Vec<StopEventResult>),
-    ErrorMessage(ErrorMessage),
-}*/
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "PascalCase")]
 pub struct StopEventResponse {
@@ -141,6 +134,7 @@ pub struct CallAtStop {
 #[serde(rename_all = "PascalCase")]
 pub struct Service {
     pub timetabled_time: String,
+    pub estimated_time: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
