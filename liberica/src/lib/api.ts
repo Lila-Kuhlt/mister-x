@@ -1,18 +1,33 @@
 import axios from "axios";
 import { Team, Stop, CreateTeam } from "lib/bindings";
 
-const HOSTNAME_DEV = window.location.hostname;
-const HOSTNAME_PROD = window.location.host;
+const PROTOCOLS = {
+  WS_SECURE: "wss:",
+  WS: "ws:",
+  HTTP_SECURE: "https:",
+  HTTP: "http:",
+};
 
-export const BASE_URLS = import.meta.env.DEV
-  ? {
-      WEBSOCKET: `ws://${HOSTNAME_DEV}:3000`,
-      FETCH: `http://${HOSTNAME_DEV}:3000/api`,
-    }
-  : {
-      WEBSOCKET: `wss://${HOSTNAME_PROD}`,
-      FETCH: `https://${HOSTNAME_PROD}/api`,
-    };
+export function getWebsocketEndpoint() {
+  const useDevServer = !window.isSecureContext || !import.meta.env.PROD;
+  const proto = useDevServer ? PROTOCOLS.WS : PROTOCOLS.WS_SECURE;
+  const hostname = window.location.hostname;
+  const port = useDevServer ? ":3000" : "";
+  return `${proto}//${hostname}${port}`;
+}
+
+export function getHTTPEndpoint() {
+  const useDevServer = !window.isSecureContext || !import.meta.env.PROD;
+  const proto = useDevServer ? PROTOCOLS.HTTP : PROTOCOLS.HTTP_SECURE;
+  const hostname = window.location.hostname;
+  const port = useDevServer ? ":3000" : "";
+  return `${proto}//${hostname}${port}/api`;
+}
+
+export const BASE_URLS = {
+  WEBSOCKET: getWebsocketEndpoint(),
+  HTTP: getHTTPEndpoint(),
+};
 
 export const ENDPOINTS = {
   POST_CREATE_TEAM: "/create-team",
@@ -23,7 +38,7 @@ export const ENDPOINTS = {
   GET_WS: "/ws",
 };
 
-export const AXIOS = axios.create({ baseURL: BASE_URLS.FETCH });
+export const AXIOS = axios.create({ baseURL: BASE_URLS.HTTP });
 
 export const postCreateTeam = (team: CreateTeam): Promise<void> =>
   AXIOS.post(ENDPOINTS.POST_CREATE_TEAM, team);
@@ -35,4 +50,6 @@ export const getStops = (): Promise<Stop[]> =>
   AXIOS.get(ENDPOINTS.GET_STOPS).then((data) => data.data);
 
 export const serverAlive = (): Promise<boolean> =>
-  AXIOS.get(ENDPOINTS.GET_PING).then(() => true).catch(() => false);
+  AXIOS.get(ENDPOINTS.GET_PING)
+    .then(() => true)
+    .catch(() => false);

@@ -1,7 +1,10 @@
-import { Map } from "components/Map";
+import { Map } from "components/map/Map";
 import { BASE_URLS, ENDPOINTS } from "lib/api";
+import { GameState } from "lib/bindings";
 import { WebsocketApi } from "lib/websockets";
+import { Popup } from "react-leaflet";
 import { createContext, useEffect, useState } from "react";
+import { Marker } from "components/map/Marker";
 
 export const WebsocketContext = createContext<WebsocketApi | undefined>(
   undefined
@@ -9,20 +12,24 @@ export const WebsocketContext = createContext<WebsocketApi | undefined>(
 
 export function Game() {
   const [ws, setWS] = useState<WebsocketApi | undefined>();
+  const [gs, setGameState] = useState<GameState>({ teams: [], trains: [] });
 
   useEffect(() => {
     const WS_URL = BASE_URLS.WEBSOCKET + ENDPOINTS.GET_WS;
     const socket: WebsocketApi = new WebsocketApi(WS_URL);
 
+    const onClose = (e: Event) => {
+      setWS(undefined);
+      console.error(`Websocket connection closed uncleanly: `, e);
+      setTimeout(() => socket.reconnect(), 1000);
+    };
+
     socket
       .registerEvent("Connect", () => setWS(socket))
-      .registerEvent("Disconnect", () => setWS(undefined))
-      .registerEvent("Error", (e) => {
-        console.error("Websocket error (reconnect in 1s): ", e);
-        setTimeout(() => socket.reconnect(), 1000);
-      });
+      .registerEvent("Error", (e) => onClose(e))
+      .registerEvent("Disconnect", () => setWS(undefined));
 
-    socket.register("GameState", (gs) => console.log("GS:", gs));
+    socket.register("GameState", (gs) => setGameState(gs));
 
     return () => socket.disconnect();
   }, []);
@@ -43,7 +50,16 @@ export function Game() {
 
   const MAP = () => (
     <WebsocketContext.Provider value={ws}>
-      <Map></Map>
+      <Map
+        tileProps={{ updateInterval: 500 }}
+        containerProps={{ preferCanvas: true }}
+      >
+        {gs.trains.map((train) => (
+          <Marker key={train.line_id} position={{ ...train }}>
+            <Popup>{train.line_name}</Popup>
+          </Marker>
+        ))}
+      </Map>
     </WebsocketContext.Provider>
   );
 

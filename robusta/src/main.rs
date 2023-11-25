@@ -260,6 +260,7 @@ async fn main() {
     specta::export::ts(TEMP_BINDINGS).unwrap();
     let old = fs::read_to_string(BINDINGS).unwrap_or_default();
     let new = fs::read_to_string(TEMP_BINDINGS).unwrap();
+
     // Only update bindings if they changed to avoid triggering a recompile of the frontend
     if old != new {
         info!("Updating bindings");
@@ -268,13 +269,6 @@ async fn main() {
 
     info!("Starting server");
     kvv::init().await;
-
-    let specta_emit_path =
-        std::env::var("SPECTA_EMIT_PATH").unwrap_or("../liberica/src/lib/bindings.ts".to_string());
-
-    if let Err(err) = specta::export::ts(&specta_emit_path) {
-        error!("Could not emit TS types to '{specta_emit_path}': {err}")
-    };
 
     let (send, recv) = tokio::sync::mpsc::channel(100);
 

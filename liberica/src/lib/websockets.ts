@@ -12,10 +12,22 @@ export type WSHandlerMap<M extends object> = {
   [K in Keys<M>]?: WSHandler<M, K>;
 };
 
+/**
+ * Websocket Disconnect Codes
+ * @see https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent/code
+ */
+export const WEBSOCKET_CODES = {
+  CLOSE_NORMAL: 1000,
+  CLOSE_GOING_AWAY: 1001,
+  CLOSE_ABNORMAL: 1006,
+  SERVER_ERROR: 1011,
+  SERVICE_RESTART: 1012,
+};
+
 export type WSEvent =
-  | { Disconnect: void }
+  | { Disconnect: CloseEvent }
   | { Connect: void }
-  | { Error: unknown }; // Todo: Better error types
+  | { Error: Event };
 
 export class WebsocketApi {
   public lastMessage?: Date;
@@ -43,7 +55,7 @@ export class WebsocketApi {
     this.endpoint = endpoint;
     this.connection = new WebSocket(endpoint);
     this.connection.onerror = (e) => this.metaHandlers["Error"]?.(e);
-    this.connection.onclose = () => this.metaHandlers["Disconnect"]?.();
+    this.connection.onclose = (e) => this.metaHandlers["Disconnect"]?.(e);
     this.connection.onopen = () => this.metaHandlers["Connect"]?.();
     this.connection.onmessage = (e) => {
       const res = this.parseMsg(e.data);
@@ -56,7 +68,7 @@ export class WebsocketApi {
       const json = JSON.parse(msg) as ServerMessage;
       return json;
     } catch (e) {
-      this.metaHandlers.Error?.(e);
+      this.metaHandlers.Error?.(e as Event);
       return undefined;
     }
   }

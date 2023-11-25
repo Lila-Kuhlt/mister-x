@@ -1,9 +1,6 @@
-use specta;
 use std::env;
 use std::path::PathBuf;
 use std::process::Command;
-
-const FRONTEND_DIR: &str = "liberica";
 
 fn main() {
     // Get the project directory
@@ -15,7 +12,11 @@ fn main() {
         .unwrap_or(project_dir.parent().unwrap().join("liberica"));
 
     for path in ["package.json", "src", "tsconfig.json", "index.html"] {
-        println!("cargo:rerun-if-changed={}/{}", liberica_dir.to_string_lossy(), path);
+        println!(
+            "cargo:rerun-if-changed={}/{}",
+            liberica_dir.to_string_lossy(),
+            path
+        );
     }
     println!("cargo:warning=Building Liberica");
 
