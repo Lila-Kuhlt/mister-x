@@ -1,23 +1,19 @@
 #[derive(Clone, Default, Copy, Debug)]
 pub struct Point {
-    pub x: f32,
-    pub y: f32,
+    pub latitude: f32,
+    pub longitude: f32,
 }
 
 impl Point {
     pub fn distance(self, other: Self) -> f32 {
-        let dx = other.x - self.x;
-        let dy = other.y - self.y;
-        (dx * dx + dy * dy).sqrt()
+        f32::hypot(other.latitude - self.latitude, other.longitude - self.longitude)
     }
 
     /// Linear interpolation.
     pub fn lerp(self, other: Self, t: f32) -> Self {
-        let dx = other.x - self.x;
-        let dy = other.y - self.y;
         Point {
-            x: self.x + t * dx,
-            y: self.y + t * dy,
+            latitude: self.latitude + t * (other.latitude - self.latitude),
+            longitude: self.longitude + t * (other.longitude - self.longitude),
         }
     }
 }

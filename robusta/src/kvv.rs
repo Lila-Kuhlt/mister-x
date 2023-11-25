@@ -97,8 +97,8 @@ fn parse_curve(line: &str) -> Option<(String, String, Vec<Point>)> {
             let latitude = coords.next()?.trim().parse().ok()?;
             let longitude = coords.next()?.trim().parse().ok()?;
             Some(Point {
-                x: longitude,
-                y: latitude,
+                latitude,
+                longitude,
             })
         })
         .collect::<Option<Vec<_>>>()?;
@@ -299,12 +299,12 @@ pub fn points_on_route(start_stop_id: &str, end_stop_id: &str, stops: &[Stop]) -
     };
 
     let start = Point {
-        x: start_stop.kvv_stop.lon as f32,
-        y: start_stop.kvv_stop.lat as f32,
+        latitude: start_stop.kvv_stop.lat as f32,
+        longitude: start_stop.kvv_stop.lon as f32,
     };
     let end = Point {
-        x: end_stop.kvv_stop.lon as f32,
-        y: end_stop.kvv_stop.lat as f32,
+        latitude: end_stop.kvv_stop.lat as f32,
+        longitude: end_stop.kvv_stop.lon as f32,
     };
     let mut points = vec![start];
     points.extend(intermediate_points(start_stop_id, end_stop_id));
@@ -345,8 +345,8 @@ pub fn train_position_per_route(
         if let Some(position) = interpolate_segment(&points, progress) {
             return Some(Train {
                 id: 0,
-                long: position.x,
-                lat: position.y,
+                lat: position.latitude,
+                long: position.longitude,
                 line_id: line_id.to_owned(),
                 line_name,
                 direction: destination,
