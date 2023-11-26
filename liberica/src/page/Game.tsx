@@ -1,5 +1,5 @@
 import { Map } from "components/map/Map";
-import { BASE_URLS, ENDPOINTS } from "lib/api";
+import { createWebsocketConnection } from "lib/api";
 import { GameState } from "lib/bindings";
 import { WebsocketApi } from "lib/websockets";
 import { Popup } from "react-leaflet";
@@ -15,8 +15,7 @@ export function Game() {
   const [gs, setGameState] = useState<GameState>({ teams: [], trains: [] });
 
   useEffect(() => {
-    const WS_URL = BASE_URLS.WEBSOCKET + ENDPOINTS.GET_WS;
-    const socket: WebsocketApi = new WebsocketApi(WS_URL);
+    const socket = createWebsocketConnection();
 
     const onClose = (e: Event) => {
       setWS(undefined);

@@ -46,7 +46,7 @@ export class WebsocketApi {
     // Don't try to reconnect if there is a connection already
     if (this.connection?.readyState === this.connection.OPEN && force) return;
 
-    this?.disconnect();
+    this.disconnect();
     this.connect(this.endpoint);
   }
 
