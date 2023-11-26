@@ -14,15 +14,9 @@ use crate::ws_message::Train;
 /// The wait time to use when the arrival or departure time is missing.
 const DEFAULT_WAIT_TIME: Duration = Duration::from_secs(30);
 
-#[derive(Debug, Serialize, specta::Type)]
-pub struct Stop {
-    id: u32,
-    kvv_stop: KvvStop,
-}
-
 /// Information about a tram station
 #[derive(Debug, Serialize, specta::Type, PartialEq)]
-pub struct KvvStop {
+pub struct Stop {
     /// human readable stop name
     pub name: String,
     /// internal stop id
@@ -144,24 +138,18 @@ async fn kvv_stops() -> Vec<Stop> {
     let api_endpoint = API_ENDPOINT.get().unwrap();
     join_all(STOPS
         .iter()
-        .enumerate()
-        .map(|(id, stop)| async move {
+        .map(|stop| async move {
             let name = stop.1.to_string();
             let stops = trias::search_stops(name, access_token.clone(), api_endpoint, 1).await.unwrap();
 
             let first_stop = stops.into_iter().next().unwrap();
             let stop_point = first_stop.stop_point;
             let position = first_stop.geo_position;
-            let kvv_stop = KvvStop {
+            Stop {
                 name: stop_point.stop_point_name.text,
                 id: stop_point.stop_point_ref,
                 lat: position.latitude.parse().unwrap(),
                 lon: position.longitude.parse().unwrap(),
-            };
-
-            Stop {
-                id: id as u32,
-                kvv_stop,
             }
         })).await
 }
@@ -222,7 +210,7 @@ pub async fn fetch_departures(stops: &[Stop]) -> LineDepartures {
     let results = join_all(stops
         .iter()
         .map(|stop| {
-            let name = stop.kvv_stop.id.clone();
+            let name = stop.id.clone();
             let access_token = access_token.clone();
             async move {
                 trias::stop_events(name, access_token, 10, api_endpoint)
@@ -264,7 +252,7 @@ pub async fn fetch_departures(stops: &[Stop]) -> LineDepartures {
                 let Some(proper_stop_ref) = find_stop_by_kvv_id(stop_ref, stops) else {
                     continue;
                 };
-                let short_ref = &proper_stop_ref.kvv_stop.id;
+                let short_ref = &proper_stop_ref.id;
                 let current_times = entry.stops.get(short_ref);
                 if let Some(current_times) = current_times {
                     if current_times.departure < times.departure {
@@ -287,7 +275,7 @@ pub fn find_stop_by_kvv_id<'a>(id: &str, stops: &'a [Stop]) -> Option<&'a Stop> 
     let id = format!("{}:", id);
     stops
         .iter()
-        .find(|stop| id.starts_with(&format!("{}:", stop.kvv_stop.id)))
+        .find(|stop| id.starts_with(&format!("{}:", stop.id)))
 }
 
 pub fn points_on_route(start_stop_id: &str, end_stop_id: &str, stops: &[Stop]) -> Vec<Point> {
@@ -299,12 +287,12 @@ pub fn points_on_route(start_stop_id: &str, end_stop_id: &str, stops: &[Stop]) -
     };
 
     let start = Point {
-        latitude: start_stop.kvv_stop.lat as f32,
-        longitude: start_stop.kvv_stop.lon as f32,
+        latitude: start_stop.lat as f32,
+        longitude: start_stop.lon as f32,
     };
     let end = Point {
-        latitude: end_stop.kvv_stop.lat as f32,
-        longitude: end_stop.kvv_stop.lon as f32,
+        latitude: end_stop.lat as f32,
+        longitude: end_stop.lon as f32,
     };
     let mut points = vec![start];
     points.extend(intermediate_points(start_stop_id, end_stop_id));

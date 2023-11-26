@@ -156,9 +156,9 @@ export default function SVGMap(props: MapProps) {
             {stops.map((stop) => (
               <Circle
                 eventHandlers={{
-                  click: () => TS.team && ws?.send({ SetTeamPosition: { lat: stop.kvv_stop.lat, long: stop.kvv_stop.lon, team_id: TS.team.id } }),
+                  click: () => TS.team && ws?.send({ SetTeamPosition: { lat: stop.lat, long: stop.lon, team_id: TS.team.id } }),
                 }}
-                center={[stop.kvv_stop.lat, stop.kvv_stop.lon]}
+                center={[stop.lat, stop.lon]}
                 pathOptions={{
                   color: "none",
                   fillColor: "blue",
