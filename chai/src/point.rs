@@ -6,7 +6,10 @@ pub struct Point {
 
 impl Point {
     pub fn distance(self, other: Self) -> f32 {
-        f32::hypot(other.latitude - self.latitude, other.longitude - self.longitude)
+        f32::hypot(
+            other.latitude - self.latitude,
+            other.longitude - self.longitude,
+        )
     }
 
     /// Linear interpolation.
