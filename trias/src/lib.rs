@@ -1,17 +1,49 @@
-mod location_information;
-pub mod response;
-mod stop_event_request;
+use std::error::Error;
 
-use location_information::LocationInformationRequest;
-pub use location_information::LocationInformationRequestBuilder;
-use response::{DeliveryPayload, Location, StopEventResponse, TriasResponse};
-pub use stop_event_request::StopEventRequestBuilder;
-
+use chrono::Utc;
 use serde::Serialize;
 use serde_xml_rs::to_string;
 
-pub fn generate_service_request(builder: ServiceRequest) -> Result<String, &'static str> {
-    let xml_string = to_string(&builder).map_err(|_| "Failed to serialize to XML")?;
+use location_information::{Location, LocationInformationRequest};
+use response::{DeliveryPayload, TriasResponse};
+use stop_event::{StopEventRequest, StopEventResponse};
+use trip_info::{TripInfoParams, TripInfoRequest, TripInfoResult};
+
+pub use location_information::LocationInformationRequestBuilder;
+pub use stop_event::StopEventRequestBuilder;
+
+mod location_information;
+pub mod response;
+mod stop_event;
+mod trip_info;
+
+#[derive(Debug, Serialize)]
+pub struct ServiceRequest {
+    #[serde(rename = "siri:RequestTimestamp")]
+    pub request_timestamp: String,
+    #[serde(rename = "siri:RequestorRef")]
+    pub requestor_ref: String,
+    #[serde(rename = "RequestPayload")]
+    pub request_payload: RequestPayload,
+}
+
+#[derive(Debug, Serialize)]
+pub enum RequestPayload {
+    LocationInformationRequest(LocationInformationRequest),
+    StopEventRequest(StopEventRequest),
+    TripInfoRequest(TripInfoRequest),
+}
+
+pub fn generate_service_request(
+    access_token: String,
+    payload: RequestPayload,
+) -> Result<String, &'static str> {
+    let request = ServiceRequest {
+        request_timestamp: Utc::now().to_rfc3339(),
+        requestor_ref: access_token,
+        request_payload: payload,
+    };
+    let xml_string = to_string(&request).map_err(|_| "Failed to serialize to XML")?;
 
     let xml_string = xml_string.replace(r#"<?xml version="1.0" encoding="UTF-8"?>"#, "");
     Ok(format!(
@@ -26,8 +58,6 @@ file:///C:/development/HEAD/extras/TRIAS/TRIAS_1.2/Trias.xsd">
     ))
 }
 
-use std::error::Error;
-
 pub async fn post_request(
     api_endpoint: &str,
     request: &str,
@@ -36,7 +66,7 @@ pub async fn post_request(
     let response = client
         .post(api_endpoint)
         .header(reqwest::header::CONTENT_TYPE, "application/xml")
-        .body(request.to_string())
+        .body(request.to_owned())
         .send()
         .await?
         .text()
@@ -51,20 +81,16 @@ pub async fn search_stops(
     access_token: String,
     api_endpoint: &str,
     number_of_results: u32,
-) -> Result<Vec<Location>, &'static str> {
-    let builder = LocationInformationRequestBuilder::new(access_token, name)
+) -> Result<Vec<Location>, Box<dyn Error>> {
+    let payload = LocationInformationRequestBuilder::new(name)
         .number_of_results(number_of_results)
         .include_pt_modes(false)
         .build();
 
-    let xml_request = generate_service_request(builder).unwrap();
-    let response = post_request(api_endpoint, &xml_request).await.unwrap();
+    let xml_request = generate_service_request(access_token, payload)?;
+    let response = post_request(api_endpoint, &xml_request).await?;
 
-    let DeliveryPayload::LocationInformationResponse(response) = response
-        .service_delivery
-        .ok_or("No service_delivery")?
-        .delivery_payload
-    else {
+    let DeliveryPayload::LocationInformationResponse(response) = response.service_delivery.delivery_payload else {
         panic!("Wrong response type");
     };
 
@@ -82,44 +108,44 @@ pub async fn stop_events(
     number_of_results: u32,
     api_endpoint: &str,
 ) -> Result<Vec<StopEventResponse>, Box<dyn Error>> {
-    let params = stop_event_request::StopEventParams {
+    let params = stop_event::StopEventParams {
         number_of_results,
         include_realtime_data: true,
         include_previous_calls: true,
         include_onward_calls: true,
         ..Default::default()
     };
-    let builder = StopEventRequestBuilder::new(access_token, location_ref)
+    let payload = StopEventRequestBuilder::new(location_ref)
         .params(params)
-        .build()
-        //... set other fields ...
-        ;
+        .build();
 
-    let xml_request = generate_service_request(builder)?;
+    let xml_request = generate_service_request(access_token, payload)?;
     let response = post_request(api_endpoint, &xml_request).await?;
 
-    let DeliveryPayload::StopEventResponse(response) = response
-        .service_delivery
-        .ok_or("no service delivery")?
-        .delivery_payload
-    else {
+    let DeliveryPayload::StopEventResponse(response) = response.service_delivery.delivery_payload else {
         panic!("Wrong response type");
     };
     Ok(response)
 }
 
-#[derive(Debug, Serialize)]
-pub struct ServiceRequest {
-    #[serde(rename = "siri:RequestTimestamp")]
-    pub request_timestamp: String, // Will use this to store the current timestamp
-    #[serde(rename = "siri:RequestorRef")]
-    pub requestor_ref: String,
-    #[serde(rename = "RequestPayload")]
-    pub request_payload: RequestPayload,
-}
+pub async fn trip_info(
+    journey_ref: String,
+    operating_day_ref: String,
+    access_token: String,
+    api_endpoint: &str,
+) -> Result<TripInfoResult, Box<dyn Error>> {
+    let payload = RequestPayload::TripInfoRequest(TripInfoRequest {
+        journey_ref,
+        operating_day_ref,
+        params: TripInfoParams::default(),
+    });
 
-#[derive(Debug, Serialize)]
-pub enum RequestPayload {
-    LocationInformationRequest(LocationInformationRequest),
-    StopEventRequest(stop_event_request::StopEventRequest),
+    let xml_request = generate_service_request(access_token, payload)?;
+    let response = post_request(api_endpoint, &xml_request).await?;
+
+    let DeliveryPayload::TripInfoResponse(response) = response.service_delivery.delivery_payload else {
+        panic!("Wrong response type");
+    };
+
+    Ok(response.trip_info_result)
 }

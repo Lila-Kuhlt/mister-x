@@ -148,8 +148,8 @@ async fn kvv_stops() -> Vec<Stop> {
             Stop {
                 name: stop_point.stop_point_name.text,
                 id: stop_point.stop_point_ref,
-                lat: position.latitude.parse().unwrap(),
-                lon: position.longitude.parse().unwrap(),
+                lat: position.latitude,
+                lon: position.longitude,
             }
         })).await
 }
@@ -181,14 +181,12 @@ type JourneyRef = String;
 type StopRef = String;
 pub type LineDepartures = HashMap<JourneyRef, Journey>;
 
-pub fn parse_times(call: &trias::response::Call) -> Option<Times> {
+pub fn parse_times(call: &trias::response::CallAtStop) -> Option<Times> {
     let arrival = call
-        .call_at_stop
         .service_arrival
         .as_ref()
         .map(|service| service.estimated_time.as_ref().unwrap_or(&service.timetabled_time).parse().unwrap());
     let departure = call
-        .call_at_stop
         .service_departure
         .as_ref()
         .map(|service| service.estimated_time.as_ref().unwrap_or(&service.timetabled_time).parse().unwrap());
@@ -207,7 +205,7 @@ pub async fn fetch_departures(stops: &[Stop]) -> LineDepartures {
     let access_token = ACCESS_TOKEN.get().unwrap();
     let api_endpoint = API_ENDPOINT.get().unwrap();
 
-    let results = join_all(stops
+    let stop_results = join_all(stops
         .iter()
         .map(|stop| {
             let name = stop.id.clone();
@@ -220,53 +218,53 @@ pub async fn fetch_departures(stops: &[Stop]) -> LineDepartures {
         })
     ).await;
 
-    let mut jorneys = HashMap::new();
+    let mut journeys = HashMap::new();
 
-    for stop_events in results
-        .iter()
+    for stop in stop_results
+        .into_iter()
         .flatten()
-        .flat_map(|x| x.stop_event_result.as_ref())
+        .flat_map(|x| x.stop_event_result)
     {
-        for stop in stop_events {
-            let service = &stop.stop_event.service;
-            if service.cancelled {
-                continue;
-            }
-            let journey = &service.journey_ref;
-            let line_name = service.service_section.published_line_name.text.clone();
-            let destination = service.destination_text.text.clone();
-            let this_call = &stop.stop_event.this_call;
-            let previous_call = &stop.stop_event.previous_call.iter().flatten();
-            let next_call = &stop.stop_event.onward_call.iter().flatten();
-            let entry = jorneys
-                .entry(journey.clone())
-                .or_insert(Journey::new(line_name, destination));
-            let calls = previous_call
-                .clone()
-                .chain(std::iter::once(this_call))
-                .chain(next_call.clone());
+        let service = stop.stop_event.service;
+        if service.cancelled {
+            continue;
+        }
+        let journey_ref = service.journey_ref;
+        let line_name = service.service_section.published_line_name.text;
+        let destination = service.destination_text.text;
+        let this_call = stop.stop_event.this_call;
+        let previous_call = stop.stop_event.previous_call.into_iter();
+        let next_call = stop.stop_event.onward_call.into_iter();
+        let entry = journeys
+            .entry(journey_ref.clone())
+            .or_insert(Journey::new(line_name, destination));
+        let calls = previous_call
+            .chain(std::iter::once(this_call))
+            .chain(next_call)
+            .map(|call| call.call_at_stop);
 
-            for call in calls {
-                let Some(times) = parse_times(call) else { continue; };
-                let stop_ref = &call.call_at_stop.stop_point_ref;
-                let Some(proper_stop_ref) = find_stop_by_kvv_id(stop_ref, stops) else {
+        for call in calls {
+            let Some(times) = parse_times(&call) else {
+                continue;
+            };
+            let stop_ref = &call.stop_point_ref;
+            let Some(proper_stop_ref) = find_stop_by_kvv_id(stop_ref, stops) else {
+                continue;
+            };
+            let short_ref = &proper_stop_ref.id;
+            let current_times = entry.stops.get(short_ref);
+            if let Some(current_times) = current_times {
+                if current_times.departure < times.departure {
                     continue;
-                };
-                let short_ref = &proper_stop_ref.id;
-                let current_times = entry.stops.get(short_ref);
-                if let Some(current_times) = current_times {
-                    if current_times.departure < times.departure {
-                        continue;
-                    }
                 }
-                entry.stops.insert(short_ref.clone(), times);
             }
-            if entry.stops.len() < 2 {
-                jorneys.remove(journey);
-            }
+            entry.stops.insert(short_ref.clone(), times);
+        }
+        if entry.stops.len() < 2 {
+            journeys.remove(&journey_ref);
         }
     }
-    jorneys
+    journeys
 }
 
 pub fn find_stop_by_kvv_id<'a>(id: &str, stops: &'a [Stop]) -> Option<&'a Stop> {
@@ -303,7 +301,7 @@ pub fn points_on_route(start_stop_id: &str, end_stop_id: &str, stops: &[Stop]) -
 
 pub fn train_position_per_route(
     time: DateTime<Utc>,
-    line_id: &str,
+    journey_ref: &str,
     departures: &Journey,
     stops: &[Stop],
 ) -> Option<Train> {
@@ -311,7 +309,7 @@ pub fn train_position_per_route(
     line_stops.sort_by_key(|x| x.1.departure);
 
     if line_stops.is_empty() {
-        tracing::warn!("no departures for line {}", line_id);
+        tracing::warn!("no departures for journey {}", journey_ref);
         return None;
     }
 
@@ -335,7 +333,7 @@ pub fn train_position_per_route(
                 id: 0,
                 lat: position.latitude,
                 long: position.longitude,
-                line_id: line_id.to_owned(),
+                line_id: journey_ref.to_owned(),
                 line_name,
                 direction: destination,
             });
@@ -367,11 +365,8 @@ pub fn train_positions(
     let stops = KVV_STOPS.get().expect("KVV_STOPS not initialized");
     departures_per_line
         .iter()
-        .flat_map(|(line_id, departures)| train_position_per_route(
-            render_time,
-            line_id,
-            departures,
-            stops,
-        ))
+        .flat_map(|(journey_ref, departures)| {
+            train_position_per_route(render_time, journey_ref, departures, stops)
+        })
         .collect()
 }
