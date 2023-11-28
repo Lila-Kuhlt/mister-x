@@ -1,7 +1,6 @@
-use std::collections::HashMap;
 use std::fs;
-use std::io::Write;
 use std::time::Duration;
+use std::{collections::HashMap, ops::ControlFlow};
 
 use axum::{
     body::{boxed, Body, BoxBody},
@@ -14,8 +13,11 @@ use axum::{
     routing::{get, get_service, post},
     Json, Router,
 };
+use chai::unique_id::UniqueIdGen;
+use chai::ws_message::Team;
+use chai::{kvv, ServerResponse};
+use chai::{ws_message, InputMessage, ServerMessage};
 use futures_util::SinkExt;
-use kvv::LineDepartures;
 use reqwest::StatusCode;
 use tokio::sync::mpsc::Sender;
 use tower::util::ServiceExt;
@@ -24,35 +26,15 @@ use tower_http::{
     services::{ServeDir, ServeFile},
 };
 use tracing::{error, info, warn, Level};
-use unique_id::UniqueIdGen;
-use ws_message::{ClientMessage, GameState, Team};
 
-mod kvv;
-mod point;
-mod unique_id;
-mod ws_message;
-
-const LOG_FILE: &str = "log.csv";
 const TEAMS_FILE: &str = "teams.json";
 
 /// The name used for the Mr. X team.
 const MRX: &str = "Mr. X";
 
 #[derive(Debug)]
-enum InputMessage {
-    Client(ClientMessage, u32),
-    Server(ServerMessage),
-}
-
-#[derive(Debug)]
-enum ServerMessage {
-    Departures(LineDepartures),
-    ClientDisconnected(u32),
-}
-
-#[derive(Debug)]
 struct Client {
-    recv: tokio::sync::mpsc::Receiver<GameState>,
+    recv: tokio::sync::mpsc::Receiver<String>,
     send: tokio::sync::mpsc::Sender<InputMessage>,
     id: u32,
 }
@@ -60,13 +42,12 @@ struct Client {
 #[derive(Debug)]
 struct ClientConnection {
     id: u32,
-    team_id: u32,
-    send: tokio::sync::mpsc::Sender<GameState>,
+    send: tokio::sync::mpsc::Sender<String>,
 }
 
 #[derive(Debug)]
 struct AppState {
-    pub teams: Vec<ws_message::Team>,
+    pub teams_state: chai::AppState,
     pub game_logic_sender: tokio::sync::mpsc::Sender<InputMessage>,
     pub connections: Vec<ClientConnection>,
     pub client_id_gen: UniqueIdGen,
@@ -74,26 +55,14 @@ struct AppState {
 }
 
 impl AppState {
-    const fn new(game_logic_sender: tokio::sync::mpsc::Sender<InputMessage>) -> Self {
+    fn new(game_logic_sender: tokio::sync::mpsc::Sender<InputMessage>) -> Self {
         Self {
-            teams: Vec::new(),
+            teams_state: Default::default(),
             game_logic_sender,
             connections: Vec::new(),
             client_id_gen: UniqueIdGen::new(),
             team_id_gen: UniqueIdGen::new(),
         }
-    }
-
-    fn client(&self, id: u32) -> Option<&ClientConnection> {
-        self.connections.iter().find(|x| x.id == id)
-    }
-    fn client_mut(&mut self, id: u32) -> Option<&mut ClientConnection> {
-        self.connections.iter_mut().find(|x| x.id == id)
-    }
-    fn team_mut_by_client_id(&mut self, id: u32) -> Option<&mut Team> {
-        self.client(id)
-            .map(|x| x.team_id)
-            .and_then(|team_id| self.teams.iter_mut().find(|team| team.id == team_id))
     }
 }
 
@@ -104,11 +73,7 @@ async fn handler(ws: WebSocketUpgrade, State(state): State<SharedState>) -> Resp
     let client = {
         let mut state = state.lock().await;
         let id = state.client_id_gen.next();
-        let client_connection = ClientConnection {
-            id,
-            team_id: 0,
-            send,
-        };
+        let client_connection = ClientConnection { id, send };
         state.connections.push(client_connection);
         Client {
             recv: rec,
@@ -145,13 +110,7 @@ async fn handle_socket(socket: WebSocket, mut client: Client) {
                     msg.into_text().ok()
                 }
             }) {
-                if let Ok(msg) = serde_json::from_str::<ws_message::ClientMessage>(&msg) {
-                    msg
-                } else {
-                    // invalid message
-                    warn!("Received invalid message: {}", msg);
-                    continue;
-                }
+                msg
             } else {
                 // client disconnected
                 disconnect(client.send, client.id).await;
@@ -168,7 +127,7 @@ async fn handle_socket(socket: WebSocket, mut client: Client) {
 
     // Push game updates to the ws stream
     while let Some(update) = client.recv.recv().await {
-        let msg = serde_json::to_string(&update).unwrap();
+        let msg = update;
 
         if send.send(msg.into()).await.is_err() {
             disconnect(client_send, client_id).await;
@@ -221,7 +180,7 @@ async fn create_team(
     // validation
     if team_name.is_empty() {
         return Err(ws_message::CreateTeamError::InvalidName);
-    } else if state.teams.iter().any(|t| t.name == team_name) {
+    } else if state.teams_state.teams.iter().any(|t| t.name == team_name) {
         return Err(ws_message::CreateTeamError::NameAlreadyExists);
     }
 
@@ -231,13 +190,13 @@ async fn create_team(
         name: team_name.to_owned(),
         ..Default::default()
     };
-    state.teams.push(team.clone());
+    state.teams_state.teams.push(team.clone());
     Ok(Json(team))
 }
 
 async fn list_teams(State(state): State<SharedState>) -> Json<Vec<Team>> {
     let state = state.lock().await;
-    Json(state.teams.clone())
+    Json(state.teams_state.teams.clone())
 }
 
 async fn list_stops() -> impl IntoResponse {
@@ -288,7 +247,7 @@ async fn main() {
             mr_x: true,
         });
     }
-    state.teams = teams;
+    state.teams_state.teams = teams;
 
     let state = std::sync::Arc::new(tokio::sync::Mutex::new(state));
 
@@ -346,97 +305,42 @@ async fn main() {
 
 async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, state: SharedState) {
     let mut departures = HashMap::new();
-    let mut log_file = fs::OpenOptions::new()
-        .append(true)
-        .create(true)
-        .open(LOG_FILE)
-        .unwrap();
     let mut interval = tokio::time::interval(Duration::from_millis(500));
     loop {
         interval.tick().await;
 
         let mut state = state.lock().await;
         while let Ok(msg) = recv.try_recv() {
-            match msg {
-                InputMessage::Client(msg, id) => {
-                    info!("Got message from client {}: {:?}", id, msg);
-                    match msg {
-                        ClientMessage::Position { long, lat } => {
-                            if let Some(team) = state.team_mut_by_client_id(id) {
-                                team.long = (long + team.long) / 2.;
-                                team.lat = (lat + team.lat) / 2.;
-                            }
-                        }
-                        ClientMessage::SetTeamPosition { long, lat, team_id } => {
-                            if let Some(team) = state.teams.iter_mut().find(|t| t.id == team_id) {
-                                team.long = long;
-                                team.lat = lat;
-                            }
-                        }
-                        ClientMessage::Message(msg) => {
-                            info!("Got message: {}", msg);
-                        }
-                        ClientMessage::JoinTeam { team_id } => {
-                            let Some(client) = state.client_mut(id) else {
-                                warn!("Client {} not found", id);
-                                continue;
-                            };
-                            client.team_id = team_id;
-                        }
-                        ClientMessage::EmbarkTrain { train_id } => {
-                            if let Some(team) = state.team_mut_by_client_id(id) {
-                                team.on_train = Some(train_id);
-                            }
-                        }
-                        ClientMessage::DisembarkTrain(_) => {
-                            if let Some(team) = state.team_mut_by_client_id(id) {
-                                team.on_train = None;
-                            }
-                        }
-                    }
-                }
-                InputMessage::Server(ServerMessage::Departures(deps)) => {
-                    departures = deps;
-                }
-                InputMessage::Server(ServerMessage::ClientDisconnected(id)) => {
-                    info!("Client {} disconnected", id);
-                    state.connections.retain(|x| x.id != id);
-                }
+            // TODO: this does not do anything yet
+            if let ControlFlow::Break(_) =
+                chai::process_message(msg, &mut state.teams_state, &mut departures)
+            {
+                continue;
             }
         }
 
-        let time = chrono::Utc::now();
-        let mut trains = kvv::train_positions(&departures, time);
-        trains.retain(|x| !x.line_id.contains("bus"));
+        let msg = chai::generate_response(&departures, &mut state.teams_state);
 
-        // update positions for players on trains
-        for team in state.teams.iter_mut() {
-            if let Some(train_id) = &team.on_train {
-                if let Some(train) = trains.iter().find(|x| &x.line_id == train_id) {
-                    team.long = train.long;
-                    team.lat = train.lat;
-                }
-            }
-        }
-
-        let game_state = GameState {
-            teams: state.teams.clone(),
-            trains,
-        };
-        writeln!(
-            log_file,
-            "{}, {}",
-            time.with_timezone(&chrono_tz::Europe::Berlin).to_rfc3339(),
-            serde_json::to_string(&game_state).unwrap()
-        ).unwrap();
         fs::write(
             TEAMS_FILE,
-            serde_json::to_string_pretty(&game_state.teams).unwrap(),
-        ).unwrap();
+            serde_json::to_string_pretty(&state.teams_state.teams).unwrap(),
+        )
+        .unwrap();
 
-        for connection in state.connections.iter_mut() {
-            if connection.send.send(game_state.clone()).await.is_err() {
-                continue;
+        match msg {
+            ServerResponse::Broadcast(msg) => {
+                for connection in state.connections.iter_mut() {
+                    if connection.send.send(msg.clone()).await.is_err() {
+                        continue;
+                    }
+                }
+            }
+            ServerResponse::P2P(msg, id) => {
+                if let Some(connection) = state.connections.iter_mut().find(|x| x.id == id) {
+                    if connection.send.send(msg).await.is_err() {
+                        continue;
+                    }
+                }
             }
         }
     }

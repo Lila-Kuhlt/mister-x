@@ -6,8 +6,6 @@ use std::collections::HashMap;
 use std::sync::OnceLock;
 use std::time::Duration;
 
-// mod api;
-
 use crate::point::{interpolate_segment, Point};
 use crate::ws_message::Train;
 
@@ -136,22 +134,23 @@ static ACCESS_TOKEN: OnceLock<String> = OnceLock::new();
 async fn kvv_stops() -> Vec<Stop> {
     let access_token = ACCESS_TOKEN.get().unwrap();
     let api_endpoint = API_ENDPOINT.get().unwrap();
-    join_all(STOPS
-        .iter()
-        .map(|stop| async move {
-            let name = stop.1.to_string();
-            let stops = trias::search_stops(name, access_token.clone(), api_endpoint, 1).await.unwrap();
+    join_all(STOPS.iter().map(|stop| async move {
+        let name = stop.1.to_string();
+        let stops = trias::search_stops(name, access_token.clone(), api_endpoint, 1)
+            .await
+            .unwrap();
 
-            let first_stop = stops.into_iter().next().unwrap();
-            let stop_point = first_stop.stop_point;
-            let position = first_stop.geo_position;
-            Stop {
-                name: stop_point.stop_point_name.text,
-                id: stop_point.stop_point_ref,
-                lat: position.latitude,
-                lon: position.longitude,
-            }
-        })).await
+        let first_stop = stops.into_iter().next().unwrap();
+        let stop_point = first_stop.stop_point;
+        let position = first_stop.geo_position;
+        Stop {
+            name: stop_point.stop_point_name.text,
+            id: stop_point.stop_point_ref,
+            lat: position.latitude,
+            lon: position.longitude,
+        }
+    }))
+    .await
 }
 
 #[derive(Debug, Clone)]
@@ -182,18 +181,32 @@ type StopRef = String;
 pub type LineDepartures = HashMap<JourneyRef, Journey>;
 
 pub fn parse_times(call: &trias::response::CallAtStop) -> Option<Times> {
-    let arrival = call
-        .service_arrival
-        .as_ref()
-        .map(|service| service.estimated_time.as_ref().unwrap_or(&service.timetabled_time).parse().unwrap());
-    let departure = call
-        .service_departure
-        .as_ref()
-        .map(|service| service.estimated_time.as_ref().unwrap_or(&service.timetabled_time).parse().unwrap());
+    let arrival = call.service_arrival.as_ref().map(|service| {
+        service
+            .estimated_time
+            .as_ref()
+            .unwrap_or(&service.timetabled_time)
+            .parse()
+            .unwrap()
+    });
+    let departure = call.service_departure.as_ref().map(|service| {
+        service
+            .estimated_time
+            .as_ref()
+            .unwrap_or(&service.timetabled_time)
+            .parse()
+            .unwrap()
+    });
     match (arrival, departure) {
         (Some(arrival), Some(departure)) => Some(Times { arrival, departure }),
-        (Some(arrival), None) => Some(Times { arrival, departure: arrival + DEFAULT_WAIT_TIME }),
-        (None, Some(departure)) => Some(Times { arrival: departure - DEFAULT_WAIT_TIME, departure }),
+        (Some(arrival), None) => Some(Times {
+            arrival,
+            departure: arrival + DEFAULT_WAIT_TIME,
+        }),
+        (None, Some(departure)) => Some(Times {
+            arrival: departure - DEFAULT_WAIT_TIME,
+            departure,
+        }),
         (None, None) => {
             tracing::warn!("no departure or arrival time");
             None
@@ -205,18 +218,16 @@ pub async fn fetch_departures(stops: &[Stop]) -> LineDepartures {
     let access_token = ACCESS_TOKEN.get().unwrap();
     let api_endpoint = API_ENDPOINT.get().unwrap();
 
-    let stop_results = join_all(stops
-        .iter()
-        .map(|stop| {
-            let name = stop.id.clone();
-            let access_token = access_token.clone();
-            async move {
-                trias::stop_events(name, access_token, 10, api_endpoint)
-                    .await
-                    .unwrap_or_default()
-            }
-        })
-    ).await;
+    let stop_results = join_all(stops.iter().map(|stop| {
+        let name = stop.id.clone();
+        let access_token = access_token.clone();
+        async move {
+            trias::stop_events(name, access_token, 10, api_endpoint)
+                .await
+                .unwrap_or_default()
+        }
+    }))
+    .await;
 
     let mut journeys = HashMap::new();
 
@@ -326,7 +337,9 @@ pub fn train_position_per_route(
         let segment_duration = next.1.arrival - last.1.departure;
         let stop_id = last.0;
         let next_stop_id = next.0;
-        let progress = (current_duration.num_seconds() as f32 / segment_duration.num_seconds() as f32).clamp(0., 1.);
+        let progress = (current_duration.num_seconds() as f32
+            / segment_duration.num_seconds() as f32)
+            .clamp(0., 1.);
         let points = points_on_route(stop_id, next_stop_id, stops);
         if let Some(position) = interpolate_segment(&points, progress) {
             return Some(Train {
@@ -346,9 +359,13 @@ pub static KVV_STOPS: OnceLock<Vec<Stop>> = OnceLock::new();
 
 pub async fn init() {
     let api_endpoint = dotenv::var("TRIAS_API_ENDPOINT").expect("TRIAS_API_ENDPOINT not set");
-    API_ENDPOINT.set(api_endpoint).expect("failed to set API_ENDPOINT");
+    API_ENDPOINT
+        .set(api_endpoint)
+        .expect("failed to set API_ENDPOINT");
     let access_token = dotenv::var("TRIAS_ACCESS_TOKEN").expect("TRIAS_ACCESS_TOKEN not set");
-    ACCESS_TOKEN.set(access_token).expect("failed to set ACCESS_TOKEN");
+    ACCESS_TOKEN
+        .set(access_token)
+        .expect("failed to set ACCESS_TOKEN");
     let stops = kvv_stops().await;
     KVV_STOPS.set(stops).expect("failed to set KVV_STOPS");
 }

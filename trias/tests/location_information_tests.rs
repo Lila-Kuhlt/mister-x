@@ -25,7 +25,8 @@ mod tests {
 
     #[test]
     fn test_location_information_request_serialization() {
-        let payload = LocationInformationRequestBuilder::new("Karlsruhe Hauptbahnhof".to_owned()).build();
+        let payload =
+            LocationInformationRequestBuilder::new("Karlsruhe Hauptbahnhof".to_owned()).build();
 
         let xml_output = generate_service_request("API-Explorer".to_owned(), payload).unwrap();
 

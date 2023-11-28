@@ -1,3 +1,8 @@
 [workspace]
-members = ["robusta", "trias"]
+members = ["robusta", "trias", "chai"]
 resolver = "2"
+
+[workspace.dependencies]
+axum = { version = "0.6.20", features = ["ws", "tracing", "macros"] }
+chrono = "0.4.31"
+chrono-tz = "0.8.4"
