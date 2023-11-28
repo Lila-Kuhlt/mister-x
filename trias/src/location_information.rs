@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::response::{GeoPosition, Text};
+use crate::response::{ErrorMessage, GeoPosition, Text};
 use crate::RequestPayload;
 
 // request
@@ -83,6 +83,8 @@ impl LocationInformationRequestBuilder {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "PascalCase")]
 pub struct LocationInformationResponse {
+    pub error_message: Option<ErrorMessage>,
+    #[serde(default)]
     pub location_result: Vec<LocationResult>,
 }
 

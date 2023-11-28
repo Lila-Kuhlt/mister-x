@@ -1,7 +1,7 @@
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 
-use crate::response::{CallAtStop, DatedJourney};
+use crate::response::{CallAtStop, DatedJourney, ErrorMessage};
 use crate::RequestPayload;
 
 // request
@@ -100,6 +100,8 @@ impl StopEventRequestBuilder {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "PascalCase")]
 pub struct StopEventResponse {
+    pub error_message: Option<ErrorMessage>,
+    #[serde(default)]
     pub stop_event_result: Vec<StopEventResult>,
 }
 

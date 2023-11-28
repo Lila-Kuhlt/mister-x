@@ -147,5 +147,11 @@ pub async fn trip_info(
         panic!("Wrong response type");
     };
 
-    Ok(response.trip_info_result)
+    response.trip_info_result.ok_or_else(|| {
+        response
+            .error_message
+            .map(|err| err.text.text)
+            .unwrap_or_default()
+            .into()
+    })
 }

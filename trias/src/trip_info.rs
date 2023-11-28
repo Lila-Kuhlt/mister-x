@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::response::{CallAtStop, DatedJourney, GeoPosition};
+use crate::response::{CallAtStop, DatedJourney, ErrorMessage, GeoPosition};
 
 // request
 
@@ -44,7 +44,8 @@ impl Default for TripInfoParams {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct TripInfoResponse {
-    pub trip_info_result: TripInfoResult,
+    pub error_message: Option<ErrorMessage>,
+    pub trip_info_result: Option<TripInfoResult>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

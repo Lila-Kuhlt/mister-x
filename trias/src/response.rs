@@ -31,6 +31,13 @@ pub enum DeliveryPayload {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "PascalCase")]
+pub struct ErrorMessage {
+    pub code: String,
+    pub text: Text,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "PascalCase")]
 pub struct Text {
     pub text: String,
     pub language: Language,
