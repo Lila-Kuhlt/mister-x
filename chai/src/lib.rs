@@ -11,6 +11,7 @@ pub mod kvv;
 pub mod point;
 pub mod unique_id;
 pub mod ws_message;
+
 const LOG_FILE: &str = "log.csv";
 
 #[derive(Debug)]
