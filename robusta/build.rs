@@ -9,7 +9,11 @@ fn main() {
     let liberica_dir = project_dir.parent().unwrap().join("liberica");
 
     for path in ["package.json", "src", "tsconfig.json", "index.html"] {
-        println!("cargo:rerun-if-changed={}/{}", liberica_dir.to_string_lossy(), path);
+        println!(
+            "cargo:rerun-if-changed={}/{}",
+            liberica_dir.to_string_lossy(),
+            path
+        );
     }
     println!("cargo:warning=Building Liberica");
 

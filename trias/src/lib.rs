@@ -90,7 +90,9 @@ pub async fn search_stops(
     let xml_request = generate_service_request(access_token, payload)?;
     let response = post_request(api_endpoint, &xml_request).await?;
 
-    let DeliveryPayload::LocationInformationResponse(response) = response.service_delivery.delivery_payload else {
+    let DeliveryPayload::LocationInformationResponse(response) =
+        response.service_delivery.delivery_payload
+    else {
         panic!("Wrong response type");
     };
 
@@ -122,7 +124,8 @@ pub async fn stop_events(
     let xml_request = generate_service_request(access_token, payload)?;
     let response = post_request(api_endpoint, &xml_request).await?;
 
-    let DeliveryPayload::StopEventResponse(response) = response.service_delivery.delivery_payload else {
+    let DeliveryPayload::StopEventResponse(response) = response.service_delivery.delivery_payload
+    else {
         panic!("Wrong response type");
     };
     Ok(response)
@@ -143,7 +146,8 @@ pub async fn trip_info(
     let xml_request = generate_service_request(access_token, payload)?;
     let response = post_request(api_endpoint, &xml_request).await?;
 
-    let DeliveryPayload::TripInfoResponse(response) = response.service_delivery.delivery_payload else {
+    let DeliveryPayload::TripInfoResponse(response) = response.service_delivery.delivery_payload
+    else {
         panic!("Wrong response type");
     };
 

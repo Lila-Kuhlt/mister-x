@@ -319,7 +319,7 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
             }
         }
 
-        let msg = chai::generate_respone(&departures, &mut state.teams_state);
+        let msg = chai::generate_response(&departures, &mut state.teams_state);
 
         fs::write(
             TEAMS_FILE,

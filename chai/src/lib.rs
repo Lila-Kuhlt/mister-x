@@ -116,13 +116,15 @@ pub fn process_message(
     ControlFlow::Continue(())
 }
 
-pub fn generate_respone(
+pub fn generate_response(
     departures: &HashMap<String, kvv::Journey>,
     state: &mut AppState,
 ) -> ServerResponse {
     let time = chrono::Utc::now();
     let mut trains = kvv::train_positions(departures, time);
     trains.retain(|x| !x.line_id.contains("bus"));
+
+    // TODO: keep a file handle open once we have a proper external state
     let mut log_file = fs::OpenOptions::new()
         .append(true)
         .create(true)
