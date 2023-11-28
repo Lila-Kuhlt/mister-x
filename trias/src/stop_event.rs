@@ -1,7 +1,10 @@
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 
-use crate::{RequestPayload, ServiceRequest};
+use crate::response::{CallAtStop, DatedJourney, ErrorMessage};
+use crate::RequestPayload;
+
+// request
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "PascalCase")]
@@ -30,6 +33,7 @@ pub struct StopEventParams {
     pub stop_event_type: String,
     pub include_previous_calls: bool,
     pub include_onward_calls: bool,
+    pub include_operating_days: bool,
     pub include_realtime_data: bool,
 }
 
@@ -40,6 +44,7 @@ impl Default for StopEventParams {
             stop_event_type: "both".to_owned(),
             include_previous_calls: false,
             include_onward_calls: false,
+            include_operating_days: false,
             include_realtime_data: true,
         }
     }
@@ -47,28 +52,19 @@ impl Default for StopEventParams {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct StopEventRequestBuilder {
-    requestor_ref: String,
     location_ref: String,
     dep_arr_time: String,
     params: Option<StopEventParams>,
 }
 
 impl StopEventRequestBuilder {
-    pub fn new(requestor_ref: String, location_ref: String) -> Self {
-        let timestamp = Utc::now()
-            .format("%Y-%m-%dT%H:%M:%S.%3fZ")
-            .to_string();
+    pub fn new(location_ref: String) -> Self {
+        let timestamp = Utc::now().to_rfc3339();
         Self {
-            requestor_ref,
             location_ref,
             dep_arr_time: timestamp,
             params: None,
         }
-    }
-
-    pub fn requestor_ref(mut self, requestor_ref: String) -> Self {
-        self.requestor_ref = requestor_ref;
-        self
     }
 
     pub fn location_ref(mut self, location_ref: String) -> Self {
@@ -86,19 +82,49 @@ impl StopEventRequestBuilder {
         self
     }
 
-    pub fn build(self) -> ServiceRequest {
-        ServiceRequest {
-            request_timestamp: self.dep_arr_time.clone(),
-            requestor_ref: self.requestor_ref,
-            request_payload: RequestPayload::StopEventRequest(StopEventRequest {
-                location: Location {
-                    location_ref: LocationRef {
-                        stop_point_ref: self.location_ref,
-                    },
-                    dep_arr_time: self.dep_arr_time,
+    pub fn build(self) -> RequestPayload {
+        RequestPayload::StopEventRequest(StopEventRequest {
+            location: Location {
+                location_ref: LocationRef {
+                    stop_point_ref: self.location_ref,
                 },
-                params: self.params.unwrap_or_default(),
-            }),
-        }
+                dep_arr_time: self.dep_arr_time,
+            },
+            params: self.params.unwrap_or_default(),
+        })
     }
+}
+
+// response
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "PascalCase")]
+pub struct StopEventResponse {
+    pub error_message: Option<ErrorMessage>,
+    #[serde(default)]
+    pub stop_event_result: Vec<StopEventResult>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "PascalCase")]
+pub struct StopEventResult {
+    pub result_id: String,
+    pub stop_event: StopEvent,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "PascalCase")]
+pub struct StopEvent {
+    #[serde(default)]
+    pub previous_call: Vec<Call>,
+    pub this_call: Call,
+    #[serde(default)]
+    pub onward_call: Vec<Call>,
+    pub service: DatedJourney,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "PascalCase")]
+pub struct Call {
+    pub call_at_stop: CallAtStop,
 }

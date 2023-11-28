@@ -8,12 +8,12 @@ mod tests {
 
     #[test]
     fn test_location_information_request_builder() {
-        let request = LocationInformationRequestBuilder::new("API-Explorer".to_owned(), "Bern".to_owned())
+        let payload = LocationInformationRequestBuilder::new("Bern".to_owned())
             .number_of_results(5)
             .include_pt_modes(true)
             .build();
 
-        if let RequestPayload::LocationInformationRequest(request) = request.request_payload {
+        if let RequestPayload::LocationInformationRequest(request) = payload {
             assert_eq!(request.initial_input.location_name, "Bern");
             assert_eq!(request.restrictions.location_type, "stop");
             assert_eq!(request.restrictions.number_of_results, 5);
@@ -25,9 +25,9 @@ mod tests {
 
     #[test]
     fn test_location_information_request_serialization() {
-        let builder = LocationInformationRequestBuilder::new("API-Explorer".to_owned(), "Karlsruhe Hauptbahnhof".to_owned()).build();
+        let payload = LocationInformationRequestBuilder::new("Karlsruhe Hauptbahnhof".to_owned()).build();
 
-        let xml_output = generate_service_request(builder).unwrap();
+        let xml_output = generate_service_request("API-Explorer".to_owned(), payload).unwrap();
 
         // assert the xml_output against the expected XML string
         // or use it to perform an actual API request
