@@ -250,6 +250,7 @@ async fn main() {
     tracing_subscriber::fmt()
         .with_max_level(Level::INFO)
         .with_span_events(tracing_subscriber::fmt::format::FmtSpan::CLOSE)
+        .with_timer(tracing_subscriber::fmt::time::ChronoLocal::rfc_3339())
         .init();
 
     const BINDINGS: &str = "../liberica/src/lib/bindings.ts";

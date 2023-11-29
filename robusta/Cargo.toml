@@ -16,8 +16,8 @@ serde = { version = "1.0.188", features = ["derive"] }
 serde_json = "1.0.107"
 specta = { version = "1.0.5", features = ["export"] }
 tokio = { version = "1.33.0", features = ["full"] }
-tracing = { version = "0.1.37", features = ["async-await"] }
-tracing-subscriber = "0.3.17"
+tracing = { version = "0.1.40", features = ["async-await"] }
+tracing-subscriber = { version = "0.3.18", features = ["chrono"] }
 urlencoding = "2.1.3"
 dotenv = "0.15.0"
 tower-http = { version = "0.4.4", features = ["cors", "fs"] }
