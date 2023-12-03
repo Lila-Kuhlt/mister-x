@@ -2,13 +2,6 @@ import axios from "axios";
 import { Team, Stop, CreateTeam } from "lib/bindings";
 import { WebsocketApi } from "./websockets";
 
-const PROTOCOL = {
-  WS_SECURE: "wss:",
-  WS: "ws:",
-  HTTP_SECURE: "https:",
-  HTTP: "http:",
-};
-
 const ENDPOINTS = {
   POST_CREATE_TEAM: "/create-team",
   POST_START_GAME: "/start-game",
@@ -30,13 +23,15 @@ const ENDPOINTS = {
  * @returns The websocket endpoint
  */
 export function getWebsocketEndpoint() {
-  const useDevServer = !window.isSecureContext || !import.meta.env.PROD;
-  const hostname = window.location.hostname;
-  const port = useDevServer ? ":3000" : "";
-  const proto =
-    useDevServer || hostname === "localhost" ? PROTOCOL.WS : PROTOCOL.WS_SECURE;
+  const hostname = location.hostname;
 
-  return `${proto}//${hostname}${port}`;
+  const isDevServer = !import.meta.env.PROD;
+  const isLocal = ['localhost', '127.0.0.1'].includes(hostname);
+
+  const port = isDevServer ? '3000' : location.port;
+  const proto = isLocal || isDevServer ? 'ws' : 'wss';
+
+  return `${proto}://${hostname}:${port}`;
 }
 
 /**
@@ -51,15 +46,15 @@ export function getWebsocketEndpoint() {
  * @returns The http endpoint
  */
 export function getHTTPEndpoint() {
-  const useDevServer = !window.isSecureContext || !import.meta.env.PROD;
-  const hostname = window.location.hostname;
-  const port = useDevServer ? ":3000" : "";
-  const proto =
-    useDevServer || hostname === "localhost"
-      ? PROTOCOL.HTTP
-      : PROTOCOL.HTTP_SECURE;
+  const hostname = location.hostname;
 
-  return `${proto}//${hostname}${port}/api`;
+  const isDevServer = !import.meta.env.PROD;
+  const isLocal = ['localhost', '127.0.0.1'].includes(hostname);
+
+  const port = isDevServer ? '3000' : location.port;
+  const proto = isLocal || isDevServer ? 'http' : 'https';
+
+  return `${proto}://${hostname}:${port}/api`;
 }
 
 export const BASE_URLS = {
