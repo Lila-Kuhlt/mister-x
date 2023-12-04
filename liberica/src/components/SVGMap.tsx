@@ -134,13 +134,17 @@ export default function SVGMap(props: MapProps) {
   const TS = useTeamStore();
 
   function disembark() {
-    setEmbarkedTrain(undefined);
-    ws?.send({ DisembarkTrain: 0 });
+    if (TS.team) {
+      setEmbarkedTrain(undefined);
+      ws?.send({ DisembarkTrain: 0 });
+    }
   }
 
   function embark(train: Train) {
-    setEmbarkedTrain(train);
-    ws?.send({ EmbarkTrain: { train_id: train.line_id } });
+    if (TS.team) {
+      setEmbarkedTrain(train);
+      ws?.send({ EmbarkTrain: { train_id: train.line_id } });
+    }
   }
 
   return (
