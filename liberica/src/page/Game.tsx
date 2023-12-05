@@ -38,7 +38,7 @@ export function Game() {
     <div className="flex flex-col items-center justify-center gap-5 w-max h-max">
       <div className="flex flex-col items-center">
         <span className="italic text-slate-400">
-          Connection to Gameserver lost
+          Connection to game server lost
         </span>
         <span className="italic text-slate-400">
           Attempting to reconnect...

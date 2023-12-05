@@ -7,7 +7,7 @@ import { Link, useNavigate } from "react-router-dom";
 
 export function Home() {
   const [teams, setTeams] = useState<Team[]>([]);
-  const [selcted, setSelected] = useState<number | undefined>();
+  const [selected, setSelected] = useState<number | undefined>();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -15,7 +15,8 @@ export function Home() {
   }, []);
 
   const process = async () => {
-    if (selcted === undefined) return;
+    if (selected === undefined) return;
+    // TODO: set team
     navigate("/game");
   };
 
@@ -28,13 +29,13 @@ export function Home() {
             <TeamCard
               key={team.id}
               team={team}
-              selected={selcted === index}
+              selected={selected === index}
               onClick={() => setSelected(index)}
             />
           ))}
         </div>
         <Button
-          disabled={selcted === undefined}
+          disabled={selected === undefined}
           type="button"
           onClick={() => void process()}
         >

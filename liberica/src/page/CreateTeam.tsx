@@ -25,8 +25,14 @@ export function CreateTeam() {
     console.log("Sending request  ");
     setLoading(true);
     postCreateTeam({ color, name, kind })
-      .then(() => setLoading(false))
-      .then(() => navigate("/"));
+      .then(() => {
+        setLoading(false)
+        navigate("/")
+      })
+      .catch((err) => {
+        setLoading(false)
+        alert(err.response.data)
+      })
   };
 
   return (

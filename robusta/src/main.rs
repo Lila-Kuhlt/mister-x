@@ -231,6 +231,7 @@ async fn create_team(
         id: state.team_id_gen.next(),
         color: team.color,
         name: team_name.to_owned(),
+        kind: team.kind,
         ..Default::default()
     };
     state.teams.push(team.clone());
