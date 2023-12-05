@@ -1,91 +1,66 @@
-import { BASE_URLS, ENDPOINTS, serverAlive } from "lib/api";
+import { Map } from "components/map/Map";
+import { createWebsocketConnection } from "lib/api";
+import { GameState } from "lib/bindings";
 import { WebsocketApi } from "lib/websockets";
-import { useGameState, useTeamStore, useWebsocketStore } from "lib/state";
-import { PropsWithChildren, useEffect } from "react";
-import { Map } from "page/Map";
-import { Button } from "react-bootstrap";
+import { Popup } from "react-leaflet";
+import { createContext, useEffect, useState } from "react";
+import { Marker } from "components/map/Marker";
 
-export function Navbar(props: PropsWithChildren) {
-  return (
-    <div
-      className="position-absolute bottom-0 w-max d-flex bg-white p-2 justify-content-between align-items-center gap-3"
-      style={{ zIndex: 10000 }}
-    >
-      {props.children}
-    </div>
-  );
-}
-
-export function WarningPage(props: PropsWithChildren) {
-  return (
-    <div className="d-flex flex-center w-max h-max flex-column">
-      {props.children}
-    </div>
-  );
-}
+export const WebsocketContext = createContext<WebsocketApi | undefined>(
+  undefined
+);
 
 export function Game() {
-  const { ws, setWebsocket } = useWebsocketStore();
-  const { setGameState, embarkedTrain, setEmbarkedTrain } = useGameState();
-  const TS = useTeamStore();
+  const [ws, setWS] = useState<WebsocketApi | undefined>();
+  const [gs, setGameState] = useState<GameState>({ teams: [], trains: [] });
 
   useEffect(() => {
-    const socket = new WebsocketApi(BASE_URLS.WEBSOCKET + ENDPOINTS.GET_WS, setWebsocket)
-      .register((msg) => console.log("Received message", msg))
-      .register(setGameState)
+    const socket = createWebsocketConnection();
+
+    const onClose = (e: Event) => {
+      setWS(undefined);
+      console.error(`Websocket connection closed uncleanly: `, e);
+      setTimeout(() => socket.reconnect(), 1000);
+    };
+
+    socket
+      .registerEvent("Connect", () => setWS(socket))
+      .registerEvent("Error", (e) => onClose(e))
+      .registerEvent("Disconnect", () => setWS(undefined));
+
+    socket.register("GameState", (gs) => setGameState(gs));
+
     return () => socket.disconnect();
-  }, [setGameState, setWebsocket]);
+  }, []);
 
-  useEffect(() => {
-    if (!ws) return;
-    if (!TS.team) return;
-
-    ws.send({ Message: "Hello from Client" });
-    ws.send({ JoinTeam: { team_id: TS.team.id } });
-  }, [ws, TS.team]);
-
-  useEffect(() => {
-    if (!window.isSecureContext) return;
-    navigator.geolocation.watchPosition(
-      (pos) =>
-        pos.coords.altitude &&
-        ws?.send({
-          Position: { lat: pos.coords.latitude, long: pos.coords.longitude },
-        })
-    );
-  }, [ws]);
-
-  return ws ? (
-    <>
-      <Map />
-      <Navbar>
-        <Button
-          onClick={() => {
-            window.location.href = "/";
-          }}
-        >
-          <i className="bi bi-house-fill"></i>
-        </Button>
-        {embarkedTrain && (
-          <span>
-            {embarkedTrain?.line_name} {embarkedTrain?.direction}
-          </span>
-        )}
-        <Button
-          disabled={!embarkedTrain}
-          onClick={() => {
-            ws.send({ DisembarkTrain: 0 });
-            setEmbarkedTrain(undefined);
-          }}
-        >
-          Disembark
-        </Button>
-      </Navbar>
-    </>
-  ) : (
-    <WarningPage>
-      <h3>Server is reloading</h3>
-      <p>Reload the site in a few seconds</p>
-    </WarningPage>
+  // Loading page
+  const LOADER = () => (
+    <div className="flex flex-col items-center justify-center gap-5 w-max h-max">
+      <div className="flex flex-col items-center">
+        <span className="italic text-slate-400">
+          Connection to Gameserver lost
+        </span>
+        <span className="italic text-slate-400">
+          Attempting to reconnect...
+        </span>
+      </div>
+    </div>
   );
+
+  const MAP = () => (
+    <WebsocketContext.Provider value={ws}>
+      <Map
+        tileProps={{ updateInterval: 500 }}
+        containerProps={{ preferCanvas: true }}
+      >
+        {gs.trains.map((train) => (
+          <Marker key={train.line_id} position={{ ...train }}>
+            <Popup>{train.line_name}</Popup>
+          </Marker>
+        ))}
+      </Map>
+    </WebsocketContext.Provider>
+  );
+
+  return ws ? MAP() : LOADER();
 }

@@ -27,6 +27,8 @@ use tracing::{error, info, warn, Level};
 use unique_id::UniqueIdGen;
 use ws_message::{ClientMessage, GameState, Team};
 
+use crate::ws_message::TeamKind;
+
 mod kvv;
 mod point;
 mod unique_id;
@@ -52,7 +54,7 @@ enum ServerMessage {
 
 #[derive(Debug)]
 struct Client {
-    recv: tokio::sync::mpsc::Receiver<GameState>,
+    recv: tokio::sync::mpsc::Receiver<ws_message::ServerMessage>,
     send: tokio::sync::mpsc::Sender<InputMessage>,
     id: u32,
 }
@@ -61,7 +63,7 @@ struct Client {
 struct ClientConnection {
     id: u32,
     team_id: u32,
-    send: tokio::sync::mpsc::Sender<GameState>,
+    send: tokio::sync::mpsc::Sender<ws_message::ServerMessage>,
 }
 
 #[derive(Debug)]
@@ -254,9 +256,11 @@ async fn main() {
 
     const BINDINGS: &str = "../liberica/src/lib/bindings.ts";
     const TEMP_BINDINGS: &str = "../target/bindings.ts.tmp";
+
     specta::export::ts(TEMP_BINDINGS).unwrap();
     let old = fs::read_to_string(BINDINGS).unwrap_or_default();
     let new = fs::read_to_string(TEMP_BINDINGS).unwrap();
+
     // Only update bindings if they changed to avoid triggering a recompile of the frontend
     if old != new {
         info!("Updating bindings");
@@ -276,7 +280,7 @@ async fn main() {
     let mut state = AppState::new(send.clone());
     let max_id = teams.iter().map(|x| x.id).max().unwrap_or(0);
     state.team_id_gen.set_min(max_id + 1);
-    if !teams.iter().any(|team| team.mr_x) {
+    if !teams.iter().any(|team| team.kind == TeamKind::MrX) {
         // no Mr. X present
         teams.push(Team {
             id: state.team_id_gen.next(),
@@ -285,7 +289,7 @@ async fn main() {
             on_train: None,
             name: MRX.to_owned(),
             color: "#FFFFFF".to_owned(),
-            mr_x: true,
+            kind: TeamKind::MrX,
         });
     }
     state.teams = teams;
@@ -428,14 +432,17 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
             "{}, {}",
             time.with_timezone(&chrono_tz::Europe::Berlin).to_rfc3339(),
             serde_json::to_string(&game_state).unwrap()
-        ).unwrap();
+        )
+        .unwrap();
         fs::write(
             TEAMS_FILE,
             serde_json::to_string_pretty(&game_state.teams).unwrap(),
-        ).unwrap();
+        )
+        .unwrap();
 
+        let server_message = ws_message::ServerMessage::GameState(game_state);
         for connection in state.connections.iter_mut() {
-            if connection.send.send(game_state.clone()).await.is_err() {
+            if connection.send.send(server_message.clone()).await.is_err() {
                 continue;
             }
         }

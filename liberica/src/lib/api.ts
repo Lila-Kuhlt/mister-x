@@ -1,20 +1,8 @@
 import axios from "axios";
-import { Team, Stop } from "lib/bindings";
+import { Team, Stop, CreateTeam } from "lib/bindings";
+import { WebsocketApi } from "./websockets";
 
-const HOSTNAME_DEV = window.location.hostname;
-const HOSTNAME_PROD = window.location.host;
-
-export const BASE_URLS = import.meta.env.DEV
-  ? {
-    WEBSOCKET: `ws://${HOSTNAME_DEV}:3000`,
-    FETCH: `http://${HOSTNAME_DEV}:3000/api`,
-  }
-  : {
-    WEBSOCKET: `wss://${HOSTNAME_PROD}`,
-    FETCH: `https://${HOSTNAME_PROD}/api`,
-  };
-
-export const ENDPOINTS = {
+const ENDPOINTS = {
   POST_CREATE_TEAM: "/create-team",
   POST_START_GAME: "/start-game",
   GET_TEAMS: "/teams",
@@ -23,10 +11,61 @@ export const ENDPOINTS = {
   GET_WS: "/ws",
 };
 
-export const AXIOS = axios.create({ baseURL: BASE_URLS.FETCH });
+/**
+ * Get the Websocket endpoint.
+ * E.g. ws://misterx.com/ws
+ *
+ * Allows insecure websocket connection, if either
+ *  - The context itself is not secure (connected via http)
+ *  - The current build is not a production build
+ *  - The hostname is not localhost (localhost is considedred secure)
+ *
+ * @returns The websocket endpoint
+ */
+export function getWebsocketEndpoint() {
+  const hostname = location.hostname;
 
-export const postCreateTeam = (name: string, color: string): Promise<Team> =>
-  AXIOS.post(ENDPOINTS.POST_CREATE_TEAM, { name, color });
+  const isDevServer = !import.meta.env.PROD;
+  const isLocal = ['localhost', '127.0.0.1'].includes(hostname);
+
+  const port = isDevServer ? '3000' : location.port;
+  const proto = isLocal || isDevServer ? 'ws' : 'wss';
+
+  return `${proto}://${hostname}:${port}`;
+}
+
+/**
+ * Get the Http endpoint.
+ * E.g. https://misterx.com/api/teams
+ *
+ * Allows insecure websocket connection, if either
+ *  - The context itself is not secure (connected via http)
+ *  - The current build is not a production build
+ *  - The hostname is not localhost (localhost is considedred secure)
+ *
+ * @returns The http endpoint
+ */
+export function getHTTPEndpoint() {
+  const hostname = location.hostname;
+
+  const isDevServer = !import.meta.env.PROD;
+  const isLocal = ['localhost', '127.0.0.1'].includes(hostname);
+
+  const port = isDevServer ? '3000' : location.port;
+  const proto = isLocal || isDevServer ? 'http' : 'https';
+
+  return `${proto}://${hostname}:${port}/api`;
+}
+
+export const BASE_URLS = {
+  WEBSOCKET: getWebsocketEndpoint(),
+  HTTP: getHTTPEndpoint(),
+};
+
+export const AXIOS = axios.create({ baseURL: BASE_URLS.HTTP });
+
+export const postCreateTeam = (team: CreateTeam): Promise<void> =>
+  AXIOS.post(ENDPOINTS.POST_CREATE_TEAM, team);
 
 export const getTeams = (): Promise<Team[]> =>
   AXIOS.get(ENDPOINTS.GET_TEAMS).then((data) => data.data);
@@ -35,4 +74,9 @@ export const getStops = (): Promise<Stop[]> =>
   AXIOS.get(ENDPOINTS.GET_STOPS).then((data) => data.data);
 
 export const serverAlive = (): Promise<boolean> =>
-  AXIOS.get(ENDPOINTS.GET_PING).then(() => true).catch(() => false);
+  AXIOS.get(ENDPOINTS.GET_PING)
+    .then(() => true)
+    .catch(() => false);
+
+export const createWebsocketConnection = () =>
+  new WebsocketApi(BASE_URLS.WEBSOCKET + ENDPOINTS.GET_WS);

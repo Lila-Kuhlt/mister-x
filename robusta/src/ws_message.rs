@@ -12,6 +12,11 @@ pub enum ClientMessage {
     Message(String),
 }
 
+#[derive(specta::Type, Clone, Serialize, Deserialize, Debug)]
+pub enum ServerMessage {
+    GameState(GameState),
+}
+
 #[derive(specta::Type, Default, Clone, Serialize, Deserialize, Debug)]
 pub struct GameState {
     pub teams: Vec<Team>,
@@ -29,6 +34,15 @@ pub struct Player {
 pub struct CreateTeam {
     pub name: String,
     pub color: String,
+    pub kind: TeamKind,
+}
+
+#[derive(specta::Type, Clone, Serialize, Deserialize, Debug, Default, PartialEq)]
+pub enum TeamKind {
+    MrX,
+    #[default]
+    Detective,
+    Observer,
 }
 
 #[derive(Clone, Debug)]
@@ -55,7 +69,7 @@ pub struct Team {
     pub on_train: Option<String>,
     pub name: String,
     pub color: String,
-    pub mr_x: bool,
+    pub kind: TeamKind,
 }
 
 #[derive(specta::Type, Default, Clone, Serialize, Deserialize, Debug)]

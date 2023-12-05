@@ -1,4 +1,5 @@
 use std::env;
+use std::path::PathBuf;
 use std::process::Command;
 
 fn main() {
@@ -6,10 +7,16 @@ fn main() {
     let project_dir = env::current_dir().unwrap();
 
     // Build the path to the `liberica` directory
-    let liberica_dir = project_dir.parent().unwrap().join("liberica");
+    let liberica_dir = std::env::var("LIBERICA_DIR")
+        .map(PathBuf::from)
+        .unwrap_or(project_dir.parent().unwrap().join("liberica"));
 
     for path in ["package.json", "src", "tsconfig.json", "index.html"] {
-        println!("cargo:rerun-if-changed={}/{}", liberica_dir.to_string_lossy(), path);
+        println!(
+            "cargo:rerun-if-changed={}/{}",
+            liberica_dir.to_string_lossy(),
+            path
+        );
     }
     println!("cargo:warning=Building Liberica");
 
@@ -33,7 +40,7 @@ fn main() {
     // Run `npm run build`
     let npm_build = Command::new("npm")
         .arg("run")
-        .arg("build")
+        .arg("build:vite")
         .output()
         .expect("Failed to run `npm run build`");
 

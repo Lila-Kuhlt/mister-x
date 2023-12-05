@@ -1,63 +1,49 @@
+import { Button } from "components/InputElements";
+import { TeamCard } from "components/TeamCard";
 import { getTeams } from "lib/api";
 import { Team } from "lib/bindings";
-import { useTeamStore, useWebsocketStore } from "lib/state";
-import { opt } from "lib/util";
 import { useEffect, useState } from "react";
-import { Button } from "react-bootstrap";
+import { Link, useNavigate } from "react-router-dom";
 
 export function Home() {
   const [teams, setTeams] = useState<Team[]>([]);
-  const [selected, setSelected] = useState<number | undefined>(undefined);
-  const { setWebsocket } = useWebsocketStore();
-  const TS = useTeamStore();
+  const [selcted, setSelected] = useState<number | undefined>();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    setWebsocket(undefined);
-    void getTeams().then(setTeams);
-  }, [setWebsocket]);
+    getTeams().then(setTeams);
+  }, []);
 
-  const setTeam = (team: Team) => {
-    console.log("setting team", team);
-    TS.setTeam(team);
-    window.location.href = "/game";
+  const process = async () => {
+    if (selcted === undefined) return;
+    navigate("/game");
   };
 
   return (
-    <div className="d-flex w-max h-max flex-center flex-column">
-      <div className="w-100 text-center" style={{ maxWidth: "330px" }}>
-        <h2 className="p-2">Join a team</h2>
-        <ol className="list-group mb-3">
+    <form className="flex items-center justify-center h-screen">
+      <div className="container flex flex-col gap-4 p-8 bg-white w-80">
+        <h2 className="text-lg font-semibold">Select a Team</h2>
+        <div>
           {teams.map((team, index) => (
-            <li
+            <TeamCard
               key={team.id}
-              className={
-                "list-group-item list-group-item-action d-flex justify-content-between align-items-start " +
-                opt(selected === index, "active")
-              }
+              team={team}
+              selected={selcted === index}
               onClick={() => setSelected(index)}
-            >
-              <div className="ms-2 me-auto">
-                <div className="fw-bold">{team.name}</div>
-              </div>
-            </li>
+            />
           ))}
-        </ol>
+        </div>
         <Button
-          className="w-100"
-          variant="primary"
-          disabled={selected === undefined}
-          onClick={() => selected !== undefined && setTeam(teams[selected])}
+          disabled={selcted === undefined}
+          type="button"
+          onClick={() => void process()}
         >
-          Join
+          Join Team
         </Button>
-        <Button
-          className="w-100 mt-2 link-secondary"
-          variant="link"
-          href="/create"
-        >
-          Create
-        </Button>
+        <Link className="text-center underline text-slate-400" to="/create">
+          Create one instead
+        </Link>
       </div>
-    </div>
+    </form>
   );
 }
