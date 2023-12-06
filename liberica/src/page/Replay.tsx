@@ -18,7 +18,9 @@ export function Replay() {
     const socket = new WebsocketApi<ReplayResponse, ReplayMessage>(BASE_URLS.WEBSOCKET + ENDPOINTS.GET_REPLAY, setWebsocket)
       .register((msg) => console.log("Received message", msg))
       .register((resp) => {
-        if (resp !== "End") {
+        if (resp === "End") {
+          setPaused(true)
+        } else {
           setGameState(JSON.parse(resp.Frame.game_state))
           setTime(resp.Frame.time)
           setProgress(resp.Frame.progress)

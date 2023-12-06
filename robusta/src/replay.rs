@@ -61,30 +61,44 @@ async fn run_replay_loop(state: &[Entry<'_>], mut recv: Receiver<ReplayMessage>,
     let mut position = start_time;
     let mut frame_time = chrono::Duration::milliseconds(MS_PER_FRAME);
 
-    let mut interval = tokio::time::interval(std::time::Duration::from_millis(MS_PER_FRAME as u64));
-    loop {
-        // FIXME: state doesn't get updated when paused
-        interval.tick().await;
-        while let Ok(msg) = recv.try_recv() {
-            match msg {
-                ReplayMessage::Pause => paused = !paused,
-                ReplayMessage::Goto(progress) => position = start_time + chrono::Duration::milliseconds((progress * duration_in_ms) as i64),
-                ReplayMessage::Speed(speed) => frame_time = chrono::Duration::milliseconds((MS_PER_FRAME as f64 * speed).clamp(0.0, duration_in_ms) as i64),
-                ReplayMessage::Disconnected => return,
-            }
-        }
-
-        if !paused {
-            if position > end_time {
-                position = end_time;
-            }
+    macro_rules! send_frame {
+        () => {
             let entry = find_nearest(state, position);
             send.send(ReplayResponse::Frame {
                 time: position.with_timezone(&chrono_tz::Europe::Berlin).to_string(),
                 progress: ((position - start_time).num_milliseconds() as f64 / duration_in_ms).clamp(0.0, 1.0),
                 game_state: entry.1.to_owned(),
             }).await.unwrap();
-            position += frame_time;
+        };
+    }
+
+    let mut interval = tokio::time::interval(std::time::Duration::from_millis(MS_PER_FRAME as u64));
+    loop {
+        interval.tick().await;
+        while let Ok(msg) = recv.try_recv() {
+            match msg {
+                ReplayMessage::Pause => paused = !paused,
+                ReplayMessage::Goto(progress) => {
+                    position = start_time + chrono::Duration::milliseconds((progress * duration_in_ms) as i64);
+                    send_frame!();
+                }
+                ReplayMessage::Speed(speed) => {
+                    frame_time = chrono::Duration::milliseconds((MS_PER_FRAME as f64 * speed).clamp(0.0, duration_in_ms) as i64);
+                }
+                ReplayMessage::Disconnected => return,
+            }
+        }
+
+        if !paused {
+            if position >= end_time {
+                position = end_time;
+                send_frame!();
+                send.send(ReplayResponse::End).await.unwrap();
+                paused = true;
+            } else {
+                send_frame!();
+                position += frame_time;
+            }
         }
     }
 }
