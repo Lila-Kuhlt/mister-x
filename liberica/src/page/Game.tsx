@@ -5,25 +5,7 @@ import { useGameState, useTeamStore, useGameWebsocketStore } from "lib/state";
 import { PropsWithChildren, useEffect } from "react";
 import { Map } from "page/Map";
 import { Button } from "react-bootstrap";
-
-export function Navbar(props: PropsWithChildren) {
-  return (
-    <div
-      className="position-absolute bottom-0 w-max d-flex bg-white p-2 justify-content-between align-items-center gap-3"
-      style={{ zIndex: 10000 }}
-    >
-      {props.children}
-    </div>
-  );
-}
-
-export function WarningPage(props: PropsWithChildren) {
-  return (
-    <div className="d-flex flex-center w-max h-max flex-column">
-      {props.children}
-    </div>
-  );
-}
+import { Navbar } from "components/Navbar";
 
 export function Game() {
   const { ws, setWebsocket } = useGameWebsocketStore();
@@ -84,9 +66,9 @@ export function Game() {
       </Navbar>
     </>
   ) : (
-    <WarningPage>
+    <div className="d-flex flex-center w-max h-max flex-column">
       <h3>Server is reloading</h3>
       <p>Reload the site in a few seconds</p>
-    </WarningPage>
+    </div>
   );
 }

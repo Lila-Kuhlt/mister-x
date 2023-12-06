@@ -6,15 +6,19 @@ const MS_PER_FRAME: i64 = 50;
 
 #[derive(specta::Type, Debug, Deserialize)]
 pub enum ReplayMessage {
+    /// Pause/unpause the replay.
     Pause,
+    /// Go to a specific position. The value is between 0 and 1.
     Goto(f64),
+    /// Set the playback speed. The value is positive.
     Speed(f64),
+    /// The client disconnected.
     Disconnected,
 }
 
 #[derive(specta::Type, Debug, Serialize)]
 pub enum ReplayResponse {
-    Frame { time: String, game_state: String },
+    Frame { time: String, progress: f64, game_state: String },
     End,
 }
 
@@ -59,27 +63,28 @@ async fn run_replay_loop(state: &[Entry<'_>], mut recv: Receiver<ReplayMessage>,
 
     let mut interval = tokio::time::interval(std::time::Duration::from_millis(MS_PER_FRAME as u64));
     loop {
+        // FIXME: state doesn't get updated when paused
         interval.tick().await;
         while let Ok(msg) = recv.try_recv() {
             match msg {
                 ReplayMessage::Pause => paused = !paused,
                 ReplayMessage::Goto(progress) => position = start_time + chrono::Duration::milliseconds((progress * duration_in_ms) as i64),
-                ReplayMessage::Speed(speed) => frame_time = chrono::Duration::milliseconds((MS_PER_FRAME as f64 * speed) as i64),
+                ReplayMessage::Speed(speed) => frame_time = chrono::Duration::milliseconds((MS_PER_FRAME as f64 * speed).clamp(0.0, duration_in_ms) as i64),
                 ReplayMessage::Disconnected => return,
             }
         }
 
         if !paused {
             if position > end_time {
-                send.send(ReplayResponse::End).await.unwrap();
-            } else {
-                let entry = find_nearest(state, position);
-                send.send(ReplayResponse::Frame {
-                    time: position.with_timezone(&chrono_tz::Europe::Berlin).to_string(),
-                    game_state: entry.1.to_owned(),
-                }).await.unwrap();
-                position += frame_time;
+                position = end_time;
             }
+            let entry = find_nearest(state, position);
+            send.send(ReplayResponse::Frame {
+                time: position.with_timezone(&chrono_tz::Europe::Berlin).to_string(),
+                progress: ((position - start_time).num_milliseconds() as f64 / duration_in_ms).clamp(0.0, 1.0),
+                game_state: entry.1.to_owned(),
+            }).await.unwrap();
+            position += frame_time;
         }
     }
 }

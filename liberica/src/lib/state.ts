@@ -17,9 +17,13 @@ export interface GameStateStore {
 
 export interface ReplayStateStore {
   time?: string;
+  progress?: number;
   speed?: number;
+  paused?: boolean;
   setTime: (time?: string) => void;
+  setProgress: (progress?: number) => void;
   setSpeed: (speed?: number) => void;
+  setPaused: (paused?: boolean) => void;
 }
 
 export interface WebsocketStore<R, S> {
@@ -44,7 +48,9 @@ export const useGameState = create<GameStateStore>()((set) => ({
 
 export const useReplayState = create<ReplayStateStore>()((set) => ({
   setTime: (time?: string) => set(() => ({ time })),
+  setProgress: (progress?: number) => set(() => ({ progress })),
   setSpeed: (speed?: number) => set(() => ({ speed })),
+  setPaused: (paused?: boolean) => set(() => ({ paused })),
 }));
 
 export const useGameWebsocketStore = useWebsocketStore<GameState, ClientMessage>();

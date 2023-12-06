@@ -23,8 +23,8 @@ import { useGameState, useGameWebsocketStore, useTeamStore } from "lib/state";
 export interface MapProps {
   trains: Train[];
   teams: Team[];
-  mrX?: Team;
   stops: Stop[];
+  showAll: boolean;
 }
 
 const viewBounds: L.LatLngBounds = new L.LatLngBounds(
@@ -128,7 +128,6 @@ export default function SVGMap(props: MapProps) {
   const trains = props.trains;
   const teams = props.teams;
   const stops = props.stops;
-  const mrX = props.mrX;
   const { setEmbarkedTrain } = useGameState();
   const { ws } = useGameWebsocketStore();
   const TS = useTeamStore();
@@ -198,7 +197,7 @@ export default function SVGMap(props: MapProps) {
           <LayerGroup>
             {teams
               .filter((team) => team.lat !== 0.0 || team.long !== 0.0) // sensible coordinates
-              .filter((team) => !team.mr_x || TS.team?.mr_x) // team is not Mr. X or the client is Mr. X
+              .filter((team) => props.showAll || !team.mr_x || TS.team?.mr_x) // show all or team is not Mr. X or the client is Mr. X
               .map((team) => (
                 <TeamMarker
                   player={team}

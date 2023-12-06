@@ -12,7 +12,7 @@ export interface MapProps {
   mrX?: Team;
 }
 
-export function Map() {
+export function Map(props: { showAll?: boolean }) {
   const { gameState } = useGameState();
   const [stops, setStops] = useState<Stop[]>([]);
   useEffect(() => {
@@ -23,8 +23,8 @@ export function Map() {
     <SVGMap
       trains={gameState?.trains ?? []}
       teams={gameState?.teams ?? []}
-      mrX={gameState?.teams[0]}
       stops={stops}
+      showAll={props.showAll ?? false}
     />
   );
 }
