@@ -2,7 +2,7 @@ import { BASE_URLS, ENDPOINTS } from "lib/api";
 import { ClientMessage, GameState } from "lib/bindings";
 import { WebsocketApi } from "lib/websockets";
 import { useGameState, useTeamStore, useGameWebsocketStore } from "lib/state";
-import { PropsWithChildren, useEffect } from "react";
+import { useEffect } from "react";
 import { Map } from "page/Map";
 import { Button } from "react-bootstrap";
 import { Navbar } from "components/Navbar";

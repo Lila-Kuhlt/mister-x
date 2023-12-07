@@ -185,7 +185,15 @@ async fn handle_socket(socket: WebSocket, mut client: Client) {
 async fn replay_handler(ws: WebSocketUpgrade) -> Response {
     let (msg_send, msg_recv) = tokio::sync::mpsc::channel(100);
     let (resp_send, resp_recv) = tokio::sync::mpsc::channel(100);
-    tokio::spawn(replay::replay("replays/game1.csv", msg_recv, resp_send));
+
+    // send list of replay files
+    let replay_files = fs::read_dir(replay::PATH)
+        .unwrap()
+        .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
+        .collect();
+    resp_send.send(ReplayResponse::Files(replay_files)).await.unwrap();
+
+    tokio::spawn(replay::replay(msg_recv, resp_send.clone()));
     ws.on_upgrade(|socket| handle_replay_socket(socket, resp_recv, msg_send))
 }
 
