@@ -11,7 +11,10 @@ export function Home() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    getTeams().then(setTeams);
+    const interval = setInterval(() => {
+      getTeams().then(setTeams);
+    }, 500);
+    return () => clearInterval(interval);
   }, []);
 
   const process = async () => {
