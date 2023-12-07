@@ -169,6 +169,7 @@ export default function SVGMap(props: MapProps) {
                   opacity: 10.0,
                 }}
                 radius={50}
+                key={stop.id}
               />
             ))}
           </LayerGroup>

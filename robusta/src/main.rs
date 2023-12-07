@@ -10,7 +10,7 @@ use axum::{
         State,
     },
     http::{Request, Uri},
-    response::{IntoResponse, Response},
+    response::Response,
     routing::{get, get_service, post},
     Json, Router,
 };
@@ -240,9 +240,9 @@ async fn list_teams(State(state): State<SharedState>) -> Json<Vec<Team>> {
     Json(state.teams.clone())
 }
 
-async fn list_stops() -> impl IntoResponse {
+async fn list_stops() -> Json<&'static [kvv::Stop]> {
     let stops = kvv::KVV_STOPS.get().unwrap();
-    Response::new(serde_json::to_string(&stops).unwrap())
+    Json(stops)
 }
 
 #[tokio::main]
