@@ -6,7 +6,7 @@ use std::time::Duration;
 use axum::{
     body::{boxed, Body, BoxBody},
     extract::{
-        ws::{WebSocket, WebSocketUpgrade},
+        ws::{self, WebSocket, WebSocketUpgrade},
         State,
     },
     http::{Request, Uri},
@@ -139,32 +139,35 @@ async fn handle_socket(socket: WebSocket, mut client: Client) {
 
     // Propagate ws update to the game logic queue
     tokio::task::spawn(async move {
-        while let Some(msg) = recv.next().await {
-            let msg = if let Some(msg) = msg.ok().and_then(|msg| {
-                if matches!(msg, axum::extract::ws::Message::Close(_)) {
-                    None
-                } else {
-                    msg.into_text().ok()
+        while let Some(result) = recv.next().await {
+            let opt_msg = match result {
+                Ok(msg) => {
+                    match msg {
+                        ws::Message::Text(_) | ws::Message::Binary(_) => msg.into_text().ok(),
+                        // pings are already handled by the server
+                        ws::Message::Ping(_) | ws::Message::Pong(_) => continue,
+                        ws::Message::Close(_) => None,
+                    }
                 }
-            }) {
-                if let Ok(msg) = serde_json::from_str::<ws_message::ClientMessage>(&msg) {
-                    msg
+                Err(_) => None,
+            };
+
+            if let Some(msg) = opt_msg {
+                if let Ok(client_msg) = serde_json::from_str::<ws_message::ClientMessage>(&msg) {
+                    client
+                        .send
+                        .send(InputMessage::Client(client_msg, client.id))
+                        .await
+                        .expect("game logic queue disconnected");
                 } else {
                     // invalid message
                     warn!("Received invalid message: {}", msg);
-                    continue;
                 }
             } else {
                 // client disconnected
                 disconnect(client.send, client.id).await;
                 return;
             };
-
-            client
-                .send
-                .send(InputMessage::Client(msg, client.id))
-                .await
-                .expect("game logic queue disconnected");
         }
     });
 
