@@ -1,91 +1,191 @@
-import { BASE_URLS, ENDPOINTS } from "lib/api"
-import { ReplayMessage, ReplayResponse } from "lib/bindings"
-import { WebsocketApi } from "lib/websockets"
-import { useGameState, useReplayState, useReplayWebsocketStore } from "lib/state"
-import { useCallback, useEffect, useState } from "react"
+import { useGameState } from "lib/state"
+import { useRef, useState } from "react"
+import { useInterval } from "use-interval"
 import { Map } from "page/Map"
 import { Button } from "react-bootstrap"
 import { Navbar } from "components/Navbar"
+import { GameState } from "lib/bindings"
+import { clamp } from "lib/util"
 
+// configuration
 const defaultSpeed = 10
+const ms_per_frame = 50
+
+type Entry = {
+  time: Date
+  state: GameState
+}
+
+function parseCSV(data: string): Entry[] {
+  return data.trim().split(/\r?\n/).map((line) => {
+    const [time, state] = line.split(", ", 2)
+    return { time: new Date(time), state: JSON.parse(state) }
+  })
+}
+
+/**
+ * Finds the entry whose time is the closest to `time`.
+ *
+ * Assumes that `state` is not empty and that `time` is in the range of `state`,
+ * i.e. not less than `state[0].time.getTime()` and not greater than `state[state.length - 1].time.getTime()`.
+ */
+function findNearest(state: Entry[], time: number): Entry {
+  // binary search
+  let low = 0
+  let high = state.length - 1
+  while (low <= high) {
+    const mid = (low + high) >>> 1
+    const midEntry = state[mid]
+    const midTime = midEntry.time.getTime()
+    if (time < midTime) {
+      high = mid - 1
+    } else if (time > midTime) {
+      low = mid + 1
+    } else {
+      return midEntry
+    }
+  }
+
+  // the nearest entry is a or b
+  const a = state[high]
+  const b = state[low]
+  if (Math.abs(a.time.getTime() - time) <= Math.abs(b.time.getTime() - time)) {
+    return a
+  } else {
+    return b
+  }
+}
+
+type ReplayState = {
+  state: Entry[]
+  startTime: number // timestamp
+  endTime: number // timestamp
+  duration: number
+  position: number // timestamp
+  frameTime: number
+}
 
 export function Replay() {
-  const { ws, setWebsocket } = useReplayWebsocketStore()
   const { setGameState } = useGameState()
-  const { setTime, setProgress, setSpeed, setPaused, time, progress, speed, paused } = useReplayState()
-  const [files, setFiles] = useState<string[]>([])
 
-  const resetReplayState = useCallback(() => {
-    setSpeed(defaultSpeed)
-    setProgress(0.0)
+  // UI state
+  const [running, setRunning] = useState(false)
+  const [paused, setPaused] = useState(true)
+  const [progress, setProgress] = useState(0.0)
+  const [time, setTime] = useState<Date>()
+  const [speed, setSpeed] = useState(defaultSpeed)
+
+  // replay state (initialized using dummy values to avoid having to check for undefined values)
+  const r = useRef<ReplayState>({
+    state: [],
+    startTime: 0,
+    endTime: 0,
+    duration: 0,
+    position: 0,
+    frameTime: 0,
+  })
+
+  function reset() {
+    setRunning(false)
     setPaused(true)
-    if (ws) {
-      ws.send({ Speed: defaultSpeed })
+    setProgress(0.0)
+    setTime(undefined)
+    setSpeed(defaultSpeed)
+  }
+
+  function startReplay(state: Entry[]) {
+    setRunning(true)
+    setPaused(true)
+    setSpeed(defaultSpeed)
+    const startTime = state[0].time.getTime()
+    const endTime = state[state.length - 1].time.getTime()
+    r.current = {
+      state,
+      startTime,
+      endTime,
+      duration: endTime - startTime,
+      position: startTime,
+      frameTime: defaultSpeed * ms_per_frame
     }
-  }, [ws])
+    sendFrame()
+  }
 
-  useEffect(() => {
-    const socket = new WebsocketApi<ReplayResponse, ReplayMessage>(BASE_URLS.WEBSOCKET + ENDPOINTS.GET_REPLAY, setWebsocket)
-      .register((msg) => console.log("Received message", msg))
-    return () => socket.disconnect();
-  }, [])
-  useEffect(() => {
-    ws?.register((resp) => {
-      if (resp === "Start") {
-        resetReplayState()
-      } else if (resp === "End") {
-        setPaused(true)
-      } else if ("Frame" in resp) {
-        setGameState(JSON.parse(resp.Frame.game_state))
-        setTime(resp.Frame.time)
-        setProgress(resp.Frame.progress)
-      } else {
-        setFiles(resp.Files)
-      }
-    })
-  }, [resetReplayState, ws])
+  function onProgressChange(newProgress: number) {
+    setProgress(newProgress)
+    r.current.position = r.current.startTime + newProgress * r.current.duration
+    sendFrame()
+  }
 
-  useEffect(() => {
-    resetReplayState()
-  }, [resetReplayState])
+  function onSpeedChange(newSpeed: number) {
+    setSpeed(newSpeed)
+    r.current.frameTime = clamp(newSpeed * ms_per_frame, 0.0, r.current.duration)
+  }
 
-  return ws ? (
+  function sendFrame() {
+    const entry = findNearest(r.current.state, r.current.position)
+    setTime(new Date(r.current.position))
+    setProgress(clamp((r.current.position - r.current.startTime) / r.current.duration, 0.0, 1.0))
+    setGameState(entry.state)
+  }
+
+  useInterval(() => {
+    if (r.current.position >= r.current.endTime) {
+      r.current.position = r.current.endTime
+      sendFrame()
+      setPaused(true)
+    } else {
+      sendFrame()
+      r.current.position += r.current.frameTime
+    }
+  }, running && !paused && ms_per_frame)
+
+  return (
     <>
-      <Map showAll={true}/>
+      <Map showAll={true} />
       <Navbar>
         <Button
           onClick={() => {
             window.location.href = "/";
           }}
         >
-          <i className="bi bi-house-fill"/>
+          <i className="bi bi-house-fill" />
         </Button>
 
-        <select
+        <input
+          type="file"
           onChange={(e) => {
-            ws.send({ Play: e.target.value })
+            const file = e.target.files?.item(0)
+            if (file) {
+              file.text().then((data) => {
+                try {
+                  const state = parseCSV(data)
+                  if (state.length > 0) {
+                    startReplay(state)
+                  }
+                } catch (e) {
+                  alert(`failed to parse file`)
+                  console.error(`failed to parse replay file: ${e}`)
+                }
+              })
+            }
+            // invalid replay file
+            reset()
           }}
-        >
-          {["", ...files].map((file) => (
-            <option key={file}>{file}</option>
-          ))}
-        </select>
+        />
 
         <div className="d-flex">
           <Button
-            onClick={() => {
-              setPaused(!paused)
-              ws.send("Pause")
-            }}
+            onClick={() => setPaused((p) => !p)}
+            disabled={!running}
           >
             {paused ? (
-              <i className="bi bi-play-fill"/>
+              <i className="bi bi-play-fill" />
             ) : (
-              <i className="bi bi-pause"/>
+              <i className="bi bi-pause" />
             )}
           </Button>
 
-          <div style={{ width: "8px" }}/>
+          <div style={{ width: "8px" }} />
 
           <label className="d-flex flex-column">
             <input
@@ -94,13 +194,12 @@ export function Replay() {
               max={1}
               step="any"
               value={progress}
-              onChange={(e) => {
-                const newProgress = parseFloat(e.target.value)
-                setProgress(newProgress)
-                ws.send({ Goto: newProgress })
-              }}
+              onChange={(e) => onProgressChange(parseFloat(e.target.value))}
+              disabled={!running}
             />
-            {time}
+            <div style={{ fontFamily: "monospace" }}>
+              {time && new Intl.DateTimeFormat("de-DE", { dateStyle: "medium", timeStyle: "long" }).format(time)}
+            </div>
           </label>
         </div>
 
@@ -110,21 +209,15 @@ export function Replay() {
             min={1}
             value={speed}
             onChange={(e) => {
-              if (e.target.validity.valid && e.target.value) {
-                const newSpeed = parseInt(e.target.value)
-                setSpeed(newSpeed)
-                ws.send({ Speed: newSpeed })
+              if (e.target.checkValidity() && e.target.value) {
+                onSpeedChange(parseInt(e.target.value))
               }
             }}
+            disabled={!running}
             style={{ width: "60px" }}
           /> x
         </label>
       </Navbar>
     </>
-  ) : (
-    <div className="d-flex flex-center w-max h-max flex-column">
-      <h3>Server is reloading</h3>
-      <p>Reload the site in a few seconds</p>
-    </div>
-  );
+  )
 }

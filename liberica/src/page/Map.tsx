@@ -16,7 +16,8 @@ export function Map(props: { showAll?: boolean }) {
   const { gameState } = useGameState();
   const [stops, setStops] = useState<Stop[]>([]);
   useEffect(() => {
-    getStops().then(setStops);
+    // ignore failures
+    getStops().then(setStops).catch(() => {});
   }, []);
 
   return (

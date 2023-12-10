@@ -18,7 +18,7 @@ import {
   ICON_OFFSET_TOP,
 } from "components/MapIcons";
 import { getContrastingTextColor } from "lib/util";
-import { useGameState, useGameWebsocketStore, useTeamStore } from "lib/state";
+import { useGameState, useWebsocketStore, useTeamStore } from "lib/state";
 
 export interface MapProps {
   trains: Train[];
@@ -129,7 +129,7 @@ export default function SVGMap(props: MapProps) {
   const teams = props.teams;
   const stops = props.stops;
   const { setEmbarkedTrain } = useGameState();
-  const { ws } = useGameWebsocketStore();
+  const { ws } = useWebsocketStore();
   const TS = useTeamStore();
 
   function disembark() {

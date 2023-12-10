@@ -22,3 +22,7 @@ export const getContrastingTextColor = (hexBackgroundColor: string) => {
     return "#FFFFFF";
   }
 };
+
+export const clamp = (x: number, min: number, max: number) => {
+  return Math.min(Math.max(x, min), max)
+}

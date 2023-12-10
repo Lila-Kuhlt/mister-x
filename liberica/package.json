@@ -20,6 +20,7 @@
     "react-dom": "^18.2.0",
     "react-leaflet": "^4.2.1",
     "react-router-dom": "^6.19.0",
+    "use-interval": "^1.4.0",
     "zustand": "^4.4.6"
   },
   "devDependencies": {

@@ -16,7 +16,6 @@ use axum::{
 };
 use futures_util::SinkExt;
 use kvv::LineDepartures;
-use replay::{ReplayResponse, ReplayMessage};
 use reqwest::StatusCode;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tower::util::ServiceExt;
@@ -30,7 +29,6 @@ use ws_message::{ClientMessage, GameState, Team};
 
 mod kvv;
 mod point;
-mod replay;
 mod unique_id;
 mod ws_message;
 
@@ -182,77 +180,6 @@ async fn handle_socket(socket: WebSocket, mut client: Client) {
     }
 }
 
-async fn replay_handler(ws: WebSocketUpgrade) -> Response {
-    let (msg_send, msg_recv) = tokio::sync::mpsc::channel(100);
-    let (resp_send, resp_recv) = tokio::sync::mpsc::channel(100);
-
-    // send list of replay files
-    let replay_files = fs::read_dir(replay::PATH)
-        .unwrap()
-        .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
-        .collect();
-    resp_send.send(ReplayResponse::Files(replay_files)).await.unwrap();
-
-    tokio::spawn(replay::replay(msg_recv, resp_send.clone()));
-    ws.on_upgrade(|socket| handle_replay_socket(socket, resp_recv, msg_send))
-}
-
-async fn handle_replay_socket(socket: WebSocket, mut client_recv: Receiver<ReplayResponse>, client_send: Sender<ReplayMessage>) {
-    use futures_util::stream::StreamExt;
-
-    let (mut send, mut recv) = socket.split();
-
-    let disconnect = |client_send: Sender<ReplayMessage>| async move {
-        client_send
-            .send(ReplayMessage::Disconnected)
-            .await
-            .expect("replay logic queue disconnected");
-    };
-
-    {
-        // Propagate ws update to the replay logic queue
-        let client_send = client_send.clone();
-        tokio::task::spawn(async move {
-            while let Some(msg) = recv.next().await {
-                let msg = if let Some(msg) = msg.ok().and_then(|msg| {
-                    if matches!(msg, axum::extract::ws::Message::Close(_)) {
-                        None
-                    } else {
-                        msg.into_text().ok()
-                    }
-                }) {
-                    if let Ok(msg) = serde_json::from_str::<ReplayMessage>(&msg) {
-                        msg
-                    } else {
-                        // invalid message
-                        warn!("Received invalid message: {}", msg);
-                        continue;
-                    }
-                } else {
-                    // client disconnected
-                    disconnect(client_send).await;
-                    return;
-                };
-
-                client_send
-                    .send(msg)
-                    .await
-                    .expect("replay logic queue disconnected");
-            }
-        });
-    }
-
-    // Push game updates to the ws stream
-    while let Some(update) = client_recv.recv().await {
-        let msg = serde_json::to_string(&update).unwrap();
-
-        if send.send(msg.into()).await.is_err() {
-            disconnect(client_send).await;
-            return;
-        }
-    }
-}
-
 async fn get_static_file(uri: Uri) -> Result<Response<BoxBody>, (StatusCode, String)> {
     let req = Request::builder().uri(uri).body(Body::empty()).unwrap();
 
@@ -399,7 +326,6 @@ async fn main() {
     // build our application with a single route
     let app = Router::new()
         .route("/ws", get(handler))
-        .route("/replay", get(replay_handler))
         .nest("/api", api)
         .nest_service(
             "/",

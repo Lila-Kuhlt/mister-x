@@ -1,19 +1,18 @@
 import { BASE_URLS, ENDPOINTS } from "lib/api";
-import { ClientMessage, GameState } from "lib/bindings";
 import { WebsocketApi } from "lib/websockets";
-import { useGameState, useTeamStore, useGameWebsocketStore } from "lib/state";
+import { useGameState, useTeamStore, useWebsocketStore } from "lib/state";
 import { useEffect } from "react";
 import { Map } from "page/Map";
 import { Button } from "react-bootstrap";
 import { Navbar } from "components/Navbar";
 
 export function Game() {
-  const { ws, setWebsocket } = useGameWebsocketStore();
+  const { ws, setWebsocket } = useWebsocketStore();
   const { setGameState, embarkedTrain, setEmbarkedTrain } = useGameState();
   const TS = useTeamStore();
 
   useEffect(() => {
-    const socket = new WebsocketApi<GameState, ClientMessage>(BASE_URLS.WEBSOCKET + ENDPOINTS.GET_WS, setWebsocket)
+    const socket = new WebsocketApi(BASE_URLS.WEBSOCKET + ENDPOINTS.GET_WS, setWebsocket)
       .register((msg) => console.log("Received message", msg))
       .register(setGameState)
     return () => socket.disconnect();
