@@ -10,7 +10,7 @@ use axum::{
         State,
     },
     http::{Request, Uri},
-    response::{IntoResponse, Response},
+    response::Response,
     routing::{get, get_service, post},
     Json, Router,
 };
@@ -246,9 +246,9 @@ async fn list_teams(State(state): State<SharedState>) -> Json<Vec<Team>> {
     Json(state.teams.clone())
 }
 
-async fn list_stops() -> impl IntoResponse {
+async fn list_stops() -> Json<&'static [kvv::Stop]> {
     let stops = kvv::KVV_STOPS.get().unwrap();
-    Response::new(serde_json::to_string(&stops).unwrap())
+    Json(stops)
 }
 
 #[tokio::main]
@@ -375,8 +375,8 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
                                 team.lat = (lat + team.lat) / 2.;
                             }
                         }
-                        ClientMessage::SetTeamPosition { long, lat, team_id } => {
-                            if let Some(team) = state.teams.iter_mut().find(|t| t.id == team_id) {
+                        ClientMessage::SetTeamPosition { long, lat } => {
+                            if let Some(team) = state.team_mut_by_client_id(id) {
                                 team.long = long;
                                 team.lat = lat;
                             }
@@ -396,7 +396,7 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
                                 team.on_train = Some(train_id);
                             }
                         }
-                        ClientMessage::DisembarkTrain(_) => {
+                        ClientMessage::DisembarkTrain => {
                             if let Some(team) = state.team_mut_by_client_id(id) {
                                 team.on_train = None;
                             }

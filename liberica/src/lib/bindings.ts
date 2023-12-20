@@ -6,7 +6,7 @@ export type CreateTeam = { name: string; color: string; kind: TeamKind }
 
 export type Train = { id: number; long: number; lat: number; line_id: string; line_name: string; direction: string }
 
-export type ClientMessage = { Position: { long: number; lat: number } } | { SetTeamPosition: { long: number; lat: number; team_id: number } } | { JoinTeam: { team_id: number } } | { EmbarkTrain: { train_id: string } } | { DisembarkTrain: number } | { Message: string }
+export type ClientMessage = { Position: { long: number; lat: number } } | { SetTeamPosition: { long: number; lat: number } } | { JoinTeam: { team_id: number } } | { EmbarkTrain: { train_id: string } } | "DisembarkTrain" | { Message: string }
 
 export type TeamKind = "MrX" | "Detective" | "Observer"
 
