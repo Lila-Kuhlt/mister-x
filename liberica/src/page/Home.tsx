@@ -11,9 +11,10 @@ export function Home() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      getTeams().then(setTeams);
-    }, 500);
+    const updateTeams = () => getTeams().then(setTeams);
+
+    updateTeams();
+    const interval = setInterval(updateTeams, 500);
     return () => clearInterval(interval);
   }, []);
 
