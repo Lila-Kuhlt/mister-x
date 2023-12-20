@@ -1,0 +1,13 @@
+.tooltip {
+  background-color: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.detectiveLabel {
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  border: 0;
+  font-weight: bold;
+  text-decoration: none;
+}

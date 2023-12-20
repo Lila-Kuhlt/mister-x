@@ -1,18 +1,31 @@
-import { Map } from "components/map/Map";
+import { GameStateContext, Map } from "components/map/Map";
 import { createWebsocketConnection } from "lib/api";
-import { GameState } from "lib/bindings";
+import { GameState, Team, Train } from "lib/bindings";
 import { WebsocketApi } from "lib/websockets";
-import { Popup } from "react-leaflet";
-import { createContext, useEffect, useState } from "react";
-import { Marker } from "components/map/Marker";
-import { useLocation } from "react-router-dom";
-
-export const WebsocketContext = createContext<WebsocketApi | undefined>(undefined);
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { Button } from "components/InputElements";
 
 export function Game() {
-  const [ws, setWS] = useState<WebsocketApi | undefined>();
+  const [ws, setWS] = useState<WebsocketApi>();
   const [gs, setGameState] = useState<GameState>({ teams: [], trains: [] });
+  const [embarkedTrain, setEmbarkedTrain] = useState<Train>();
   const team: Team = useLocation().state; // this is how Home passes the team
+  const navigate = useNavigate();
+
+  function disembark() {
+    if (team) {
+      setEmbarkedTrain(undefined);
+      ws?.send("DisembarkTrain");
+    }
+  }
+
+  function embark(train: Train) {
+    if (team) {
+      setEmbarkedTrain(train);
+      ws?.send({ EmbarkTrain: { train_id: train.line_id } });
+    }
+  }
 
   useEffect(() => {
     const socket = createWebsocketConnection();
@@ -62,18 +75,21 @@ export function Game() {
   );
 
   const MAP = () => (
-    <WebsocketContext.Provider value={ws}>
+    <GameStateContext.Provider value={gs}>
       <Map
         tileProps={{ updateInterval: 500 }}
         containerProps={{ preferCanvas: true }}
-      >
-        {gs.trains.map((train) => (
-          <Marker key={train.line_id} position={{ ...train }}>
-            <Popup>{train.line_name}</Popup>
-          </Marker>
-        ))}
-      </Map>
-    </WebsocketContext.Provider>
+        onStopClick={(stop) => ws?.send({ SetTeamPosition: { lat: stop.lat, long: stop.lon } })}
+        onTrainClick={(train) => {
+          const embarked = gs.teams.find((team) => team.on_train === train.line_id) !== undefined;
+          if (embarked) {
+            disembark();
+          } else {
+            embark(train);
+          }
+        }}
+      />
+    </GameStateContext.Provider>
   );
 
   return ws ? MAP() : LOADER();
