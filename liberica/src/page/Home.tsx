@@ -18,9 +18,10 @@ export function Home() {
   }, []);
 
   const process = async () => {
-    if (selected === undefined) return;
-    // TODO: set team
-    navigate("/game");
+    if (selected === undefined) {
+      return;
+    }
+    navigate("/game", { state: teams[selected] });
   };
 
   return (
@@ -40,7 +41,7 @@ export function Home() {
         <Button
           disabled={selected === undefined}
           type="button"
-          onClick={() => void process()}
+          onClick={process}
         >
           Join Team
         </Button>

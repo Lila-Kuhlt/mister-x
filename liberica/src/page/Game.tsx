@@ -5,14 +5,14 @@ import { WebsocketApi } from "lib/websockets";
 import { Popup } from "react-leaflet";
 import { createContext, useEffect, useState } from "react";
 import { Marker } from "components/map/Marker";
+import { useLocation } from "react-router-dom";
 
-export const WebsocketContext = createContext<WebsocketApi | undefined>(
-  undefined
-);
+export const WebsocketContext = createContext<WebsocketApi | undefined>(undefined);
 
 export function Game() {
   const [ws, setWS] = useState<WebsocketApi | undefined>();
   const [gs, setGameState] = useState<GameState>({ teams: [], trains: [] });
+  const team: Team = useLocation().state; // this is how Home passes the team
 
   useEffect(() => {
     const socket = createWebsocketConnection();
@@ -32,6 +32,20 @@ export function Game() {
 
     return () => socket.disconnect();
   }, []);
+
+  useEffect(() => {
+    if (ws && team) {
+      ws.send({ JoinTeam: { team_id: team.id } })
+    }
+  }, [ws, team]);
+
+  useEffect(() => {
+    if (ws && window.isSecureContext) {
+      navigator.geolocation.watchPosition((pos) => {
+        ws.send({ Position: { lat: pos.coords.latitude, long: pos.coords.longitude } });
+      });
+    }
+  }, [ws]);
 
   // Loading page
   const LOADER = () => (
