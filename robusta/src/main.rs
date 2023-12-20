@@ -25,7 +25,7 @@ use tower_http::{
 };
 use tracing::{error, info, warn, Level};
 use unique_id::UniqueIdGen;
-use ws_message::{ClientMessage, GameState, Team};
+use ws_message::{ClientMessage, GameState, Team, TeamState};
 
 use crate::ws_message::TeamKind;
 
@@ -63,12 +63,13 @@ struct Client {
 struct ClientConnection {
     id: u32,
     team_id: u32,
+    team_kind: TeamKind,
     send: tokio::sync::mpsc::Sender<ws_message::ServerMessage>,
 }
 
 #[derive(Debug)]
 struct AppState {
-    pub teams: Vec<ws_message::Team>,
+    pub teams: Vec<ws_message::TeamState>,
     pub game_logic_sender: tokio::sync::mpsc::Sender<InputMessage>,
     pub connections: Vec<ClientConnection>,
     pub client_id_gen: UniqueIdGen,
@@ -92,10 +93,10 @@ impl AppState {
     fn client_mut(&mut self, id: u32) -> Option<&mut ClientConnection> {
         self.connections.iter_mut().find(|x| x.id == id)
     }
-    fn team_mut_by_client_id(&mut self, id: u32) -> Option<&mut Team> {
+    fn team_mut_by_client_id(&mut self, id: u32) -> Option<&mut TeamState> {
         self.client(id)
             .map(|x| x.team_id)
-            .and_then(|team_id| self.teams.iter_mut().find(|team| team.id == team_id))
+            .and_then(|team_id| self.teams.iter_mut().find(|ts| ts.team.id == team_id))
     }
 }
 
@@ -109,6 +110,7 @@ async fn handler(ws: WebSocketUpgrade, State(state): State<SharedState>) -> Resp
         let client_connection = ClientConnection {
             id,
             team_id: 0,
+            team_kind: Default::default(),
             send,
         };
         state.connections.push(client_connection);
@@ -226,24 +228,23 @@ async fn create_team(
     // validation
     if team_name.is_empty() {
         return Err(ws_message::CreateTeamError::InvalidName);
-    } else if state.teams.iter().any(|t| t.name == team_name) {
+    } else if state.teams.iter().any(|ts| ts.team.name == team_name) {
         return Err(ws_message::CreateTeamError::NameAlreadyExists);
     }
 
     let team = Team {
         id: state.team_id_gen.next(),
-        color: team.color,
         name: team_name.to_owned(),
+        color: team.color,
         kind: team.kind,
-        ..Default::default()
     };
-    state.teams.push(team.clone());
+    state.teams.push(TeamState { team: team.clone(), ..Default::default() });
     Ok(Json(team))
 }
 
 async fn list_teams(State(state): State<SharedState>) -> Json<Vec<Team>> {
     let state = state.lock().await;
-    Json(state.teams.clone())
+    Json(state.teams.iter().map(|ts| ts.team.clone()).collect())
 }
 
 async fn list_stops() -> Json<&'static [kvv::Stop]> {
@@ -278,22 +279,22 @@ async fn main() {
 
     let mut teams = fs::read_to_string(TEAMS_FILE)
         .ok()
-        .and_then(|x| serde_json::from_str::<Vec<Team>>(&x).ok())
+        .and_then(|x| serde_json::from_str::<Vec<TeamState>>(&x).ok())
         .unwrap_or_default();
 
     let mut state = AppState::new(send.clone());
-    let max_id = teams.iter().map(|x| x.id).max().unwrap_or(0);
+    let max_id = teams.iter().map(|ts| ts.team.id).max().unwrap_or(0);
     state.team_id_gen.set_min(max_id + 1);
-    if !teams.iter().any(|team| team.kind == TeamKind::MrX) {
+    if !teams.iter().any(|ts| ts.team.kind == TeamKind::MrX) {
         // no Mr. X present
-        teams.push(Team {
-            id: state.team_id_gen.next(),
-            long: 0.0,
-            lat: 0.0,
-            on_train: None,
-            name: MRX.to_owned(),
-            color: "#FFFFFF".to_owned(),
-            kind: TeamKind::MrX,
+        teams.push(TeamState {
+            team: Team {
+                id: state.team_id_gen.next(),
+                name: MRX.to_owned(),
+                color: "#FFFFFF".to_owned(),
+                kind: TeamKind::MrX,
+            },
+            ..Default::default()
         });
     }
     state.teams = teams;
@@ -385,11 +386,17 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
                             info!("Got message: {}", msg);
                         }
                         ClientMessage::JoinTeam { team_id } => {
+                            let Some(ts) = state.teams.iter().find(|ts| ts.team.id == team_id) else {
+                                warn!("Team {} not found", team_id);
+                                continue;
+                            };
+                            let team_kind = ts.team.kind;
                             let Some(client) = state.client_mut(id) else {
                                 warn!("Client {} not found", id);
                                 continue;
                             };
                             client.team_id = team_id;
+                            client.team_kind = team_kind;
                         }
                         ClientMessage::EmbarkTrain { train_id } => {
                             if let Some(team) = state.team_mut_by_client_id(id) {
@@ -444,9 +451,17 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
         )
         .unwrap();
 
-        let server_message = ws_message::ServerMessage::GameState(game_state);
         for connection in state.connections.iter_mut() {
-            if connection.send.send(server_message.clone()).await.is_err() {
+            let game_state = GameState {
+                teams: game_state
+                    .teams
+                    .iter()
+                    .filter(|ts| ts.team.kind == TeamKind::Detective || (connection.team_kind == TeamKind::MrX && ts.team.kind != TeamKind::Observer))
+                    .cloned()
+                    .collect(),
+                trains: game_state.trains.clone(),
+            };
+            if connection.send.send(ws_message::ServerMessage::GameState(game_state.clone())).await.is_err() {
                 continue;
             }
         }

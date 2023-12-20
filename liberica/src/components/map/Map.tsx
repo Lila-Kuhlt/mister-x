@@ -12,7 +12,7 @@ import {
 import { createContext, useContext, useEffect, useState } from "react";
 import { MrXIcon, TrainIcon, DetectiveIcon, ICON_OFFSET, ICON_OFFSET_TOP } from "components/MapIcons";
 import { Marker } from "./Marker";
-import { GameState, Stop, Team, Train } from "lib/bindings";
+import { GameState, Stop, TeamState, Train } from "lib/bindings";
 import { getStops } from "lib/api";
 import { getContrastingTextColor } from "lib/util";
 import Style from "style/Map.module.css";
@@ -27,7 +27,7 @@ export type MapProps = React.PropsWithChildren<{
   containerProps?: Partial<MapContainerProps>;
 }>;
 
-function MrXMarker(props: { player: Team }) {
+function MrXMarker(props: { player: TeamState }) {
   const player = props.player;
 
   return (
@@ -35,7 +35,7 @@ function MrXMarker(props: { player: Team }) {
       icon={MrXIcon}
       position={{ ...player }}
     >
-      <Tooltip offset={ICON_OFFSET} key={player.id}>
+      <Tooltip offset={ICON_OFFSET} key={player.team.id}>
         Mr. X war hier
       </Tooltip>
     </Marker>
@@ -61,12 +61,12 @@ function TrainMarker(props: { train: Train; onClick?: (train: Train) => void }) 
   );
 }
 
-function TeamMarker(props: { player: Team }) {
+function TeamMarker(props: { player: TeamState }) {
   const player = props.player;
 
   return (
     <Marker
-      icon={player.kind == "MrX" ? MrXIcon : DetectiveIcon}
+      icon={player.team.kind == "MrX" ? MrXIcon : DetectiveIcon}
       position={{ ...player }}
     >
       <Tooltip
@@ -78,12 +78,12 @@ function TeamMarker(props: { player: Team }) {
       >
         <a
           style={{
-            background: player.color,
-            color: getContrastingTextColor(player.color),
+            background: player.team.color,
+            color: getContrastingTextColor(player.team.color),
           }}
           className={Style.detectiveLabel}
         >
-          {player.name}
+          {player.team.name}
         </a>
       </Tooltip>
     </Marker>
@@ -154,11 +154,11 @@ export function Map(
         <LayersControl.Overlay checked name="Detectives">
           <LayerGroup>
             {gs.teams
-              .filter((team) => team.lat !== 0.0 || team.long !== 0.0) // sensible coordinates
-              .map((team) => (
+              .filter((ts) => ts.lat !== 0.0 || ts.long !== 0.0) // sensible coordinates
+              .map((ts) => (
                 <TeamMarker
-                  player={team}
-                  key={team.id}
+                  player={ts}
+                  key={ts.team.id}
                 />
               ))}
           </LayerGroup>

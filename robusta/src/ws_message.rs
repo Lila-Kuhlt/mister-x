@@ -19,8 +19,16 @@ pub enum ServerMessage {
 
 #[derive(specta::Type, Default, Clone, Serialize, Deserialize, Debug)]
 pub struct GameState {
-    pub teams: Vec<Team>,
+    pub teams: Vec<TeamState>,
     pub trains: Vec<Train>,
+}
+
+#[derive(specta::Type, Default, Clone, Serialize, Deserialize, Debug)]
+pub struct TeamState {
+    pub team: Team,
+    pub long: f32,
+    pub lat: f32,
+    pub on_train: Option<String>,
 }
 
 #[derive(Default, Clone, Debug)]
@@ -37,7 +45,7 @@ pub struct CreateTeam {
     pub kind: TeamKind,
 }
 
-#[derive(specta::Type, Clone, Serialize, Deserialize, Debug, Default, PartialEq)]
+#[derive(specta::Type, Clone, Copy, Serialize, Deserialize, Debug, Default, PartialEq)]
 pub enum TeamKind {
     MrX,
     #[default]
@@ -64,9 +72,6 @@ impl IntoResponse for CreateTeamError {
 #[derive(specta::Type, Default, Clone, Serialize, Deserialize, Debug)]
 pub struct Team {
     pub id: u32,
-    pub long: f32,
-    pub lat: f32,
-    pub on_train: Option<String>,
     pub name: String,
     pub color: String,
     pub kind: TeamKind,
