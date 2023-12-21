@@ -122,11 +122,10 @@ export function Map(
       center={CENTER}
       zoom={DEFAULT_ZOOM}
       className="h-max w-max"
-      zoomControl={false}
       {...props.containerProps}
     >
       <TileLayer
-        url="https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png"
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         updateInterval={200}
         {...props.tileProps}
       />
