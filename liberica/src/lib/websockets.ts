@@ -13,7 +13,7 @@ export type WSHandlerMap<M extends object> = {
 };
 
 /**
- * Websocket Disconnect Codes
+ * WebSocket Disconnect Codes
  * @see https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent/code
  */
 export const WEBSOCKET_CODES = {
@@ -29,7 +29,7 @@ export type WSEvent =
   | { Connect: void }
   | { Error: Event };
 
-export class WebsocketApi {
+export class WebSocketApi {
   public lastMessage?: Date;
 
   private connection!: WebSocket;
@@ -86,7 +86,7 @@ export class WebsocketApi {
   public register<T extends Keys<ServerMessage>>(
     type: T,
     handler: WSHandlerMap<ServerMessage>[T]
-  ): WebsocketApi {
+  ): WebSocketApi {
     this.handlers[type] = handler;
     return this;
   }

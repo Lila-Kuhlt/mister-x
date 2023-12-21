@@ -1,6 +1,6 @@
 import axios from "axios";
 import { Team, Stop, CreateTeam } from "lib/bindings";
-import { WebsocketApi } from "./websockets";
+import { WebSocketApi } from "./websockets";
 
 const ENDPOINTS = {
   POST_CREATE_TEAM: "/create-team",
@@ -12,7 +12,7 @@ const ENDPOINTS = {
 };
 
 /**
- * Get the Websocket endpoint.
+ * Get the WebSocket endpoint.
  * E.g. ws://misterx.com/ws
  *
  * Allows insecure websocket connection, if either
@@ -22,7 +22,7 @@ const ENDPOINTS = {
  *
  * @returns The websocket endpoint
  */
-export function getWebsocketEndpoint() {
+export function getWebSocketEndpoint() {
   const hostname = location.hostname;
 
   const isDevServer = !import.meta.env.PROD;
@@ -58,7 +58,7 @@ export function getHTTPEndpoint() {
 }
 
 export const BASE_URLS = {
-  WEBSOCKET: getWebsocketEndpoint(),
+  WEBSOCKET: getWebSocketEndpoint(),
   HTTP: getHTTPEndpoint(),
 };
 
@@ -78,5 +78,5 @@ export const serverAlive = (): Promise<boolean> =>
     .then(() => true)
     .catch(() => false);
 
-export const createWebsocketConnection = () =>
-  new WebsocketApi(BASE_URLS.WEBSOCKET + ENDPOINTS.GET_WS);
+export const createWebSocketConnection = () =>
+  new WebSocketApi(BASE_URLS.WEBSOCKET + ENDPOINTS.GET_WS);

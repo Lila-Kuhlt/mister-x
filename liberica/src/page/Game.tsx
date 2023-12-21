@@ -1,13 +1,13 @@
 import { GameStateContext, Map } from "components/map/Map";
-import { createWebsocketConnection } from "lib/api";
+import { createWebSocketConnection } from "lib/api";
 import { GameState, Team, Train } from "lib/bindings";
-import { WebsocketApi } from "lib/websockets";
+import { WebSocketApi } from "lib/websockets";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "components/InputElements";
 
 export function Game() {
-  const [ws, setWS] = useState<WebsocketApi>();
+  const [ws, setWS] = useState<WebSocketApi>();
   const [gs, setGameState] = useState<GameState>({ teams: [], trains: [] });
   const [embarkedTrain, setEmbarkedTrain] = useState<Train>();
   const team: Team = useLocation().state; // this is how Home passes the team
@@ -28,11 +28,11 @@ export function Game() {
   }
 
   useEffect(() => {
-    const socket = createWebsocketConnection();
+    const socket = createWebSocketConnection();
 
     const onClose = (e: Event) => {
       setWS(undefined);
-      console.error(`Websocket connection closed uncleanly: `, e);
+      console.error(`WebSocket connection closed uncleanly: `, e);
       setTimeout(() => socket.reconnect(), 1000);
     };
 
