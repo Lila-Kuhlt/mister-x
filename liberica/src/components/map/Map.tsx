@@ -11,6 +11,7 @@ import {
 } from "react-leaflet";
 import { createContext, useContext, useEffect, useState } from "react";
 import { MrXIcon, TrainIcon, DetectiveIcon, ICON_OFFSET, ICON_OFFSET_TOP } from "components/MapIcons";
+import { Button } from "components/InputElements";
 import { Marker } from "./Marker";
 import { GameState, Stop, TeamState, Train } from "lib/bindings";
 import { getStops } from "lib/api";
@@ -26,6 +27,20 @@ export type MapProps = React.PropsWithChildren<{
   tileProps?: Partial<TileLayerProps>;
   containerProps?: Partial<MapContainerProps>;
 }>;
+
+function ResetMapViewButton() {
+  const map = useMap();
+
+  return (
+    <div className="leaflet-top leaflet-center">
+      <div className="leaflet-control leaflet-bar">
+        <Button onClick={() => map.setView(CENTER, DEFAULT_ZOOM)}>
+          Reset Map View
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 function MrXMarker(props: { player: TeamState }) {
   const player = props.player;
@@ -164,6 +179,7 @@ export function Map(
           </LayerGroup>
         </LayersControl.Overlay>
       </LayersControl>
+      <ResetMapViewButton />
       {props.children}
     </MapContainer>
   );

@@ -53,11 +53,11 @@ export function DropDown<T extends string>(
 }
 
 export const Button = (
-  props: React.PropsWithChildren<React.ButtonHTMLAttributes<HTMLButtonElement>>
+  { className, ...props }: React.PropsWithChildren<React.ButtonHTMLAttributes<HTMLButtonElement>>
 ) => {
   return (
     <button
-      className="middle none w-full center rounded-lg bg-purple-500 text-white shadow-md shadow-pink-500/20 py-2 px-6 font-sans text-sm font-bold transition-all hover:shadow-lg hover:shadow-pink-500/40 focus:opacity-[0.85] focus:shadow-none active:opacity-[0.85] active:shadow-none disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none flex justify-center"
+      className={`middle none w-full center rounded-lg bg-purple-500 text-white shadow-md shadow-pink-500/20 py-2 px-6 font-sans text-sm font-bold transition-all hover:shadow-lg hover:shadow-pink-500/40 focus:opacity-[0.85] focus:shadow-none active:opacity-[0.85] active:shadow-none disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none flex justify-center ${className}`}
       {...props}
     >
       {props.children}
