@@ -11,6 +11,10 @@ const ENDPOINTS = {
   GET_WS: "/ws",
 };
 
+const hostname = location.hostname;
+const isDevServer = !import.meta.env.PROD;
+const isLocal = ['localhost', '127.0.0.1'].includes(hostname);
+
 /**
  * Get the WebSocket endpoint.
  * E.g. ws://misterx.com/ws
@@ -22,12 +26,7 @@ const ENDPOINTS = {
  *
  * @returns The websocket endpoint
  */
-export function getWebSocketEndpoint() {
-  const hostname = location.hostname;
-
-  const isDevServer = !import.meta.env.PROD;
-  const isLocal = ['localhost', '127.0.0.1'].includes(hostname);
-
+export function getWebSocketEndpoint(): string {
   const port = isDevServer ? '3000' : location.port;
   const proto = isLocal || isDevServer ? 'ws' : 'wss';
 
@@ -45,12 +44,7 @@ export function getWebSocketEndpoint() {
  *
  * @returns The http endpoint
  */
-export function getHTTPEndpoint() {
-  const hostname = location.hostname;
-
-  const isDevServer = !import.meta.env.PROD;
-  const isLocal = ['localhost', '127.0.0.1'].includes(hostname);
-
+export function getHTTPEndpoint(): string {
   const port = isDevServer ? '3000' : location.port;
   const proto = isLocal || isDevServer ? 'http' : 'https';
 
