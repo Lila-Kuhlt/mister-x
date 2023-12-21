@@ -4,7 +4,9 @@ import { GameState, Team, Train } from "lib/bindings";
 import { WebSocketApi } from "lib/websockets";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { Navbar } from "components/Navbar";
 import { Button } from "components/InputElements";
+import { FaHome } from "react-icons/fa";
 
 export function Game() {
   const [ws, setWS] = useState<WebSocketApi>();
@@ -76,19 +78,28 @@ export function Game() {
 
   const MAP = () => (
     <GameStateContext.Provider value={gs}>
-      <Map
-        tileProps={{ updateInterval: 500 }}
-        containerProps={{ preferCanvas: true }}
-        onStopClick={(stop) => ws?.send({ SetTeamPosition: { lat: stop.lat, long: stop.lon } })}
-        onTrainClick={(train) => {
-          const embarked = gs.teams.find((team) => team.on_train === train.line_id) !== undefined;
-          if (embarked) {
-            disembark();
-          } else {
-            embark(train);
-          }
-        }}
-      />
+      <div className="flex flex-col w-max h-max">
+        <Map
+          tileProps={{ updateInterval: 500 }}
+          containerProps={{ preferCanvas: true }}
+          onStopClick={(stop) => ws?.send({ SetTeamPosition: { lat: stop.lat, long: stop.lon } })}
+          onTrainClick={embark}
+        />
+
+        <Navbar>
+          <Button onClick={() => navigate("/")}>
+            <FaHome />
+          </Button>
+
+          {embarkedTrain && (
+            <span>
+              {embarkedTrain.line_name} {embarkedTrain.direction}
+            </span>
+          )}
+
+          <Button disabled={!embarkedTrain} onClick={disembark}>Disembark</Button>
+        </Navbar>
+      </div>
     </GameStateContext.Provider>
   );
 
