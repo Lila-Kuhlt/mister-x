@@ -1,10 +1,11 @@
 import { CreateTeam } from "page/CreateTeam";
 import { Game } from "page/Game";
 import { Home } from "page/Home";
+import { Replay } from "page/Replay";
+import { Admin } from "page/Admin";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import "style/main.css";
-import { Admin } from "page/Admin";
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 import LanguageDetector from "i18next-browser-languagedetector";
@@ -33,6 +34,7 @@ ReactDOM.createRoot(rootElement).render(
             <Route path="/" element={<Home />} />
             <Route path="/create" element={<CreateTeam />} />
             <Route path="/game" element={<Game />} />
+            <Route path="/replay" element={<Replay />} />
             <Route path="/admin" element={<Admin />} />
         </Routes>
     </BrowserRouter>,

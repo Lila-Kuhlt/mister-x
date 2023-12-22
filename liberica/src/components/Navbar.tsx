@@ -1,4 +1,7 @@
 import { PropsWithChildren } from "react";
+import { Button } from "./InputElements";
+import { FaHome } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
 
 export function Navbar(props: PropsWithChildren) {
     return (
@@ -14,4 +17,14 @@ export function Navbar(props: PropsWithChildren) {
             {props.children}
         </div>
     );
+}
+
+export function HomeButton() {
+  const navigate = useNavigate();
+
+  return (
+    <Button onClick={() => navigate("/")}>
+      <FaHome />
+    </Button>
+  )
 }

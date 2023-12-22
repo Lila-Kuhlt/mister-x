@@ -17,3 +17,7 @@ export const getContrastingTextColor = (bg: string) => {
 
     return luminance > 0.5 ? "#000000" : "#FFFFFF";
 };
+
+export const clamp = (x: number, min: number, max: number) => {
+  return Math.min(Math.max(x, min), max)
+};
