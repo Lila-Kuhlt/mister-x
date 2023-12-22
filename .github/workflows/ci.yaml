@@ -1,0 +1,24 @@
+name: CI
+
+on: push
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v3
+        with:
+          path: |
+            target
+            liberica/node_modules
+          key: ${{ runner.os }}-mister-x
+      - name: Build robusta
+        run: |
+          cd robusta
+          cargo build
+      - name: Build liberica
+        run: |
+          cd liberica
+          npm install
+          npm run build
