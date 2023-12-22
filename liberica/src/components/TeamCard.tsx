@@ -6,7 +6,6 @@ export function TeamCard(props: {
   onClick: () => void;
 }) {
   const team = props.team;
-  const color = (team.color.startsWith("#") && `[${team.color}]`) || team.color;
 
   const states = {
     selected: "outline outline-solid outline-2 outline-slate-300",
@@ -20,7 +19,7 @@ export function TeamCard(props: {
       className={`my-1 flex items-center w-full transition-all rounded-md hover:bg-slate-100 ${states[state]}`}
       onClick={props.onClick}
     >
-      <div className={`w-10 h-10 bg-${color} rounded m-2`} />
+      <div className="w-10 h-10 rounded m-2" style={{ backgroundColor: team.color }} />
       <div className="flex flex-col justify-center">
         <span className="font-semibold">{team.name}</span>
         <span className="justify-end italic font-normal text-slate-400">

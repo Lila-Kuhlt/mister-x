@@ -63,7 +63,6 @@ struct Client {
 struct ClientConnection {
     id: u32,
     team_id: u32,
-    team_kind: TeamKind,
     send: tokio::sync::mpsc::Sender<ws_message::ServerMessage>,
 }
 
@@ -110,7 +109,6 @@ async fn handler(ws: WebSocketUpgrade, State(state): State<SharedState>) -> Resp
         let client_connection = ClientConnection {
             id,
             team_id: 0,
-            team_kind: Default::default(),
             send,
         };
         state.connections.push(client_connection);
@@ -291,7 +289,7 @@ async fn main() {
             team: Team {
                 id: state.team_id_gen.next(),
                 name: MRX.to_owned(),
-                color: "#FFFFFF".to_owned(),
+                color: "#000000".to_owned(),
                 kind: TeamKind::MrX,
             },
             ..Default::default()
@@ -386,17 +384,11 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
                             info!("Got message: {}", msg);
                         }
                         ClientMessage::JoinTeam { team_id } => {
-                            let Some(ts) = state.teams.iter().find(|ts| ts.team.id == team_id) else {
-                                warn!("Team {} not found", team_id);
-                                continue;
-                            };
-                            let team_kind = ts.team.kind;
                             let Some(client) = state.client_mut(id) else {
                                 warn!("Client {} not found", id);
                                 continue;
                             };
                             client.team_id = team_id;
-                            client.team_kind = team_kind;
                         }
                         ClientMessage::EmbarkTrain { train_id } => {
                             if let Some(team) = state.team_mut_by_client_id(id) {
@@ -456,7 +448,7 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
                 teams: game_state
                     .teams
                     .iter()
-                    .filter(|ts| ts.team.kind == TeamKind::Detective || (connection.team_kind == TeamKind::MrX && ts.team.kind != TeamKind::Observer))
+                    .filter(|ts| ts.team.kind == TeamKind::Detective || ts.team.id == connection.team_id)
                     .cloned()
                     .collect(),
                 trains: game_state.trains.clone(),

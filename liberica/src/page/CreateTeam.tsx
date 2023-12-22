@@ -3,26 +3,23 @@ import { postCreateTeam } from "lib/api";
 import { TeamKind } from "lib/bindings";
 import { FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { red, pink, lime, cyan, purple } from "tailwindcss/colors"
 
 export function CreateTeam() {
-  const [color, setColor] = useState<string>("red-500");
+  const [color, setColor] = useState<string>(purple["500"]);
   const [name, setName] = useState<string>("");
   const [kind, setKind] = useState<TeamKind>("Detective");
 
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  // WARNING! These are preloaded colors (see tailwind configuraton).
-  // If the colors are changed, they have to be "compiled" by tailwind,
-  // thus they need to be added in the tailwind configuration
-  const colors = ["red-500", "pink-500", "lime-500", "cyan-500", "purple-500"];
+  const colors = [red["500"], pink["500"], lime["500"], cyan["500"], purple["500"]];
 
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (!color || !name || !kind) return;
 
-    console.log("Sending request  ");
     setLoading(true);
     postCreateTeam({ color, name, kind })
       .then(() => {
@@ -37,7 +34,8 @@ export function CreateTeam() {
 
   return (
     <div
-      className={`flex items-center justify-center h-screen bg-${color} transition-colors`}
+      className={`flex items-center justify-center h-screen transition-colors`}
+      style={{ backgroundColor: color }}
     >
       <form
         className="container flex flex-col gap-3 p-8 bg-white shadow-md rounded-xl w-80"
@@ -55,7 +53,8 @@ export function CreateTeam() {
         <div className="flex justify-between gap-3">
           {colors.map((color) => (
             <div
-              className={`w-10 h-10 bg-${color} rounded-md`}
+              className="w-10 h-10 rounded-md"
+              style={{ backgroundColor: color }}
               key={color}
               onClick={() => setColor(color)}
             />
