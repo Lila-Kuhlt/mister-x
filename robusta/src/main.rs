@@ -17,7 +17,7 @@ use axum::{
 use futures_util::SinkExt;
 use kvv::LineDepartures;
 use reqwest::StatusCode;
-use tokio::sync::mpsc::Sender;
+use tokio::sync::mpsc::{Receiver, Sender};
 use tower::util::ServiceExt;
 use tower_http::{
     cors::CorsLayer,
@@ -54,8 +54,8 @@ enum ServerMessage {
 
 #[derive(Debug)]
 struct Client {
-    recv: tokio::sync::mpsc::Receiver<ws_message::ServerMessage>,
-    send: tokio::sync::mpsc::Sender<InputMessage>,
+    recv: Receiver<ws_message::ServerMessage>,
+    send: Sender<InputMessage>,
     id: u32,
 }
 
@@ -63,20 +63,20 @@ struct Client {
 struct ClientConnection {
     id: u32,
     team_id: u32,
-    send: tokio::sync::mpsc::Sender<ws_message::ServerMessage>,
+    send: Sender<ws_message::ServerMessage>,
 }
 
 #[derive(Debug)]
 struct AppState {
     pub teams: Vec<ws_message::TeamState>,
-    pub game_logic_sender: tokio::sync::mpsc::Sender<InputMessage>,
+    pub game_logic_sender: Sender<InputMessage>,
     pub connections: Vec<ClientConnection>,
     pub client_id_gen: UniqueIdGen,
     pub team_id_gen: UniqueIdGen,
 }
 
 impl AppState {
-    const fn new(game_logic_sender: tokio::sync::mpsc::Sender<InputMessage>) -> Self {
+    const fn new(game_logic_sender: Sender<InputMessage>) -> Self {
         Self {
             teams: Vec::new(),
             game_logic_sender,
@@ -236,7 +236,10 @@ async fn create_team(
         color: team.color,
         kind: team.kind,
     };
-    state.teams.push(TeamState { team: team.clone(), ..Default::default() });
+    state.teams.push(TeamState {
+        team: team.clone(),
+        ..Default::default()
+    });
     Ok(Json(team))
 }
 
@@ -351,7 +354,7 @@ async fn main() {
         .unwrap();
 }
 
-async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, state: SharedState) {
+async fn run_game_loop(mut recv: Receiver<InputMessage>, state: SharedState) {
     let mut departures = HashMap::new();
     let mut log_file = fs::OpenOptions::new()
         .append(true)
@@ -448,7 +451,9 @@ async fn run_game_loop(mut recv: tokio::sync::mpsc::Receiver<InputMessage>, stat
                 teams: game_state
                     .teams
                     .iter()
-                    .filter(|ts| ts.team.kind == TeamKind::Detective || ts.team.id == connection.team_id)
+                    .filter(|ts| {
+                        ts.team.kind == TeamKind::Detective || ts.team.id == connection.team_id
+                    })
                     .cloned()
                     .collect(),
                 trains: game_state.trains.clone(),

@@ -136,22 +136,20 @@ static ACCESS_TOKEN: OnceLock<String> = OnceLock::new();
 async fn kvv_stops() -> Vec<Stop> {
     let access_token = ACCESS_TOKEN.get().unwrap();
     let api_endpoint = API_ENDPOINT.get().unwrap();
-    join_all(STOPS
-        .iter()
-        .map(|stop| async move {
-            let name = stop.1.to_string();
-            let stops = trias::search_stops(name, access_token.clone(), api_endpoint, 1).await.unwrap();
+    join_all(STOPS.iter().map(|stop| async move {
+        let name = stop.1.to_string();
+        let stops = trias::search_stops(name, access_token.clone(), api_endpoint, 1).await.unwrap();
 
-            let first_stop = stops.into_iter().next().unwrap();
-            let stop_point = first_stop.stop_point;
-            let position = first_stop.geo_position;
-            Stop {
-                name: stop_point.stop_point_name.text,
-                id: stop_point.stop_point_ref,
-                lat: position.latitude,
-                lon: position.longitude,
-            }
-        })).await
+        let first_stop = stops.into_iter().next().unwrap();
+        let stop_point = first_stop.stop_point;
+        let position = first_stop.geo_position;
+        Stop {
+            name: stop_point.stop_point_name.text,
+            id: stop_point.stop_point_ref,
+            lat: position.latitude,
+            lon: position.longitude,
+        }
+    })).await
 }
 
 #[derive(Debug, Clone)]
@@ -205,18 +203,15 @@ pub async fn fetch_departures(stops: &[Stop]) -> LineDepartures {
     let access_token = ACCESS_TOKEN.get().unwrap();
     let api_endpoint = API_ENDPOINT.get().unwrap();
 
-    let stop_results = join_all(stops
-        .iter()
-        .map(|stop| {
-            let name = stop.id.clone();
-            let access_token = access_token.clone();
-            async move {
-                trias::stop_events(name, access_token, 10, api_endpoint)
-                    .await
-                    .unwrap_or_default()
-            }
-        })
-    ).await;
+    let stop_results = join_all(stops.iter().map(|stop| {
+        let name = stop.id.clone();
+        let access_token = access_token.clone();
+        async move {
+            trias::stop_events(name, access_token, 10, api_endpoint)
+                .await
+                .unwrap_or_default()
+        }
+    })).await;
 
     let mut journeys = HashMap::new();
 
