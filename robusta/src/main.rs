@@ -112,6 +112,7 @@ async fn handler(ws: WebSocketUpgrade, State(state): State<SharedState>) -> Resp
             send,
         };
         state.connections.push(client_connection);
+        info!("Client {} connected", id);
         Client {
             recv: rec,
             send: state.game_logic_sender.clone(),

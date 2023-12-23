@@ -32,32 +32,32 @@ export function Game() {
   useEffect(() => {
     const socket = createWebSocketConnection();
 
-    const onClose = (e: Event) => {
-      setWS(undefined);
-      console.error(`WebSocket connection closed uncleanly: `, e);
-      setTimeout(() => socket.reconnect(), 1000);
-    };
-
     socket
       .registerEvent("Connect", () => setWS(socket))
-      .registerEvent("Error", (e) => onClose(e))
-      .registerEvent("Disconnect", () => setWS(undefined));
+      .registerEvent("Error", (e) => {
+        setWS(undefined);
+        console.error("WebSocket connection closed uncleanly:", e);
+        setTimeout(() => socket.reconnect(), 1000);
+      })
 
     socket.register("GameState", (gs) => setGameState(gs));
 
-    return () => socket.disconnect();
+    return () => {
+      setWS(undefined);
+      socket.disconnect();
+    };
   }, []);
 
   useEffect(() => {
-    if (ws && team) {
-      ws.send({ JoinTeam: { team_id: team.id } })
+    if (team) {
+      ws?.send({ JoinTeam: { team_id: team.id } })
     }
   }, [ws, team]);
 
   useEffect(() => {
-    if (ws && window.isSecureContext) {
+    if (window.isSecureContext) {
       navigator.geolocation.watchPosition((pos) => {
-        ws.send({ Position: { lat: pos.coords.latitude, long: pos.coords.longitude } });
+        ws?.send({ Position: { lat: pos.coords.latitude, long: pos.coords.longitude } });
       });
     }
   }, [ws]);

@@ -51,7 +51,7 @@ export class WebSocketApi {
   }
 
   public connect(endpoint: string) {
-    console.log("Connecting to ", endpoint);
+    console.log("Connecting to", endpoint);
     this.endpoint = endpoint;
     this.connection = new WebSocket(endpoint);
     this.connection.onerror = (e) => this.metaHandlers["Error"]?.(e);
