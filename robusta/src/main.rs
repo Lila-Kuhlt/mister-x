@@ -40,6 +40,9 @@ const TEAMS_FILE: &str = "teams.json";
 /// The name used for the Mr. X team.
 const MRX: &str = "Mr. X";
 
+/// The interval between position broadcasts (10 min).
+const INTERVAL: Duration = Duration::from_secs(600);
+
 #[derive(Debug)]
 enum InputMessage {
     Client(ClientMessage, u32),
@@ -92,6 +95,12 @@ impl AppState {
 
     fn client_mut(&mut self, id: u32) -> Option<&mut ClientConnection> {
         self.connections.iter_mut().find(|x| x.id == id)
+    }
+
+    fn team_by_client_id(&mut self, id: u32) -> Option<&TeamState> {
+        self.client(id)
+            .map(|x| x.team_id)
+            .and_then(|team_id| self.teams.iter().find(|ts| ts.team.id == team_id))
     }
 
     fn team_mut_by_client_id(&mut self, id: u32) -> Option<&mut TeamState> {
@@ -409,6 +418,52 @@ async fn run_game_loop(mut recv: Receiver<InputMessage>, state: SharedState) {
                         ClientMessage::DisembarkTrain => {
                             if let Some(team) = state.team_mut_by_client_id(id) {
                                 team.on_train = None;
+                            }
+                        }
+                        ClientMessage::MrXGadget(gadget) => {
+                            use ws_message::MrXGadget::*;
+                            if state.team_by_client_id(id).map(|ts| ts.team.kind != TeamKind::MrX).unwrap_or(true) {
+                                warn!("Client {} tried to use MrX Gadget, but is not MrX", id);
+                                continue;
+                            }
+                            match &gadget {
+                                AlternativeFacts { stop_id } => {
+                                    // TODO: change next position broadcast
+                                }
+                                Midjourney { image } => {
+                                    // TODO: prevent next position boradcast and broadcast image instead
+                                }
+                                NotFound => {
+                                    // TODO: prevent next position broadcast
+                                }
+                                Teleport => {}
+                                Shifter => {}
+                            }
+                            for connection in state.connections.iter_mut() {
+                                if connection.send.send(ClientResponse::MrXGadget(gadget.clone())).await.is_err() {
+                                    continue;
+                                }
+                            }
+                        }
+                        ClientMessage::DetectiveGadget(gadget) => {
+                            use ws_message::DetectiveGadget::*;
+                            if state.team_by_client_id(id).map(|ts| ts.team.kind != TeamKind::Detective).unwrap_or(true) {
+                                warn!("Client {} tried to use Detective Gadget, but is not Detective", id);
+                                continue;
+                            }
+                            match &gadget {
+                                Stop { stop_id } => {
+                                    // TODO: mark stop as blocked for the next 20 mins
+                                },
+                                OutOfOrder => {
+                                    // TODO: immediately broadcast Mr. X position
+                                },
+                                Shackles => todo!(),
+                            }
+                            for connection in state.connections.iter_mut() {
+                                if connection.send.send(ClientResponse::DetectiveGadget(gadget.clone())).await.is_err() {
+                                    continue;
+                                }
                             }
                         }
                     }

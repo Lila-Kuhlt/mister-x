@@ -7,12 +7,32 @@ pub enum ClientMessage {
     JoinTeam { team_id: u32 },
     EmbarkTrain { train_id: String },
     DisembarkTrain,
+    MrXGadget(MrXGadget),
+    DetectiveGadget(DetectiveGadget),
     Message(String),
+}
+
+#[derive(specta::Type, Clone, Serialize, Deserialize, Debug)]
+pub enum MrXGadget {
+    AlternativeFacts { stop_id: String },
+    Midjourney { image: Vec<u8> },
+    NotFound,
+    Teleport,
+    Shifter,
+}
+
+#[derive(specta::Type, Clone, Serialize, Deserialize, Debug)]
+pub enum DetectiveGadget {
+    Stop { stop_id: String },
+    OutOfOrder,
+    Shackles,
 }
 
 #[derive(specta::Type, Clone, Serialize, Deserialize, Debug)]
 pub enum ClientResponse {
     GameState(GameState),
+    MrXGadget(MrXGadget),
+    DetectiveGadget(DetectiveGadget),
 }
 
 #[derive(specta::Type, Default, Clone, Serialize, Deserialize, Debug)]

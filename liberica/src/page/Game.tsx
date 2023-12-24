@@ -29,6 +29,8 @@ export function Game() {
         ws?.send({ EmbarkTrain: { train_id: train.line_id } });
     }
 
+    const [showGadgetMenu, setShowGadgetMenu] = useState(false)
+
     useEffect(() => {
         const socket = createWebSocketConnection();
 
