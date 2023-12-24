@@ -82,7 +82,12 @@ export function Game() {
         <Map
           tileProps={{ updateInterval: 500 }}
           containerProps={{ preferCanvas: true }}
-          onStopClick={(stop) => ws?.send({ SetTeamPosition: { lat: stop.lat, long: stop.lon } })}
+          onStopClick={(stop) => {
+            if (team) {
+              disembark();
+              ws?.send({ SetTeamPosition: { lat: stop.lat, long: stop.lon } });
+            }
+          }}
           onTrainClick={embark}
         />
 
