@@ -1,0 +1,16 @@
+{
+    "SelectTeam": "Select team",
+    "ResetMapView": "Reset Map View",
+    "CreateTeam": "Create team",
+    "Detective": "Detective",
+    "MrX": "Mr. X",
+    "Observer": "Observer",
+    "ConnectionLost": "Connection to game server lost",
+    "Reconnect": "Attempting to reconnect...",
+    "Disembark": "Disembark",
+    "JoinTeam": "Join team",
+    "to": "{{line}} to {{direction}}",
+    "MrXMarker": "Mr. X was here",
+    "AdminPage": "Admin page",
+    "time": "{{time, datetime(dateStyle: medium; timeStyle: long)}}"
+}

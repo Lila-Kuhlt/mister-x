@@ -7,6 +7,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Navbar } from "components/Navbar";
 import { Button } from "components/InputElements";
 import { FaHome } from "react-icons/fa";
+import { useTranslation } from "react-i18next";
 
 export function Game() {
   const [ws, setWS] = useState<WebSocketApi>();
@@ -14,6 +15,7 @@ export function Game() {
   const [embarkedTrain, setEmbarkedTrain] = useState<Train>();
   const team: Team = useLocation().state; // this is how Home passes the team
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   function disembark() {
     if (team) {
@@ -62,21 +64,7 @@ export function Game() {
     }
   }, [ws]);
 
-  // Loading page
-  const LOADER = () => (
-    <div className="flex flex-col items-center justify-center gap-5 w-max h-max">
-      <div className="flex flex-col items-center">
-        <span className="italic text-slate-400">
-          Connection to game server lost
-        </span>
-        <span className="italic text-slate-400">
-          Attempting to reconnect...
-        </span>
-      </div>
-    </div>
-  );
-
-  const MAP = () => (
+  return ws ? (
     <GameStateContext.Provider value={gs}>
       <div className="flex flex-col w-max h-max">
         <Map
@@ -102,11 +90,21 @@ export function Game() {
             </span>
           )}
 
-          <Button disabled={!embarkedTrain} onClick={disembark}>Disembark</Button>
+          <Button disabled={!embarkedTrain} onClick={disembark}>{t("Disembark")}</Button>
         </Navbar>
       </div>
     </GameStateContext.Provider>
+  ) : (
+    // Loading page
+    <div className="flex flex-col items-center justify-center gap-5 w-max h-max">
+      <div className="flex flex-col items-center">
+        <span className="italic text-slate-400">
+          {t("ConnectionLost")}
+        </span>
+        <span className="italic text-slate-400">
+          {t("Reconnect")}
+        </span>
+      </div>
+    </div>
   );
-
-  return ws ? MAP() : LOADER();
 }

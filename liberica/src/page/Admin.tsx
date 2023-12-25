@@ -1,3 +1,7 @@
+import { useTranslation } from "react-i18next";
+
 export function Admin() {
-  return <>Admin Page</>;
+  const { t } = useTranslation();
+
+  return <>{t("AdminPage")}</>;
 }
