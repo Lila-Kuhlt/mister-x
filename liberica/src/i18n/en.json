@@ -2,6 +2,8 @@
     "SelectTeam": "Select team",
     "ResetMapView": "Reset Map View",
     "CreateTeam": "Create team",
+    "InvalidName": "invalid name",
+    "NameAlreadyExists": "name already exists",
     "Detective": "Detective",
     "MrX": "Mr. X",
     "Observer": "Observer",

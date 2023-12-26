@@ -20,8 +20,6 @@ export function CreateTeam() {
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    if (!color || !name || !kind) return;
-
     setLoading(true);
     postCreateTeam({ color, name, kind })
       .then(() => {
@@ -30,7 +28,7 @@ export function CreateTeam() {
       })
       .catch((err) => {
         setLoading(false)
-        alert(err.response.data)
+        alert(t(err.response.data))
       })
   };
 

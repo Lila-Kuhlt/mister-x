@@ -1,5 +1,3 @@
-use axum::response::{IntoResponse, Response};
-use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 
 #[derive(specta::Type, Clone, Deserialize, Debug)]
@@ -53,20 +51,10 @@ pub enum TeamKind {
     Observer,
 }
 
-#[derive(Clone, Debug)]
+#[derive(specta::Type, Clone, Serialize, Debug)]
 pub enum CreateTeamError {
     InvalidName,
     NameAlreadyExists,
-}
-impl IntoResponse for CreateTeamError {
-    fn into_response(self) -> Response {
-        let body = match self {
-            Self::InvalidName => "invalid name",
-            Self::NameAlreadyExists => "name already exists",
-        };
-
-        (StatusCode::UNPROCESSABLE_ENTITY, body).into_response()
-    }
 }
 
 #[derive(specta::Type, Default, Clone, Serialize, Deserialize, Debug)]

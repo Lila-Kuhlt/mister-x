@@ -220,15 +220,16 @@ pub async fn file_handler(uri: Uri) -> Result<Response<BoxBody>, (StatusCode, St
 async fn create_team(
     State(state): State<SharedState>,
     Json(team): Json<ws_message::CreateTeam>,
-) -> Result<Json<Team>, ws_message::CreateTeamError> {
+) -> Result<Json<Team>, (StatusCode, Json<ws_message::CreateTeamError>)> {
     let mut state = state.lock().await;
     let team_name = team.name.trim();
 
     // validation
+    let error = |err: ws_message::CreateTeamError| Err((StatusCode::UNPROCESSABLE_ENTITY, Json(err)));
     if team_name.is_empty() {
-        return Err(ws_message::CreateTeamError::InvalidName);
+        return error(ws_message::CreateTeamError::InvalidName);
     } else if state.teams.iter().any(|ts| ts.team.name == team_name) {
-        return Err(ws_message::CreateTeamError::NameAlreadyExists);
+        return error(ws_message::CreateTeamError::NameAlreadyExists);
     }
 
     let team = Team {

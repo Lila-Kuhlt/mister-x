@@ -58,7 +58,7 @@ export const BASE_URLS = {
 
 export const AXIOS = axios.create({ baseURL: BASE_URLS.HTTP });
 
-export const postCreateTeam = (team: CreateTeam): Promise<void> =>
+export const postCreateTeam = (team: CreateTeam): Promise<Team> =>
   AXIOS.post(ENDPOINTS.POST_CREATE_TEAM, team);
 
 export const getTeams = (): Promise<Team[]> =>

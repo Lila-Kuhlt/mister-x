@@ -2,6 +2,8 @@
     "SelectTeam": "Team auswählen",
     "ResetMapView": "Kartenansicht zurücksetzen",
     "CreateTeam": "Team erstellen",
+    "InvalidName": "ungültiger Name",
+    "NameAlreadyExists": "Name existiert bereits",
     "Detective": "Detektiv",
     "MrX": "Mr. X",
     "Observer": "Beobachter",
