@@ -14,5 +14,7 @@
     "to": "{{line}} nach {{direction}}",
     "MrXMarker": "Mr. X war hier",
     "AdminPage": "Admin-Seite",
-    "time": "{{time, datetime(dateStyle: medium; timeStyle: long)}}"
+    "time": "{{time, datetime(dateStyle: medium; timeStyle: long)}}",
+    "FailedParseReplay": "Replay-Datei konnte nicht geparst werden",
+    "Speed": "Geschwindigkeit"
 }
