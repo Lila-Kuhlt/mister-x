@@ -13,12 +13,12 @@ jobs:
             target
             liberica/node_modules
           key: ${{ runner.os }}-mister-x
+      - name: Build liberica
+        run: |
+          cd liberica
+          npm ci
+          npm run build
       - name: Build robusta
         run: |
           cd robusta
           cargo build
-      - name: Build liberica
-        run: |
-          cd liberica
-          npm install
-          npm run build
