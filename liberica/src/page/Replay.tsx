@@ -6,6 +6,7 @@ import { HomeButton, Navbar } from "components/Navbar"
 import { GameState } from "lib/bindings"
 import { clamp } from "lib/util"
 import { FaPlay, FaPause } from "react-icons/fa"
+import { useTranslation } from "react-i18next"
 
 // configuration
 const defaultSpeed = 10
@@ -67,6 +68,7 @@ type ReplayState = {
 }
 
 export function Replay() {
+  const { t } = useTranslation()
   const [gs, setGameState] = useState<GameState>({ teams: [], trains: [] })
 
   // UI state
@@ -161,7 +163,7 @@ export function Replay() {
                     startReplay(state)
                   }
                 } catch (e) {
-                  alert("failed to parse file")
+                  alert(t("FailedParseReplay"))
                   console.error(`failed to parse replay file: ${e}`)
                 }
               })
@@ -196,13 +198,13 @@ export function Replay() {
               disabled={!running}
             />
             <div style={{ fontFamily: "monospace" }}>
-              {time && new Intl.DateTimeFormat("de-DE", { dateStyle: "medium", timeStyle: "long" }).format(time)}
+              {time && t("time", { time })}
             </div>
           </label>
         </div>
 
         <label>
-          Speed: <input
+          {t("Speed")}: <input
             type="number"
             min={1}
             value={speed}
@@ -213,7 +215,7 @@ export function Replay() {
             }}
             disabled={!running}
             style={{ width: "60px" }}
-          /> x
+          /> {"x"}
         </label>
       </Navbar>
     </div>
