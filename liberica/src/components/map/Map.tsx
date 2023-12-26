@@ -10,6 +10,7 @@ import {
   Tooltip,
 } from "react-leaflet";
 import { createContext, useContext, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { MrXIcon, TrainIcon, DetectiveIcon, ICON_OFFSET, ICON_OFFSET_TOP } from "components/MapIcons";
 import { Button } from "components/InputElements";
 import { Marker } from "./Marker";
@@ -30,12 +31,13 @@ export type MapProps = React.PropsWithChildren<{
 
 function ResetMapViewButton() {
   const map = useMap();
+  const { t } = useTranslation();
 
   return (
     <div className="leaflet-top leaflet-center">
       <div className="leaflet-control leaflet-bar">
         <Button onClick={() => map.setView(CENTER, DEFAULT_ZOOM)}>
-          Reset Map View
+          {t("ResetMapView")}
         </Button>
       </div>
     </div>
@@ -44,6 +46,7 @@ function ResetMapViewButton() {
 
 function MrXMarker(props: { player: TeamState }) {
   const player = props.player;
+  const { t } = useTranslation();
 
   return (
     <Marker
@@ -51,7 +54,7 @@ function MrXMarker(props: { player: TeamState }) {
       position={{ ...player }}
     >
       <Tooltip offset={ICON_OFFSET} key={player.team.id}>
-        Mr. X war hier
+        {t("MrXMarker")}
       </Tooltip>
     </Marker>
   );
@@ -60,6 +63,7 @@ function MrXMarker(props: { player: TeamState }) {
 function TrainMarker(props: { train: Train; onClick?: (train: Train) => void }) {
   const train = props.train;
   const zoom = useMap().getZoom();
+  const { t } = useTranslation();
 
   return (
     <Marker
@@ -69,7 +73,7 @@ function TrainMarker(props: { train: Train; onClick?: (train: Train) => void }) 
     >
       {zoom > DEFAULT_ZOOM && (
         <Tooltip direction="right" offset={ICON_OFFSET} permanent>
-          {train.line_name.split(" ")[1]} to {train.direction}
+          {t("to", { line: train.line_name.split(" ")[1], direction: train.direction })}
         </Tooltip>
       )}
     </Marker>

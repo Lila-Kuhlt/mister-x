@@ -2,6 +2,7 @@ import { Button, DropDown, TextInput } from "components/InputElements";
 import { postCreateTeam } from "lib/api";
 import { TeamKind } from "lib/bindings";
 import { FormEvent, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { red, pink, lime, cyan, purple } from "tailwindcss/colors"
 
@@ -12,6 +13,7 @@ export function CreateTeam() {
 
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const colors = [red["500"], pink["500"], lime["500"], cyan["500"], purple["500"]];
 
@@ -41,7 +43,7 @@ export function CreateTeam() {
         className="container flex flex-col gap-3 p-8 bg-white shadow-md rounded-xl w-80"
         onSubmit={onSubmit}
       >
-        <h2 className="text-xl font-bold">Create team</h2>
+        <h2 className="text-xl font-bold">{t("CreateTeam")}</h2>
 
         <TextInput onTextChange={setName} trim="all" />
 
@@ -65,7 +67,7 @@ export function CreateTeam() {
           {loading ? (
             <div className="w-4 h-4 border-4 border-dashed rounded-full animate-spin dark:border-white"></div>
           ) : (
-            <>Create Team</>
+            <>{t("CreateTeam")}</>
           )}
         </Button>
       </form>
