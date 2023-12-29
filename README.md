@@ -15,6 +15,11 @@ TRIAS_API_ENDPOINT=YOUR_API_ENDPOINT
 TRIAS_ACCESS_TOKEN=YOUR_TOKEN
 ```
 
+## Portability
+If you are not in Karlsruhe but whant to use the App, you have to change some stuff. I'll try to write a short guide in the next couple of days, till then, here's a list of the things you need:
+* Map boundries (Log/Lat of 2 Corners)
+* A TRIAS API Key (Check with your train operator)
+* A list of Stops you want to include
 
 ## Development
 For development first navigate into the `robusta` directory and execute the `cargo run` command.
