@@ -41,7 +41,7 @@ ReactDOM.createRoot(rootElement).render(
             <Route path="/game" element={<Game />} />
             <Route path="/replay" element={<Replay />} />
             <Route path="/admin" element={<Admin />} />
-            <Route path="/gadgets" element={<Gadgets />} />
+            <Route path="/gadgets" element={<Gadgets team={{ id: 42, name: "MRX", color: "#000000", kind: "MrX" }} />} />
         </Routes>
     </BrowserRouter>,
 );
