@@ -3,7 +3,7 @@ import { Game } from "page/Game";
 import { Home } from "page/Home";
 import { Replay } from "page/Replay";
 import { Admin } from "page/Admin";
-import { Gadgets } from "page/Gadgets";
+import { DetectiveGadgets } from "page/Gadgets";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import "style/main.css";
@@ -41,7 +41,7 @@ ReactDOM.createRoot(rootElement).render(
             <Route path="/game" element={<Game />} />
             <Route path="/replay" element={<Replay />} />
             <Route path="/admin" element={<Admin />} />
-            <Route path="/gadgets" element={<Gadgets team={{ id: 42, name: "MRX", color: "#000000", kind: "MrX" }} />} />
+            <Route path="/gadgets" element={<DetectiveGadgets />} />
         </Routes>
     </BrowserRouter>,
 );
