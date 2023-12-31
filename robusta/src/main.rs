@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::io::Write;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
 use axum::{
@@ -40,7 +41,7 @@ const TEAMS_FILE: &str = "teams.json";
 /// The name used for the Mr. X team.
 const MRX: &str = "Mr. X";
 
-/// The interval between position broadcasts (10 min).
+/// The interval between position broadcasts and gadgets uses (10 min).
 const INTERVAL: Duration = Duration::from_secs(600);
 
 #[derive(Debug)]
@@ -375,6 +376,47 @@ async fn run_game_loop(mut recv: Receiver<InputMessage>, state: SharedState) {
         .build("logs")
         .expect("failed to initialize rolling file appender");
 
+    let can_mr_x_use_gadget = Arc::new(AtomicBool::new(false));
+    let can_detective_use_gadget = Arc::new(AtomicBool::new(false));
+    enum SpecialPos {
+        Stop(String),
+        Image(Vec<u8>),
+        NotFound,
+    }
+    let (send_pos, mut recv_pos) = tokio::sync::mpsc::channel(1);
+    {
+        let can_mr_x_use_gadget = Arc::clone(&can_mr_x_use_gadget);
+        let can_detective_use_gadget = Arc::clone(&can_detective_use_gadget);
+        tokio::spawn(async move {
+            let mut interval = tokio::time::interval(INTERVAL);
+            interval.tick().await;
+            // TODO: broadcast Mr. X start
+            interval.tick().await;
+            can_mr_x_use_gadget.store(true, Ordering::SeqCst);
+            can_detective_use_gadget.store(true, Ordering::SeqCst);
+            // TODO: broadcast Detective start
+            loop {
+                use SpecialPos::*;
+
+                interval.tick().await;
+                match recv_pos.try_recv() {
+                    Ok(Stop(stop_id)) => {
+                        // TODO: broadcast stop id
+                    }
+                    Ok(Image(image)) => {
+                        // TODO: broadcast image
+                    }
+                    Ok(NotFound) => {
+                        // TODO: broadcast 404
+                    }
+                    Err(_) => {
+                        // TODO: broadcast Mr. X position
+                    }
+                }
+            }
+        });
+    }
+
     // the time for a single frame
     let mut interval = tokio::time::interval(Duration::from_millis(500));
 
@@ -426,15 +468,28 @@ async fn run_game_loop(mut recv: Receiver<InputMessage>, state: SharedState) {
                                 warn!("Client {} tried to use MrX Gadget, but is not MrX", id);
                                 continue;
                             }
+                            match can_mr_x_use_gadget.compare_exchange(true, false, Ordering::SeqCst, Ordering::SeqCst) {
+                                Ok(_) => {
+                                    let can_mr_x_use_gadget = Arc::clone(&can_mr_x_use_gadget);
+                                    tokio::spawn(async move {
+                                        tokio::time::sleep(INTERVAL).await;
+                                        can_mr_x_use_gadget.store(true, Ordering::SeqCst);
+                                    });
+                                }
+                                Err(_) => continue,
+                            }
                             match &gadget {
                                 AlternativeFacts { stop_id } => {
-                                    // TODO: change next position broadcast
+                                    send_pos.try_send(SpecialPos::Stop(stop_id.clone()));
+                                    continue;
                                 }
                                 Midjourney { image } => {
-                                    // TODO: prevent next position boradcast and broadcast image instead
+                                    send_pos.try_send(SpecialPos::Image(image.clone()));
+                                    continue;
                                 }
                                 NotFound => {
-                                    // TODO: prevent next position broadcast
+                                    send_pos.try_send(SpecialPos::NotFound);
+                                    continue;
                                 }
                                 Teleport => {}
                                 Shifter => {}
@@ -450,6 +505,16 @@ async fn run_game_loop(mut recv: Receiver<InputMessage>, state: SharedState) {
                             if state.team_by_client_id(id).map(|ts| ts.team.kind != TeamKind::Detective).unwrap_or(true) {
                                 warn!("Client {} tried to use Detective Gadget, but is not Detective", id);
                                 continue;
+                            }
+                            match can_detective_use_gadget.compare_exchange(true, false, Ordering::SeqCst, Ordering::SeqCst) {
+                                Ok(_) => {
+                                    let can_detective_use_gadget = Arc::clone(&can_detective_use_gadget);
+                                    tokio::spawn(async move {
+                                        tokio::time::sleep(INTERVAL).await;
+                                        can_detective_use_gadget.store(true, Ordering::SeqCst);
+                                    });
+                                }
+                                Err(_) => continue,
                             }
                             match &gadget {
                                 Stop { stop_id } => {
