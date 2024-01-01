@@ -11,7 +11,7 @@ import {
 } from "react-leaflet";
 import { createContext, useContext, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { MrXIcon, TrainIcon, DetectiveIcon, ICON_OFFSET, ICON_OFFSET_TOP } from "components/MapIcons";
+import { MrXIcon, TrainIcon, DetectiveIcon } from "components/MapIcons";
 import { Button } from "components/InputElements";
 import { Marker } from "./Marker";
 import { GameState, Stop, TeamState, Train } from "lib/bindings";
@@ -53,7 +53,7 @@ function MrXMarker(props: { player: TeamState }) {
       icon={MrXIcon}
       position={{ ...player }}
     >
-      <Tooltip offset={ICON_OFFSET} key={player.team.id}>
+      <Tooltip key={player.team.id}>
         {t("MrXMarker")}
       </Tooltip>
     </Marker>
@@ -72,7 +72,7 @@ function TrainMarker(props: { train: Train; onClick?: (train: Train) => void }) 
       onClick={() => props.onClick?.(train)}
     >
       {zoom > DEFAULT_ZOOM && (
-        <Tooltip direction="right" offset={ICON_OFFSET} permanent>
+        <Tooltip direction="right" permanent>
           {t("to", { line: train.line_name.split(" ")[1], direction: train.direction })}
         </Tooltip>
       )}
@@ -92,7 +92,6 @@ function TeamMarker(props: { player: TeamState }) {
         className={Style.tooltip}
         direction="top"
         opacity={1}
-        offset={ICON_OFFSET_TOP}
         permanent
       >
         <a
