@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 use crate::location_information::LocationInformationResponse;
@@ -13,19 +14,19 @@ pub struct TriasResponse {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "PascalCase")]
 pub struct ServiceDelivery {
-    pub response_timestamp: String,
+    pub response_timestamp: DateTime<Utc>,
     pub producer_ref: String,
     pub status: bool,
     pub more_data: String,
     pub language: Language,
-    pub calc_time: Option<String>,
+    pub calc_time: Option<u64>,
     pub delivery_payload: DeliveryPayload,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum DeliveryPayload {
     LocationInformationResponse(LocationInformationResponse),
-    StopEventResponse(Vec<StopEventResponse>),
+    StopEventResponse(StopEventResponse),
     TripInfoResponse(TripInfoResponse),
 }
 
@@ -57,7 +58,7 @@ pub struct CallAtStop {
     pub planned_bay: Option<Text>,
     pub service_arrival: Option<Service>,
     pub service_departure: Option<Service>,
-    pub stop_seq_number: String,
+    pub stop_seq_number: u64,
     pub demand_stop: bool,
     pub unplanned_stop: bool,
     pub not_serviced_stop: bool,
@@ -68,8 +69,8 @@ pub struct CallAtStop {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "PascalCase")]
 pub struct Service {
-    pub timetabled_time: String,
-    pub estimated_time: Option<String>,
+    pub timetabled_time: DateTime<Utc>,
+    pub estimated_time: Option<DateTime<Utc>>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

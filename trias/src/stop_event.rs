@@ -1,4 +1,4 @@
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 use crate::response::{CallAtStop, DatedJourney, ErrorMessage};
@@ -17,7 +17,7 @@ pub struct StopEventRequest {
 #[serde(rename_all = "PascalCase")]
 pub struct Location {
     pub location_ref: LocationRef,
-    pub dep_arr_time: String,
+    pub dep_arr_time: DateTime<Utc>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -53,13 +53,13 @@ impl Default for StopEventParams {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct StopEventRequestBuilder {
     location_ref: String,
-    dep_arr_time: String,
+    dep_arr_time: DateTime<Utc>,
     params: Option<StopEventParams>,
 }
 
 impl StopEventRequestBuilder {
     pub fn new(location_ref: String) -> Self {
-        let timestamp = Utc::now().to_rfc3339();
+        let timestamp = Utc::now();
         Self {
             location_ref,
             dep_arr_time: timestamp,
@@ -72,7 +72,7 @@ impl StopEventRequestBuilder {
         self
     }
 
-    pub fn dep_arr_time(mut self, dep_arr_time: String) -> Self {
+    pub fn dep_arr_time(mut self, dep_arr_time: DateTime<Utc>) -> Self {
         self.dep_arr_time = dep_arr_time;
         self
     }

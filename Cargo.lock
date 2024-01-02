@@ -216,6 +216,7 @@ dependencies = [
  "iana-time-zone",
  "js-sys",
  "num-traits",
+ "serde",
  "wasm-bindgen",
  "windows-targets",
 ]
@@ -1657,7 +1658,6 @@ name = "trias"
 version = "0.1.0"
 dependencies = [
  "chrono",
- "chrono-tz",
  "dotenv",
  "reqwest",
  "serde",

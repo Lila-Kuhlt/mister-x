@@ -179,15 +179,15 @@ type JourneyRef = String;
 type StopRef = String;
 pub type LineDepartures = HashMap<JourneyRef, Journey>;
 
-pub fn parse_times(call: &trias::response::CallAtStop) -> Option<Times> {
+pub fn get_times(call: &trias::response::CallAtStop) -> Option<Times> {
     let arrival = call
         .service_arrival
         .as_ref()
-        .map(|service| service.estimated_time.as_ref().unwrap_or(&service.timetabled_time).parse().unwrap());
+        .map(|service| service.estimated_time.unwrap_or(service.timetabled_time));
     let departure = call
         .service_departure
         .as_ref()
-        .map(|service| service.estimated_time.as_ref().unwrap_or(&service.timetabled_time).parse().unwrap());
+        .map(|service| service.estimated_time.unwrap_or(service.timetabled_time));
     match (arrival, departure) {
         (Some(arrival), Some(departure)) => Some(Times { arrival, departure }),
         (Some(arrival), None) => Some(Times { arrival, departure: arrival + DEFAULT_WAIT_TIME }),
@@ -209,7 +209,7 @@ pub async fn fetch_departures(stops: &[Stop]) -> LineDepartures {
         async move {
             trias::stop_events(name, access_token, 10, api_endpoint)
                 .await
-                .unwrap_or_default()
+                .map_err(|err| err.to_string())
         }
     })).await;
 
@@ -217,8 +217,13 @@ pub async fn fetch_departures(stops: &[Stop]) -> LineDepartures {
 
     for stop in stop_results
         .into_iter()
-        .flatten()
-        .flat_map(|x| x.stop_event_result)
+        .flat_map(|res| match res {
+            Ok(x) => x.stop_event_result,
+            Err(err) => {
+                tracing::error!("{}", err);
+                Vec::new()
+            }
+        })
     {
         let service = stop.stop_event.service;
         if service.cancelled {
@@ -239,7 +244,7 @@ pub async fn fetch_departures(stops: &[Stop]) -> LineDepartures {
             .map(|call| call.call_at_stop);
 
         for call in calls {
-            let Some(times) = parse_times(&call) else {
+            let Some(times) = get_times(&call) else {
                 continue;
             };
             let stop_ref = &call.stop_point_ref;

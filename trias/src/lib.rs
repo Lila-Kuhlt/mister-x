@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use serde::Serialize;
 use serde_xml_rs::to_string;
 
@@ -20,7 +20,7 @@ mod trip_info;
 #[derive(Debug, Serialize)]
 pub struct ServiceRequest {
     #[serde(rename = "siri:RequestTimestamp")]
-    pub request_timestamp: String,
+    pub request_timestamp: DateTime<Utc>,
     #[serde(rename = "siri:RequestorRef")]
     pub requestor_ref: String,
     #[serde(rename = "RequestPayload")]
@@ -39,7 +39,7 @@ pub fn generate_service_request(
     payload: RequestPayload,
 ) -> Result<String, &'static str> {
     let request = ServiceRequest {
-        request_timestamp: Utc::now().to_rfc3339(),
+        request_timestamp: Utc::now(),
         requestor_ref: access_token,
         request_payload: payload,
     };
@@ -107,7 +107,7 @@ pub async fn stop_events(
     access_token: String,
     number_of_results: u32,
     api_endpoint: &str,
-) -> Result<Vec<StopEventResponse>, Box<dyn Error>> {
+) -> Result<StopEventResponse, Box<dyn Error>> {
     let params = stop_event::StopEventParams {
         number_of_results,
         include_realtime_data: true,
