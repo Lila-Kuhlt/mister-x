@@ -18,6 +18,12 @@ fn main() {
             path
         );
     }
+    if std::env::var("BUILD_FRONTEND").is_err() {
+        println!("cargo:warning=Skipping Liberica build");
+        println!("cargo:warning=Set `BUILD_FRONTED` to enable automatic liberica rebuilds");
+        return;
+    }
+
     println!("cargo:warning=Building Liberica");
 
     // Change into the `liberica` directory
@@ -31,9 +37,9 @@ fn main() {
 
     // Check for errors in `npm install`
     if !npm_install.status.success() {
-        panic!(
-            "`npm install` failed: {}",
-            String::from_utf8_lossy(&npm_install.stderr)
+        println!(
+            "cargo:warning=`npm install` failed: {}",
+            String::from_utf8_lossy(&npm_install.stderr).replace('\n', "\\n")
         );
     }
 
@@ -46,9 +52,9 @@ fn main() {
 
     // Check for errors in `npm run build`
     if !npm_build.status.success() {
-        panic!(
-            "`npm run build` failed: {}",
-            String::from_utf8_lossy(&npm_build.stderr)
+        println!(
+            "cargo:warning=`npm run build` failed: {}",
+            String::from_utf8_lossy(&npm_build.stderr).replace('\n', "\\n")
         );
     }
 
