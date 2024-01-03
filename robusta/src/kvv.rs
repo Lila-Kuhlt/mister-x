@@ -147,7 +147,7 @@ pub struct Times {
 
 #[derive(Debug, Default, Clone)]
 pub struct Journey {
-    stops: HashMap<StopRef, Times>,
+    stops: Vec<(StopRef, Times)>,
     line_name: String,
     destination: String,
 }
@@ -155,7 +155,7 @@ pub struct Journey {
 impl Journey {
     fn new(line_name: String, destination: String) -> Self {
         Self {
-            stops: HashMap::new(),
+            stops: Vec::new(),
             line_name,
             destination,
         }
@@ -202,7 +202,7 @@ pub async fn fetch_departures(stops: &[Stop]) -> LineDepartures {
 
     let mut journeys = HashMap::new();
 
-    for stop in stop_results
+    for stop_event in stop_results
         .into_iter()
         .flat_map(|res| match res {
             Ok(x) => x.stop_event_result,
@@ -211,45 +211,38 @@ pub async fn fetch_departures(stops: &[Stop]) -> LineDepartures {
                 Vec::new()
             }
         })
+        .map(|stop_event_result| stop_event_result.stop_event)
     {
-        let service = stop.stop_event.service;
+        let service = stop_event.service;
         if service.cancelled {
             continue;
         }
         let journey_ref = service.journey_ref;
         let line_name = service.service_section.published_line_name.text;
         let destination = service.destination_text.text;
-        let this_call = stop.stop_event.this_call;
-        let previous_call = stop.stop_event.previous_call.into_iter();
-        let next_call = stop.stop_event.onward_call.into_iter();
-        let entry = journeys
-            .entry(journey_ref.clone())
-            .or_insert(Journey::new(line_name, destination));
-        let calls = previous_call
+        if journeys.contains_key(&journey_ref) {
+            continue;
+        }
+        let mut journey = Journey::new(line_name, destination);
+        let previous_calls = stop_event.previous_call.into_iter();
+        let this_call = stop_event.this_call;
+        let next_calls = stop_event.onward_call.into_iter();
+        let calls = previous_calls
             .chain(std::iter::once(this_call))
-            .chain(next_call)
+            .chain(next_calls)
             .map(|call| call.call_at_stop);
 
         for call in calls {
+            let stop_ref = &call.stop_point_ref;
+            let Some(stop) = find_stop_by_kvv_id(stop_ref, stops) else {
+                continue;
+            };
             let Some(times) = get_times(&call) else {
                 continue;
             };
-            let stop_ref = &call.stop_point_ref;
-            let Some(proper_stop_ref) = find_stop_by_kvv_id(stop_ref, stops) else {
-                continue;
-            };
-            let short_ref = &proper_stop_ref.id;
-            let current_times = entry.stops.get(short_ref);
-            if let Some(current_times) = current_times {
-                if current_times.departure < times.departure {
-                    continue;
-                }
-            }
-            entry.stops.insert(short_ref.clone(), times);
+            journey.stops.push((stop.id.clone(), times));
         }
-        if entry.stops.len() < 2 {
-            journeys.remove(&journey_ref);
-        }
+        journeys.insert(journey_ref, journey);
     }
     journeys
 }
@@ -292,10 +285,7 @@ pub fn train_position_per_route(
     departures: &Journey,
     stops: &[Stop],
 ) -> Option<Train> {
-    let mut line_stops: Vec<_> = departures.stops.iter().collect();
-    line_stops.sort_by_key(|x| x.1.departure);
-
-    if line_stops.is_empty() {
+    if departures.stops.is_empty() {
         tracing::warn!("no departures for journey {}", journey_ref);
         return None;
     }
@@ -303,16 +293,15 @@ pub fn train_position_per_route(
     let line_name = departures.line_name.clone();
     let destination = departures.destination.clone();
 
-    let pos_offset = line_stops
-        .iter()
-        .position(|x| x.1.departure > time)
-        .unwrap_or_default();
-    let slice = &line_stops[(pos_offset.max(1) - 1)..=pos_offset];
-    if let [last, next] = slice {
+    let pos_offset = departures
+        .stops
+        .binary_search_by_key(&time, |(_, times)| times.departure)
+        .unwrap_or_else(|i| i);
+    if let [last, next] = &departures.stops[(pos_offset.max(1) - 1)..=pos_offset.min(departures.stops.len() - 1)] {
         let current_duration = time - last.1.departure;
         let segment_duration = next.1.arrival - last.1.departure;
-        let stop_id = last.0;
-        let next_stop_id = next.0;
+        let stop_id = &last.0;
+        let next_stop_id = &next.0;
         let progress = (current_duration.num_seconds() as f32 / segment_duration.num_seconds() as f32).clamp(0., 1.);
         let points = points_on_route(stop_id, next_stop_id, stops);
         if let Some(position) = interpolate_segment(&points, progress) {
