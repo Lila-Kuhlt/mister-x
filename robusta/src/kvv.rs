@@ -14,7 +14,7 @@ use crate::ws_message::Train;
 /// The wait time to use when the arrival or departure time is missing.
 const DEFAULT_WAIT_TIME: Duration = Duration::from_secs(30);
 
-/// Information about a tram station
+/// Information about a tram station.
 #[derive(Debug, Serialize, specta::Type, PartialEq)]
 pub struct Stop {
     /// human readable stop name
@@ -27,20 +27,7 @@ pub struct Stop {
     pub lon: f64,
 }
 
-#[derive(Clone, Default)]
-pub struct Route {
-    pub stops: Vec<Segment>,
-    pub line_id: u32,
-    pub destination: String,
-}
-
-#[derive(Clone, Default, Debug)]
-pub struct Segment {
-    pub start_id: u32,
-    pub end_id: u32,
-    pub positions: Vec<Point>,
-}
-
+/// The included stops and their IDs.
 const STOPS: &[(&str, &str)] = &[
     ("Arbeitsagentur", "de:08212:64"),
     ("Augartenstraße", "de:08212:74"),

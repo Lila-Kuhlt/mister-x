@@ -22,7 +22,7 @@ import Style from "style/Map.module.css";
 export const GameStateContext = createContext<GameState>({ teams: [], trains: [] });
 
 const CENTER: [number, number] = [49.0046, 8.403];
-const DEFAULT_ZOOM: number = 15
+const DEFAULT_ZOOM: number = 15;
 
 export type MapProps = React.PropsWithChildren<{
   tileProps?: Partial<TileLayerProps>;

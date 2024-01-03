@@ -19,7 +19,7 @@ export type CreateTeam = { name: string; color: string; kind: TeamKind }
 export type GameState = { teams: TeamState[]; trains: Train[] }
 
 /**
- * Information about a tram station
+ * Information about a tram station.
  */
 export type Stop = { name: string; id: string; lat: number; lon: number }
 
