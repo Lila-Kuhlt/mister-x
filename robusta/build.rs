@@ -20,7 +20,7 @@ fn main() {
     }
     if std::env::var("BUILD_FRONTEND").is_err() {
         println!("cargo:warning=Skipping Liberica build");
-        println!("cargo:warning=Set `BUILD_FRONTED` to enable automatic liberica rebuilds");
+        println!("cargo:warning=Set `BUILD_FRONTEND` to enable automatic liberica rebuilds");
         return;
     }
 
