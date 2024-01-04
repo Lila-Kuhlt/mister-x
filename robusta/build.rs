@@ -39,7 +39,7 @@ fn main() {
     if !npm_install.status.success() {
         println!(
             "cargo:warning=`npm install` failed: {}",
-            String::from_utf8_lossy(&npm_install.stderr).replace('\n', "\\n")
+            String::from_utf8_lossy(&npm_install.stderr).replace('\n', "\ncargo:warning="),
         );
     }
 
@@ -54,7 +54,7 @@ fn main() {
     if !npm_build.status.success() {
         println!(
             "cargo:warning=`npm run build` failed: {}",
-            String::from_utf8_lossy(&npm_build.stderr).replace('\n', "\\n")
+            String::from_utf8_lossy(&npm_build.stderr).replace('\n', "\ncargo:warning="),
         );
     }
 
