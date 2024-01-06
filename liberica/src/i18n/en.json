@@ -16,5 +16,6 @@
     "AdminPage": "Admin page",
     "time": "{{time, datetime(dateStyle: medium; timeStyle: long)}}",
     "FailedParseReplay": "failed to parse replay file",
+    "ReplayTooBig": "replay file is too big",
     "Speed": "Speed"
 }
