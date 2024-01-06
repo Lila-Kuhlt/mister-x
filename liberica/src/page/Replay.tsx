@@ -11,6 +11,7 @@ import { useTranslation } from "react-i18next"
 // configuration
 const defaultSpeed = 10
 const ms_per_frame = 50
+const max_replay_size = 100_000_000 // 100 MB
 
 type Entry = {
   time: Date
@@ -156,6 +157,9 @@ export function Replay() {
           onChange={(e) => {
             const file = e.target.files?.item(0)
             if (file) {
+              if (file.size >= max_replay_size) {
+                alert(t("ReplayTooBig"))
+              }
               file.text().then((data) => {
                 try {
                   const state = parseCSV(data)
