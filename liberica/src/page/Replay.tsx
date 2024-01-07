@@ -5,6 +5,7 @@ import { Button } from "components/InputElements"
 import { HomeButton, Navbar } from "components/Navbar"
 import { GameState } from "lib/bindings"
 import { clamp } from "lib/util"
+import schema from "lib/schema"
 import { FaPlay, FaPause } from "react-icons/fa"
 import { useTranslation } from "react-i18next"
 
@@ -21,7 +22,7 @@ type Entry = {
 function parseCSV(data: string): Entry[] {
   return data.trim().split(/\r?\n/).map((line) => {
     const [time, state] = line.split(", ", 2)
-    return { time: new Date(time), state: JSON.parse(state) }
+    return { time: new Date(time), state: schema.GameState.check(JSON.parse(state)) }
   })
 }
 
