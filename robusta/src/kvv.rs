@@ -1,5 +1,6 @@
 use chrono::{DateTime, Utc};
 use futures_util::future::join_all;
+use lazy_static::lazy_static;
 use serde::Serialize;
 
 use std::collections::HashMap;
@@ -27,48 +28,60 @@ pub struct Stop {
     pub lon: f64,
 }
 
-/// The included stops and their IDs.
-const STOPS: &[(&str, &str)] = &[
-    ("Arbeitsagentur", "de:08212:64"),
-    ("Augartenstraße", "de:08212:74"),
-    ("Barbarossaplatz", "de:08212:5003"),
-    ("Durlacher Tor/KIT-Campus Süd", "de:08212:3"),
-    ("Durlacher Tor/KIT-Campus Süd (U)", "de:08212:1001"),
-    ("Ebertstraße", "de:08212:91"),
-    ("Ettlinger Tor/Staatstheater", "de:08212:71"),
-    ("Ettlinger Tor/Staatstheater (U)", "de:08212:1012"),
-    ("Karlstor/Bundesgerichtshof", "de:08212:61"),
-    ("Kolpingplatz", "de:08212:63"),
-    ("Kongresszentrum (U)", "de:08212:1013"),
-    ("Kronenplatz", "de:08212:80"),
-    ("Kronenplatz (U)", "de:08212:1002"),
-    ("Marktplatz (Kaiserstraße U)", "de:08212:1003"),
-    ("Marktplatz (Pyramide U)", "de:08212:1011"),
-    ("Mathystraße", "de:08212:62"),
-    ("Mühlburger Tor", "de:08212:39"),
-    ("Otto-Sachs-Straße", "de:08212:508"),
-    ("Poststraße", "de:08212:98"),
-    ("Rüppurrer Tor", "de:08212:85"),
-    ("Schillerstraße", "de:08212:40"),
-    ("Sophienstraße", "de:08212:602"),
-    ("St. Vincentius Krankenhaus", "de:08212:5508"),
-    ("Südendschule", "de:08212:5504"),
-    ("Tivoli", "de:08212:84"),
-    ("Weinbrennerplatz", "de:08212:603"),
-    ("Welfenstraße", "de:08212:6218"),
-    ("Werderstraße", "de:08212:83"),
-    ("ZKM", "de:08212:65"),
-    ("Lessingstraße", "de:08212:507"),
-    ("Europaplatz/Postgalerie", "de:08212:37"),
-    ("Europaplatz/Postgalerie (U)", "de:08212:1004"),
-    ("Gottesauer Platz/BGV", "de:08212:6"),
-    ("Hauptbahnhof (Vorplatz)", "de:08212:89"),
-    ("Kunstakademie/Hochschule", "de:08212:7003"),
-];
+lazy_static! {
+    /// The included stops and their IDs.
+    static ref STOPS: HashMap<&'static str, &'static str> = HashMap::from([
+        ("de:08212:64", "Arbeitsagentur"),
+        ("de:08212:74", "Augartenstraße"),
+        ("de:08212:5003", "Barbarossaplatz"),
+        ("de:08212:3", "Durlacher Tor/KIT-Campus Süd"),
+        ("de:08212:1001", "Durlacher Tor/KIT-Campus Süd (U)"),
+        ("de:08212:91", "Ebertstraße"),
+        ("de:08212:71", "Ettlinger Tor/Staatstheater"),
+        ("de:08212:1012", "Ettlinger Tor/Staatstheater (U)"),
+        ("de:08212:61", "Karlstor/Bundesgerichtshof"),
+        ("de:08212:63", "Kolpingplatz"),
+        ("de:08212:1013", "Kongresszentrum (U)"),
+        ("de:08212:80", "Kronenplatz"),
+        ("de:08212:1002", "Kronenplatz (U)"),
+        ("de:08212:1003", "Marktplatz (Kaiserstraße U)"),
+        ("de:08212:1011", "Marktplatz (Pyramide U)"),
+        ("de:08212:62", "Mathystraße"),
+        ("de:08212:39", "Mühlburger Tor"),
+        ("de:08212:508", "Otto-Sachs-Straße"),
+        ("de:08212:98", "Poststraße"),
+        ("de:08212:85", "Rüppurrer Tor"),
+        ("de:08212:40", "Schillerstraße"),
+        ("de:08212:602", "Sophienstraße"),
+        ("de:08212:5508", "St. Vincentius Krankenhaus"),
+        ("de:08212:5504", "Südendschule"),
+        ("de:08212:84", "Tivoli"),
+        ("de:08212:603", "Weinbrennerplatz"),
+        ("de:08212:6218", "Welfenstraße"),
+        ("de:08212:83", "Werderstraße"),
+        ("de:08212:65", "ZKM"),
+        ("de:08212:507", "Lessingstraße"),
+        ("de:08212:37", "Europaplatz/Postgalerie"),
+        ("de:08212:1004", "Europaplatz/Postgalerie (U)"),
+        ("de:08212:6", "Gottesauer Platz/BGV"),
+        ("de:08212:89", "Hauptbahnhof (Vorplatz)"),
+        ("de:08212:7003", "Kunstakademie/Hochschule"),
+    ]);
 
-static CURVES: OnceLock<Vec<(String, String, Vec<Point>)>> = OnceLock::new();
+    static ref CURVES: HashMap<(&'static str, &'static str), Vec<Point>> = {
+        const CURVES_STR: &str = include_str!("../data/route_curves.csv");
+        CURVES_STR
+            .lines()
+            .map(parse_curve)
+            .collect::<Option<HashMap<_, _>>>()
+            .unwrap_or_else(|| {
+                tracing::error!("Error parsing curves");
+                HashMap::new()
+            })
+    };
+}
 
-fn parse_curve(line: &str) -> Option<(String, String, Vec<Point>)> {
+fn parse_curve(line: &str) -> Option<((&str, &str), Vec<Point>)> {
     let mut parts = line.split(';');
     let start = parts.next()?.trim();
     let end = parts.next()?.trim();
@@ -83,38 +96,22 @@ fn parse_curve(line: &str) -> Option<(String, String, Vec<Point>)> {
             })
         })
         .collect::<Option<Vec<_>>>()?;
-    Some((start.to_owned(), end.to_owned(), points))
-}
-
-fn get_curves() -> &'static [(String, String, Vec<Point>)] {
-    const CURVES_STR: &str = include_str!("../data/route_curves.csv");
-    CURVES.get_or_init(|| {
-        CURVES_STR
-            .lines()
-            .map(parse_curve)
-            .collect::<Option<Vec<_>>>()
-            .unwrap_or_else(|| {
-                tracing::error!("Error parsing curves");
-                Vec::new()
-            })
-    })
+    Some(((start, end), points))
 }
 
 fn intermediate_points(start_id: &str, end_id: &str) -> Vec<Point> {
-    let curves = get_curves();
-    let start = STOPS.iter().find(|stop| start_id == stop.1).unwrap().0;
-    let end = STOPS.iter().find(|stop| end_id == stop.1).unwrap().0;
-    let mut points = Vec::new();
+    let start = STOPS[start_id];
+    let end = STOPS[end_id];
 
-    if let Some(p) = curves.iter().find(|(s, e, _)| s == start && e == end) {
-        points = p.2.clone();
-    }
-    if let Some(p) = curves.iter().find(|(s, e, _)| e == start && s == end) {
-        points = p.2.clone();
+    if let Some(points) = CURVES.get(&(start, end)) {
+        points.clone()
+    } else if let Some(points) = CURVES.get(&(end, start)) {
+        let mut points = points.clone();
         points.reverse();
+        points
+    } else {
+        Vec::new()
     }
-
-    points
 }
 
 static API_ENDPOINT: OnceLock<String> = OnceLock::new();
@@ -123,9 +120,8 @@ static ACCESS_TOKEN: OnceLock<String> = OnceLock::new();
 async fn kvv_stops() -> Vec<Stop> {
     let access_token = ACCESS_TOKEN.get().unwrap();
     let api_endpoint = API_ENDPOINT.get().unwrap();
-    join_all(STOPS.iter().map(|stop| async move {
-        let name = stop.1.to_string();
-        let stops = trias::search_stops(name, access_token.clone(), api_endpoint, 1).await.unwrap();
+    join_all(STOPS.keys().map(|&stop_id| async move {
+        let stops = trias::search_stops(stop_id.to_owned(), access_token.clone(), api_endpoint, 1).await.unwrap();
 
         let first_stop = stops.into_iter().next().unwrap();
         let stop_point = first_stop.stop_point;

@@ -77,12 +77,12 @@ pub async fn post_request(
 }
 
 pub async fn search_stops(
-    name: String,
+    stop_id: String,
     access_token: String,
     api_endpoint: &str,
     number_of_results: u32,
 ) -> Result<Vec<Location>, Box<dyn Error>> {
-    let payload = LocationInformationRequestBuilder::new(name)
+    let payload = LocationInformationRequestBuilder::new(stop_id)
         .number_of_results(number_of_results)
         .include_pt_modes(false)
         .build();
