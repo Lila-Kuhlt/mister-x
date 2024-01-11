@@ -18,6 +18,7 @@ fn main() {
             path
         );
     }
+    println!("cargo:rerun-if-env-changed=BUILD_FRONTEND");
     if std::env::var("BUILD_FRONTEND").is_err() {
         println!("cargo:warning=Skipping Liberica build");
         println!("cargo:warning=Set `BUILD_FRONTEND` to enable automatic liberica rebuilds");
