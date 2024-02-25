@@ -460,7 +460,8 @@ async fn run_game_loop(mut recv: Receiver<InputMessage>, state: SharedState) {
                     .collect(),
                 trains: game_state.trains.clone(),
             };
-            if connection.send.send(ws_message::ServerMessage::GameState(game_state.clone())).await.is_err() {
+            if let Err(err) = connection.send.send(ws_message::ServerMessage::GameState(game_state.clone())).await {
+                error!("failed to send game state to client {}: {}", connection.id, err);
                 continue;
             }
         }
