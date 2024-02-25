@@ -135,13 +135,13 @@ async fn kvv_stops() -> Vec<Stop> {
     })).await
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Times {
     arrival: DateTime<Utc>,
     departure: DateTime<Utc>,
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct Journey {
     stops: Vec<(StopRef, Times)>,
     line_name: String,

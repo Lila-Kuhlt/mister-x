@@ -36,6 +36,7 @@ mod ws_message;
 
 const LOG_FILE: &str = "log.csv";
 const TEAMS_FILE: &str = "teams.json";
+const ERROR_FILE: &str = "errors.csv";
 
 /// The name used for the Mr. X team.
 const MRX: &str = "Mr. X";
@@ -363,6 +364,12 @@ async fn run_game_loop(mut recv: Receiver<InputMessage>, state: SharedState) {
         .create(true)
         .open(LOG_FILE)
         .unwrap();
+    let mut error_departures = HashMap::default();
+    let mut error_file = fs::OpenOptions::new()
+        .append(true)
+        .create(true)
+        .open(ERROR_FILE)
+        .unwrap();
     let mut interval = tokio::time::interval(Duration::from_millis(500));
     loop {
         interval.tick().await;
@@ -420,6 +427,18 @@ async fn run_game_loop(mut recv: Receiver<InputMessage>, state: SharedState) {
         let time = chrono::Utc::now();
         let mut trains = kvv::train_positions(&departures, time);
         trains.retain(|x| !x.line_id.contains("bus"));
+
+        if trains.is_empty() && !departures.is_empty() && departures != error_departures {
+            warn!("no trains");
+            error_departures = departures.clone();
+            writeln!(
+                error_file,
+                "{}, {:#?}",
+                time.with_timezone(&chrono_tz::Europe::Berlin).to_rfc3339(),
+                departures,
+            )
+            .unwrap();
+        }
 
         // update positions for players on trains
         for team in state.teams.iter_mut() {
