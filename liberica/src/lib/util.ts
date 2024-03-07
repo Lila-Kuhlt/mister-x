@@ -1,16 +1,9 @@
-import L from "leaflet";
-
 export const extractPos = (item: {
   lat: number;
   long: number;
 }): [number, number] => {
   return [item.lat, item.long];
 };
-
-export const VIEW_BOUNDS: L.LatLngBounds = new L.LatLngBounds(
-  [49.0129685, 8.3782551],
-  [48.9906205, 8.4203851]
-);
 
 export const opt = (bool: boolean | (() => boolean), value: string) =>
   (typeof bool === "function" ? bool() : bool) && value;
