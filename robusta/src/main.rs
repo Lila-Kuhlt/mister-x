@@ -24,6 +24,7 @@ use tower_http::{
     services::{ServeDir, ServeFile},
 };
 use tracing::{error, info, warn, Level};
+use tracing_appender::rolling::{self, Rotation};
 use unique_id::UniqueIdGen;
 use ws_message::{ClientMessage, GameState, Team, TeamState};
 
@@ -34,7 +35,6 @@ mod point;
 mod unique_id;
 mod ws_message;
 
-const LOG_FILE: &str = "log.csv";
 const TEAMS_FILE: &str = "teams.json";
 
 /// The name used for the Mr. X team.
@@ -358,11 +358,13 @@ async fn main() {
 
 async fn run_game_loop(mut recv: Receiver<InputMessage>, state: SharedState) {
     let mut departures = HashMap::new();
-    let mut log_file = fs::OpenOptions::new()
-        .append(true)
-        .create(true)
-        .open(LOG_FILE)
-        .unwrap();
+    let mut log_file = rolling::Builder::new()
+        .rotation(Rotation::DAILY)
+        .filename_prefix("log")
+        .filename_suffix("csv")
+        .max_log_files(1)
+        .build("logs")
+        .expect("failed to initialize rolling file appender");
     let mut interval = tokio::time::interval(Duration::from_millis(500));
     loop {
         interval.tick().await;
