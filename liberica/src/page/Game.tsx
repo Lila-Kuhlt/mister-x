@@ -3,15 +3,13 @@ import { createWebSocketConnection } from "lib/api";
 import { GameState, Team, Train } from "lib/bindings";
 import { WebSocketApi } from "lib/websockets";
 import { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { Button } from "components/InputElements";
+import { useLocation } from "react-router-dom";
 
 export function Game() {
   const [ws, setWS] = useState<WebSocketApi>();
   const [gs, setGameState] = useState<GameState>({ teams: [], trains: [] });
   const [embarkedTrain, setEmbarkedTrain] = useState<Train>();
   const team: Team = useLocation().state; // this is how Home passes the team
-  const navigate = useNavigate();
 
   function disembark() {
     if (team) {
@@ -47,17 +45,17 @@ export function Game() {
   }, []);
 
   useEffect(() => {
-    if (ws && team) {
-      ws.send({ JoinTeam: { team_id: team.id } })
-    }
+    if (!ws || !team) return;
+    ws.send({ JoinTeam: { team_id: team.id } });
   }, [ws, team]);
 
   useEffect(() => {
-    if (ws && window.isSecureContext) {
-      navigator.geolocation.watchPosition((pos) => {
-        ws.send({ Position: { lat: pos.coords.latitude, long: pos.coords.longitude } });
-      });
-    }
+    if (!ws || !window.isSecureContext) return;
+    navigator.geolocation.watchPosition((pos) =>
+      ws.send({
+        Position: { lat: pos.coords.latitude, long: pos.coords.longitude },
+      })
+    );
   }, [ws]);
 
   // Loading page
@@ -79,14 +77,14 @@ export function Game() {
       <Map
         tileProps={{ updateInterval: 500 }}
         containerProps={{ preferCanvas: true }}
-        onStopClick={(stop) => ws?.send({ SetTeamPosition: { lat: stop.lat, long: stop.lon } })}
+        onStopClick={(stop) =>
+          ws?.send({ SetTeamPosition: { lat: stop.lat, long: stop.lon } })
+        }
         onTrainClick={(train) => {
-          const embarked = gs.teams.find((team) => team.on_train === train.line_id) !== undefined;
-          if (embarked) {
-            disembark();
-          } else {
-            embark(train);
-          }
+          const embarked =
+            gs.teams.find((team) => team.on_train === train.line_id) !==
+            undefined;
+          embarked ? disembark() : embark(train);
         }}
       />
     </GameStateContext.Provider>
