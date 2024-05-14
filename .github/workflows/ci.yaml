@@ -1,42 +1,59 @@
 name: CI
 
-on: [push, pull_request]
+on:
+  pull_request:
+    branches:
+      - master
+  push:
+    branches:
+      - master
+      
+env:
+  CARGO_TERM_COLOR: always
 
 jobs:
   robusta:
-    name: robusta Check & Build
+    name: 🦀 robusta Check & Build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
-
-      - name: Install stable toolchain
-        uses: actions-rs/toolchain@v1
+        
+      - name: Change directory
+        run: cd robusta
+        
+      - uses: actions/cache@v3
         with:
-          profile: minimal
-          toolchain: stable
+          path: target
+          key: ${{ runner.os }}-robusta-mister-x
 
-      - name: Run cargo check
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-
-      - name: Run cargo build
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
+      - name: 🚧 Build robusta
+        run: cargo build
+          
+      - name: 🔬 Check formatting
+        run: cargo fmt --all -- --check
 
 
   liberica:
-    name: liberica Check & Build
+    name: ⚡ liberica Check & Build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
+        
+      - uses: actions/cache@v3
+        with:
+          path: liberica/node_modules
+          key: ${{ runner.os }}-liberica-mister-x
+        
+      - name: 🚧 Setup bun
         uses: oven-sh/setup-bun@v1
+        
+      - name: Change directory
+        run: cd liberica
 
-      - name: Install dependencies
+      - name: 🚧 Install dependencies
         run: bun install
 
-      - name: Lint
+      - name: 🔎 Lint liberica
         run: bun lint
