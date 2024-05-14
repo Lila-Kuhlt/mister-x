@@ -17,7 +17,7 @@ mod tests {
             assert_eq!(request.initial_input.location_name, "Bern");
             assert_eq!(request.restrictions.location_type, "stop");
             assert_eq!(request.restrictions.number_of_results, 5);
-            assert_eq!(request.restrictions.include_pt_modes, true);
+            assert!(request.restrictions.include_pt_modes);
         } else {
             panic!("Wrong request type");
         }
@@ -25,7 +25,8 @@ mod tests {
 
     #[test]
     fn test_location_information_request_serialization() {
-        let payload = LocationInformationRequestBuilder::new("Karlsruhe Hauptbahnhof".to_owned()).build();
+        let payload =
+            LocationInformationRequestBuilder::new("Karlsruhe Hauptbahnhof".to_owned()).build();
 
         let xml_output = generate_service_request("API-Explorer".to_owned(), payload).unwrap();
 

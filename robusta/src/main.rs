@@ -225,7 +225,8 @@ async fn create_team(
     let team_name = team.name.trim();
 
     // validation
-    let error = |err: ws_message::CreateTeamError| Err((StatusCode::UNPROCESSABLE_ENTITY, Json(err)));
+    let error =
+        |err: ws_message::CreateTeamError| Err((StatusCode::UNPROCESSABLE_ENTITY, Json(err)));
     if team_name.is_empty() {
         return error(ws_message::CreateTeamError::InvalidName);
     } else if state.teams.iter().any(|ts| ts.team.name == team_name) {
@@ -462,8 +463,15 @@ async fn run_game_loop(mut recv: Receiver<InputMessage>, state: SharedState) {
                     .collect(),
                 trains: game_state.trains.clone(),
             };
-            if let Err(err) = connection.send.send(ws_message::ServerMessage::GameState(game_state.clone())).await {
-                error!("failed to send game state to client {}: {}", connection.id, err);
+            if let Err(err) = connection
+                .send
+                .send(ws_message::ServerMessage::GameState(game_state.clone()))
+                .await
+            {
+                error!(
+                    "failed to send game state to client {}: {}",
+                    connection.id, err
+                );
                 continue;
             }
         }

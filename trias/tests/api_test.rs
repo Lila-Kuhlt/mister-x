@@ -47,8 +47,7 @@ async fn test_fetch_stop_event() {
         .await
         .unwrap();
 
-    let DeliveryPayload::StopEventResponse(response) =
-        response.service_delivery.delivery_payload
+    let DeliveryPayload::StopEventResponse(response) = response.service_delivery.delivery_payload
     else {
         panic!("Wrong response type");
     };
