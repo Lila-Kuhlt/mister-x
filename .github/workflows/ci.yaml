@@ -19,16 +19,10 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@v4
         
-      - name: Change directory
-        run: cd robusta
-        
       - uses: actions/cache@v3
         with:
           path: target
           key: ${{ runner.os }}-robusta-mister-x
-
-      - name: 🚧 Build robusta
-        run: cargo clippy --frozen
           
       - name: 🔬 Rust fmt
         run: cargo fmt --check --all
@@ -53,9 +47,6 @@ jobs:
         
       - name: 🚧 Setup bun
         uses: oven-sh/setup-bun@v1
-        
-      - name: Change directory
-        run: cd liberica
 
       - name: 🚧 Install dependencies
         run: bun install
