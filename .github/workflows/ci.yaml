@@ -28,15 +28,20 @@ jobs:
           key: ${{ runner.os }}-robusta-mister-x
 
       - name: 🚧 Build robusta
-        run: cargo build
+        run: cargo clippy --frozen
           
-      - name: 🔬 Check formatting
-        run: cargo fmt --all -- --check
+      - name: 🔬 Rust fmt
+        run: cargo fmt --check --all
 
 
   liberica:
     name: ⚡ liberica Check & Build
     runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: liberica
+        
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
