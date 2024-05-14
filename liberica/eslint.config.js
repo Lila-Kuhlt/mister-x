@@ -1,6 +1,7 @@
 import globals from "globals";
 import eslintJs from "@eslint/js";
 import tseslint from "typescript-eslint";
+import stylistic from "@stylistic/eslint-plugin"
 
 /* Currently some React related plugins are still not supported:
  *
@@ -15,6 +16,13 @@ import tseslint from "typescript-eslint";
 export default [
     { ignores: ["src/lib/bindings.ts", "node_modules", "dist"] },
     { languageOptions: { globals: globals.browser } },
+
+    stylistic.configs.customize({
+        indent: 4,
+        quotes: 'single',
+        semi: true,
+        jsx: true,
+    }),
 
     eslintJs.configs.recommended,
 
