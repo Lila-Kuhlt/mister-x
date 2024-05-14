@@ -13,11 +13,14 @@ jobs:
             target
             liberica/node_modules
           key: ${{ runner.os }}-mister-x
+
+      - uses: oven-sh/setup-bun@v1
       - name: Build liberica
         run: |
           cd liberica
-          npm ci
-          npm run build
+          bun lint
+          bun run build
+
       - name: Build robusta
         run: |
           cd robusta
