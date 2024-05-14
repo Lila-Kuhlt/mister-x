@@ -24,7 +24,7 @@ jobs:
       - name: Run cargo build
         uses: actions-rs/cargo@v1
         with:
-          command: check
+          command: build
 
 
   liberica:
@@ -33,11 +33,10 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
+        uses: oven-sh/setup-bun@v1
 
       - name: Install dependencies
-        uses: oven-sh/setup-bun@v1
         run: bun install
 
       - name: Lint
-        uses: oven-sh/setup-bun@v1
         run: bun lint
