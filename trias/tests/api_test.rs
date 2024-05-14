@@ -14,13 +14,9 @@ async fn test_fetch_location_information() {
         ;
 
     let xml_request = trias::generate_service_request(access_token, payload).unwrap();
-    let response = trias::post_request(api_endpoint, &xml_request)
-        .await
-        .unwrap();
+    let response = trias::post_request(api_endpoint, &xml_request).await.unwrap();
 
-    let DeliveryPayload::LocationInformationResponse(response) =
-        response.service_delivery.delivery_payload
-    else {
+    let DeliveryPayload::LocationInformationResponse(response) = response.service_delivery.delivery_payload else {
         panic!("Wrong response type");
     };
     for stop in &response.location_result {
@@ -43,20 +39,12 @@ async fn test_fetch_stop_event() {
 
     let xml_request = trias::generate_service_request(access_token, payload).unwrap();
     println!("{}", xml_request);
-    let response = trias::post_request(api_endpoint, &xml_request)
-        .await
-        .unwrap();
+    let response = trias::post_request(api_endpoint, &xml_request).await.unwrap();
 
-    let DeliveryPayload::StopEventResponse(response) = response.service_delivery.delivery_payload
-    else {
+    let DeliveryPayload::StopEventResponse(response) = response.service_delivery.delivery_payload else {
         panic!("Wrong response type");
     };
 
     let result = &response[0].stop_event_result;
-    assert!(result[0]
-        .stop_event
-        .this_call
-        .call_at_stop
-        .service_departure
-        .is_some());
+    assert!(result[0].stop_event.this_call.call_at_stop.service_departure.is_some());
 }

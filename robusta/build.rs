@@ -12,11 +12,7 @@ fn main() {
         .unwrap_or(project_dir.parent().unwrap().join("liberica"));
 
     for path in ["package.json", "src", "tsconfig.json", "index.html"] {
-        println!(
-            "cargo:rerun-if-changed={}/{}",
-            liberica_dir.to_string_lossy(),
-            path
-        );
+        println!("cargo:rerun-if-changed={}/{}", liberica_dir.to_string_lossy(), path);
     }
     println!("cargo:rerun-if-env-changed=BUILD_FRONTEND");
     if std::env::var("BUILD_FRONTEND").is_err() {

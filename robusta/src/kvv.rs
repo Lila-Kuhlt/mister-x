@@ -90,10 +90,7 @@ fn parse_curve(line: &str) -> Option<((&str, &str), Vec<Point>)> {
             let mut coords = point.split(',');
             let latitude = coords.next()?.trim().parse().ok()?;
             let longitude = coords.next()?.trim().parse().ok()?;
-            Some(Point {
-                latitude,
-                longitude,
-            })
+            Some(Point { latitude, longitude })
         })
         .collect::<Option<Vec<_>>>()?;
     Some(((start, end), points))
@@ -257,9 +254,7 @@ pub fn find_stop_by_kvv_id<'a>(id: &str, stops: &'a [Stop]) -> Option<&'a Stop> 
     // stop ids can have extra information at the end, e.g. "de:08212:3:01" which is not present in
     // the base id "de:08212:3". We want to match the base id.
     let id = format!("{}:", id);
-    stops
-        .iter()
-        .find(|stop| id.starts_with(&format!("{}:", stop.id)))
+    stops.iter().find(|stop| id.starts_with(&format!("{}:", stop.id)))
 }
 
 pub fn points_on_route(start_stop_id: &str, end_stop_id: &str, stops: &[Stop]) -> Vec<Point> {
@@ -303,16 +298,12 @@ pub fn train_position_per_route(
         .stops
         .binary_search_by_key(&time, |(_, times)| times.departure)
         .unwrap_or_else(|i| i);
-    if let [last, next] =
-        &departures.stops[(pos_offset.max(1) - 1)..=pos_offset.min(departures.stops.len() - 1)]
-    {
+    if let [last, next] = &departures.stops[(pos_offset.max(1) - 1)..=pos_offset.min(departures.stops.len() - 1)] {
         let current_duration = time - last.1.departure;
         let segment_duration = next.1.arrival - last.1.departure;
         let stop_id = &last.0;
         let next_stop_id = &next.0;
-        let progress = (current_duration.num_seconds() as f32
-            / segment_duration.num_seconds() as f32)
-            .clamp(0., 1.);
+        let progress = (current_duration.num_seconds() as f32 / segment_duration.num_seconds() as f32).clamp(0., 1.);
         let points = points_on_route(stop_id, next_stop_id, stops);
         if let Some(position) = interpolate_segment(&points, progress) {
             return Some(Train {
@@ -332,13 +323,9 @@ pub static KVV_STOPS: OnceLock<Vec<Stop>> = OnceLock::new();
 
 pub async fn init() {
     let api_endpoint = dotenv::var("TRIAS_API_ENDPOINT").expect("TRIAS_API_ENDPOINT not set");
-    API_ENDPOINT
-        .set(api_endpoint)
-        .expect("failed to set API_ENDPOINT");
+    API_ENDPOINT.set(api_endpoint).expect("failed to set API_ENDPOINT");
     let access_token = dotenv::var("TRIAS_ACCESS_TOKEN").expect("TRIAS_ACCESS_TOKEN not set");
-    ACCESS_TOKEN
-        .set(access_token)
-        .expect("failed to set ACCESS_TOKEN");
+    ACCESS_TOKEN.set(access_token).expect("failed to set ACCESS_TOKEN");
     let stops = kvv_stops().await;
     KVV_STOPS.set(stops).expect("failed to set KVV_STOPS");
 }
@@ -348,15 +335,10 @@ pub async fn fetch_departures_for_region() -> LineDepartures {
     fetch_departures(stops).await
 }
 
-pub fn train_positions(
-    departures_per_line: &LineDepartures,
-    render_time: DateTime<Utc>,
-) -> Vec<Train> {
+pub fn train_positions(departures_per_line: &LineDepartures, render_time: DateTime<Utc>) -> Vec<Train> {
     let stops = KVV_STOPS.get().expect("KVV_STOPS not initialized");
     departures_per_line
         .iter()
-        .flat_map(|(journey_ref, departures)| {
-            train_position_per_route(render_time, journey_ref, departures, stops)
-        })
+        .flat_map(|(journey_ref, departures)| train_position_per_route(render_time, journey_ref, departures, stops))
         .collect()
 }
