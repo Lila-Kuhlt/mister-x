@@ -27,10 +27,10 @@ fn main() {
     env::set_current_dir(liberica_dir).unwrap();
 
     // Run `npm install`
-    let npm_install = Command::new("npm")
+    let npm_install = Command::new("bun")
         .arg("install")
         .output()
-        .expect("Failed to run `npm install`");
+        .expect("Failed to run `bun install` is bun installed?");
 
     // Check for errors in `npm install`
     if !npm_install.status.success() {
@@ -41,16 +41,16 @@ fn main() {
     }
 
     // Run `npm run build`
-    let npm_build = Command::new("npm")
+    let npm_build = Command::new("bun")
         .arg("run")
-        .arg("build:vite")
+        .arg("build")
         .output()
-        .expect("Failed to run `npm run build`");
+        .expect("Failed to run `bun run build`");
 
     // Check for errors in `npm run build`
     if !npm_build.status.success() {
         println!(
-            "cargo:warning=`npm run build` failed: {}",
+            "cargo:warning=`bun run build` failed: {}",
             String::from_utf8_lossy(&npm_build.stderr).replace('\n', "\ncargo:warning="),
         );
     }
