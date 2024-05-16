@@ -1,7 +1,10 @@
 import globals from "globals";
 import eslintJs from "@eslint/js";
 import tseslint from "typescript-eslint";
-import stylistic from "@stylistic/eslint-plugin"
+
+// Prettier
+import eslintPluginPrettier from "eslint-plugin-prettier/recommended"
+import eslintConfigPrettier from "eslint-config-prettier"
 
 /* Currently some React related plugins are still not supported:
  *
@@ -13,18 +16,15 @@ import stylistic from "@stylistic/eslint-plugin"
  * - https://github.com/jsx-eslint/eslint-plugin-react/pull/3743
  */
 
+/** @type {import("eslint").Config} */
 export default [
     { ignores: ["src/lib/bindings.ts", "node_modules", "dist"] },
     { languageOptions: { globals: globals.browser } },
 
-    stylistic.configs.customize({
-        indent: 4,
-        quotes: 'single',
-        semi: true,
-        jsx: true,
-    }),
-
     eslintJs.configs.recommended,
+
+    eslintPluginPrettier,
+    eslintConfigPrettier, // disables some rules that cause conflicts
 
     ...tseslint.configs.strict, // strict is a superset of recommended
     ...tseslint.configs.stylistic,

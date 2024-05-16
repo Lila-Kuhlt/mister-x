@@ -15,7 +15,13 @@ export function CreateTeam() {
     const navigate = useNavigate();
     const { t } = useTranslation();
 
-    const colors = [red['500'], pink['500'], lime['500'], cyan['500'], purple['500']];
+    const colors = [
+        red['500'],
+        pink['500'],
+        lime['500'],
+        cyan['500'],
+        purple['500'],
+    ];
 
     const onSubmit = (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -35,12 +41,10 @@ export function CreateTeam() {
     return (
         <div
             className="flex items-center justify-center h-screen transition-colors"
-            style={{ backgroundColor: color }}
-        >
+            style={{ backgroundColor: color }}>
             <form
                 className="container flex flex-col gap-3 p-8 bg-white shadow-md rounded-xl w-80"
-                onSubmit={onSubmit}
-            >
+                onSubmit={onSubmit}>
                 <h2 className="text-xl font-bold">{t('CreateTeam')}</h2>
 
                 <TextInput onTextChange={setName} trim="all" />
@@ -51,7 +55,7 @@ export function CreateTeam() {
                 />
 
                 <div className="flex justify-between gap-3">
-                    {colors.map(color => (
+                    {colors.map((color) => (
                         <div
                             className="w-10 h-10 rounded-md"
                             style={{ backgroundColor: color }}
@@ -62,13 +66,11 @@ export function CreateTeam() {
                 </div>
 
                 <Button disabled={loading}>
-                    {loading
-                        ? (
-                            <div className="w-4 h-4 border-4 border-dashed rounded-full animate-spin dark:border-white"></div>
-                            )
-                        : (
-                            <>{t('CreateTeam')}</>
-                            )}
+                    {loading ? (
+                        <div className="w-4 h-4 border-4 border-dashed rounded-full animate-spin dark:border-white"></div>
+                    ) : (
+                        <>{t('CreateTeam')}</>
+                    )}
                 </Button>
             </form>
         </div>

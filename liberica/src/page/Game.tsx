@@ -42,7 +42,7 @@ export function Game() {
                 setTimeout(() => socket.reconnect(), 1000);
             });
 
-        socket.register('GameState', gs => setGameState(gs));
+        socket.register('GameState', (gs) => setGameState(gs));
 
         return () => {
             setWS(undefined);
@@ -59,7 +59,12 @@ export function Game() {
     useEffect(() => {
         if (window.isSecureContext) {
             navigator.geolocation.watchPosition((pos) => {
-                ws?.send({ Position: { lat: pos.coords.latitude, long: pos.coords.longitude } });
+                ws?.send({
+                    Position: {
+                        lat: pos.coords.latitude,
+                        long: pos.coords.longitude,
+                    },
+                });
             });
         }
     }, [ws]);
@@ -73,7 +78,12 @@ export function Game() {
                     onStopClick={(stop) => {
                         if (team) {
                             disembark();
-                            ws?.send({ SetTeamPosition: { lat: stop.lat, long: stop.lon } });
+                            ws?.send({
+                                SetTeamPosition: {
+                                    lat: stop.lat,
+                                    long: stop.lon,
+                                },
+                            });
                         }
                     }}
                     onTrainClick={embark}
@@ -86,13 +96,13 @@ export function Game() {
 
                     {embarkedTrain && (
                         <span>
-                            {embarkedTrain.line_name}
-                            {' '}
-                            {embarkedTrain.direction}
+                            {embarkedTrain.line_name} {embarkedTrain.direction}
                         </span>
                     )}
 
-                    <Button disabled={!embarkedTrain} onClick={disembark}>{t('Disembark')}</Button>
+                    <Button disabled={!embarkedTrain} onClick={disembark}>
+                        {t('Disembark')}
+                    </Button>
                 </Navbar>
             </div>
         </GameStateContext.Provider>
@@ -104,9 +114,7 @@ export function Game() {
                 <span className="italic text-slate-400">
                     {t('ConnectionLost')}
                 </span>
-                <span className="italic text-slate-400">
-                    {t('Reconnect')}
-                </span>
+                <span className="italic text-slate-400">{t('Reconnect')}</span>
             </div>
         </div>
     );

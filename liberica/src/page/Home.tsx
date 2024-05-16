@@ -44,11 +44,12 @@ export function Home() {
                 <Button
                     disabled={selected === undefined}
                     type="button"
-                    onClick={process}
-                >
+                    onClick={process}>
                     {t('JoinTeam')}
                 </Button>
-                <Link className="text-center underline text-slate-400" to="/create">
+                <Link
+                    className="text-center underline text-slate-400"
+                    to="/create">
                     {t('CreateTeam')}
                 </Link>
             </div>

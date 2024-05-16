@@ -12,8 +12,7 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 import en_translation from 'i18n/en.json';
 import de_translation from 'i18n/de.json';
 
-i18n
-    .use(LanguageDetector)
+i18n.use(LanguageDetector)
     .use(initReactI18next)
     .init({
         debug: true,
@@ -36,5 +35,5 @@ ReactDOM.createRoot(rootElement).render(
             <Route path="/game" element={<Game />} />
             <Route path="/admin" element={<Admin />} />
         </Routes>
-    </BrowserRouter>,
+    </BrowserRouter>
 );

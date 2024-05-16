@@ -62,10 +62,10 @@ export const postCreateTeam = (team: CreateTeam): Promise<Team> =>
     AXIOS.post(ENDPOINTS.POST_CREATE_TEAM, team);
 
 export const getTeams = (): Promise<Team[]> =>
-    AXIOS.get(ENDPOINTS.GET_TEAMS).then(data => data.data);
+    AXIOS.get(ENDPOINTS.GET_TEAMS).then((data) => data.data);
 
 export const getStops = (): Promise<Stop[]> =>
-    AXIOS.get(ENDPOINTS.GET_STOPS).then(data => data.data);
+    AXIOS.get(ENDPOINTS.GET_STOPS).then((data) => data.data);
 
 export const serverAlive = (): Promise<boolean> =>
     AXIOS.get(ENDPOINTS.GET_PING)

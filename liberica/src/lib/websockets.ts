@@ -44,8 +44,9 @@ export class WebSocketApi {
     }
 
     public reconnect(force = false) {
-    // Don't try to reconnect if there is a connection already
-        if (this.connection?.readyState === this.connection.OPEN && force) return;
+        // Don't try to reconnect if there is a connection already
+        if (this.connection?.readyState === this.connection.OPEN && force)
+            return;
 
         this.disconnect();
         this.connect(this.endpoint);
@@ -55,8 +56,8 @@ export class WebSocketApi {
         console.log('Connecting to', endpoint);
         this.endpoint = endpoint;
         this.connection = new WebSocket(endpoint);
-        this.connection.onerror = e => this.metaHandlers['Error']?.(e);
-        this.connection.onclose = e => this.metaHandlers['Disconnect']?.(e);
+        this.connection.onerror = (e) => this.metaHandlers['Error']?.(e);
+        this.connection.onclose = (e) => this.metaHandlers['Disconnect']?.(e);
         this.connection.onopen = () => this.metaHandlers['Connect']?.();
         this.connection.onmessage = (e) => {
             const res = this.parseMsg(e.data);
@@ -68,8 +69,7 @@ export class WebSocketApi {
         try {
             const json = JSON.parse(msg) as ServerMessage;
             return json;
-        }
-        catch (e) {
+        } catch (e) {
             this.metaHandlers.Error?.(e as Event);
             return undefined;
         }
@@ -80,14 +80,16 @@ export class WebSocketApi {
         for (const key in msg) {
             const handler = key as Keys<ServerMessage>;
             if (!this.handlers[handler])
-                console.warn('No message handler found for message type ' + handler);
+                console.warn(
+                    'No message handler found for message type ' + handler
+                );
             this.handlers[handler]?.(msg[key as keyof ServerMessage]);
         }
     }
 
     public register<T extends Keys<ServerMessage>>(
         type: T,
-        handler: WSHandlerMap<ServerMessage>[T],
+        handler: WSHandlerMap<ServerMessage>[T]
     ): WebSocketApi {
         this.handlers[type] = handler;
         return this;
@@ -95,7 +97,7 @@ export class WebSocketApi {
 
     public registerEvent<T extends Keys<WSEvent>>(
         type: T,
-        handler: WSHandlerMap<WSEvent>[T],
+        handler: WSHandlerMap<WSEvent>[T]
     ) {
         this.metaHandlers[type] = handler;
         return this;

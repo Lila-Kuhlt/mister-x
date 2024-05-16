@@ -19,7 +19,10 @@ import { getStops } from 'lib/api';
 import { getContrastingTextColor } from 'lib/util';
 import Style from 'style/Map.module.css';
 
-export const GameStateContext = createContext<GameState>({ teams: [], trains: [] });
+export const GameStateContext = createContext<GameState>({
+    teams: [],
+    trains: [],
+});
 
 const CENTER: [number, number] = [49.0046, 8.403];
 const DEFAULT_ZOOM = 15;
@@ -44,7 +47,10 @@ function ResetMapViewButton() {
     );
 }
 
-function TrainMarker(props: { train: Train; onClick?: (train: Train) => void }) {
+function TrainMarker(props: {
+    train: Train;
+    onClick?: (train: Train) => void;
+}) {
     const train = props.train;
     const zoom = useMap().getZoom();
     const { t } = useTranslation();
@@ -53,11 +59,13 @@ function TrainMarker(props: { train: Train; onClick?: (train: Train) => void }) 
         <Marker
             icon={TrainIcon}
             position={{ ...train }}
-            onClick={() => props.onClick?.(train)}
-        >
+            onClick={() => props.onClick?.(train)}>
             {zoom > DEFAULT_ZOOM && (
                 <Tooltip direction="right" permanent>
-                    {t('to', { line: train.line_name.split(' ')[1], direction: train.direction })}
+                    {t('to', {
+                        line: train.line_name.split(' ')[1],
+                        direction: train.direction,
+                    })}
                 </Tooltip>
             )}
         </Marker>
@@ -70,21 +78,18 @@ function TeamMarker(props: { player: TeamState }) {
     return (
         <Marker
             icon={player.team.kind == 'MrX' ? MrXIcon : DetectiveIcon}
-            position={{ ...player }}
-        >
+            position={{ ...player }}>
             <Tooltip
                 className={Style.tooltip}
                 direction="top"
                 opacity={1}
-                permanent
-            >
+                permanent>
                 <a
                     style={{
                         background: player.team.color,
                         color: getContrastingTextColor(player.team.color),
                     }}
-                    className={Style.detectiveLabel}
-                >
+                    className={Style.detectiveLabel}>
                     {player.team.name}
                 </a>
             </Tooltip>
@@ -96,7 +101,7 @@ export function Map(
     props: MapProps & {
         onStopClick?: (stop: Stop) => void;
         onTrainClick?: (train: Train) => void;
-    },
+    }
 ) {
     const gs = useContext(GameStateContext);
     const [stops, setStops] = useState<Stop[]>([]);
@@ -109,8 +114,7 @@ export function Map(
             center={CENTER}
             zoom={DEFAULT_ZOOM}
             className="h-max w-max"
-            {...props.containerProps}
-        >
+            {...props.containerProps}>
             <TileLayer
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 updateInterval={200}
@@ -120,7 +124,7 @@ export function Map(
                 {/* Stops */}
                 <LayersControl.Overlay checked name="Stops">
                     <LayerGroup>
-                        {stops.map(stop => (
+                        {stops.map((stop) => (
                             <Circle
                                 key={stop.id}
                                 eventHandlers={{
@@ -141,7 +145,7 @@ export function Map(
                 {/* Trains */}
                 <LayersControl.Overlay checked name="Trains">
                     <LayerGroup>
-                        {gs.trains.map(train => (
+                        {gs.trains.map((train) => (
                             <TrainMarker
                                 train={train}
                                 key={train.line_id}
@@ -155,12 +159,9 @@ export function Map(
                 <LayersControl.Overlay checked name="Detectives">
                     <LayerGroup>
                         {gs.teams
-                            .filter(ts => ts.lat !== 0.0 || ts.long !== 0.0) // sensible coordinates
-                            .map(ts => (
-                                <TeamMarker
-                                    player={ts}
-                                    key={ts.team.id}
-                                />
+                            .filter((ts) => ts.lat !== 0.0 || ts.long !== 0.0) // sensible coordinates
+                            .map((ts) => (
+                                <TeamMarker player={ts} key={ts.team.id} />
                             ))}
                     </LayerGroup>
                 </LayersControl.Overlay>
