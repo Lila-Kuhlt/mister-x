@@ -3,7 +3,7 @@ import { PropsWithChildren } from 'react';
 export function Navbar(props: PropsWithChildren) {
     return (
         <div
-            className="absolute bottom-0 w-max flex bg-white p-2 gap-3"
+            className="absolute bottom-0 flex w-max gap-3 bg-white p-2"
             style={{
                 position: 'fixed',
                 justifyContent: 'space-between',

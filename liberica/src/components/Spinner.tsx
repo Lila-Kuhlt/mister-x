@@ -2,7 +2,7 @@ export function Spinner(props: { className?: string; color?: string }) {
     const color = props.color ?? 'white';
     return (
         <svg
-            className={`w-5 h-5 mr-3 text-white animate-spin ${props.className}`}
+            className={`mr-3 h-5 w-5 animate-spin text-white ${props.className}`}
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 24 24">

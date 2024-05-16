@@ -40,10 +40,10 @@ export function CreateTeam() {
 
     return (
         <div
-            className="flex items-center justify-center h-screen transition-colors"
+            className="flex h-screen items-center justify-center transition-colors"
             style={{ backgroundColor: color }}>
             <form
-                className="container flex flex-col gap-3 p-8 bg-white shadow-md rounded-xl w-80"
+                className="container flex w-80 flex-col gap-3 rounded-xl bg-white p-8 shadow-md"
                 onSubmit={onSubmit}>
                 <h2 className="text-xl font-bold">{t('CreateTeam')}</h2>
 
@@ -57,7 +57,7 @@ export function CreateTeam() {
                 <div className="flex justify-between gap-3">
                     {colors.map((color) => (
                         <div
-                            className="w-10 h-10 rounded-md"
+                            className="h-10 w-10 rounded-md"
                             style={{ backgroundColor: color }}
                             key={color}
                             onClick={() => setColor(color)}
@@ -67,7 +67,7 @@ export function CreateTeam() {
 
                 <Button disabled={loading}>
                     {loading ? (
-                        <div className="w-4 h-4 border-4 border-dashed rounded-full animate-spin dark:border-white"></div>
+                        <div className="h-4 w-4 animate-spin rounded-full border-4 border-dashed dark:border-white"></div>
                     ) : (
                         <>{t('CreateTeam')}</>
                     )}

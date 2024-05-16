@@ -16,15 +16,15 @@ export function TeamCard(props: {
 
     return (
         <div
-            className={`my-1 flex items-center w-full transition-all rounded-md hover:bg-slate-100 ${states[state]}`}
+            className={`my-1 flex w-full items-center rounded-md transition-all hover:bg-slate-100 ${states[state]}`}
             onClick={props.onClick}>
             <div
-                className="w-10 h-10 rounded m-2"
+                className="m-2 h-10 w-10 rounded"
                 style={{ backgroundColor: team.color }}
             />
             <div className="flex flex-col justify-center">
                 <span className="font-semibold">{team.name}</span>
-                <span className="justify-end italic font-normal text-slate-400">
+                <span className="justify-end font-normal italic text-slate-400">
                     {team.kind}
                 </span>
             </div>

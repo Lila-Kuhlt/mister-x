@@ -71,7 +71,7 @@ export function Game() {
 
     const GameContext = (
         <GameStateContext.Provider value={gs}>
-            <div className="flex flex-col w-max h-max">
+            <div className="flex h-max w-max flex-col">
                 <Map
                     tileProps={{ updateInterval: 500 }}
                     containerProps={{ preferCanvas: true }}
@@ -109,7 +109,7 @@ export function Game() {
     );
 
     const LandingPage = (
-        <div className="flex flex-col items-center justify-center gap-5 w-max h-max">
+        <div className="flex h-max w-max flex-col items-center justify-center gap-5">
             <div className="flex flex-col items-center">
                 <span className="italic text-slate-400">
                     {t('ConnectionLost')}
