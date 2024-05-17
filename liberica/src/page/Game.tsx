@@ -1,13 +1,13 @@
-import { GameStateContext, Map } from 'components/map/Map';
-import { createWebSocketConnection } from 'lib/api';
-import { GameState, Team, Train } from 'lib/bindings';
-import { WebSocketApi } from 'lib/websockets';
-import { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { Navbar } from 'components/Navbar';
-import { Button } from 'components/InputElements';
-import { FaHome } from 'react-icons/fa';
-import { useTranslation } from 'react-i18next';
+import { GameStateContext, Map } from "components/map/Map";
+import { createWebSocketConnection } from "lib/api";
+import { GameState, Team, Train } from "lib/bindings";
+import { WebSocketApi } from "lib/websockets";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { Navbar } from "components/Navbar";
+import { Button } from "components/InputElements";
+import { FaHome } from "react-icons/fa";
+import { useTranslation } from "react-i18next";
 
 export function Game() {
     const [ws, setWS] = useState<WebSocketApi>();
@@ -20,7 +20,7 @@ export function Game() {
     function disembark() {
         if (team) {
             setEmbarkedTrain(undefined);
-            ws?.send('DisembarkTrain');
+            ws?.send("DisembarkTrain");
         }
     }
 
@@ -35,14 +35,14 @@ export function Game() {
         const socket = createWebSocketConnection();
 
         socket
-            .registerEvent('Connect', () => setWS(socket))
-            .registerEvent('Error', (e) => {
+            .registerEvent("Connect", () => setWS(socket))
+            .registerEvent("Error", (e) => {
                 setWS(undefined);
-                console.error('WebSocket connection closed uncleanly:', e);
+                console.error("WebSocket connection closed uncleanly:", e);
                 setTimeout(() => socket.reconnect(), 1000);
             });
 
-        socket.register('GameState', (gs) => setGameState(gs));
+        socket.register("GameState", (gs) => setGameState(gs));
 
         return () => {
             setWS(undefined);
@@ -69,7 +69,7 @@ export function Game() {
         }
     }, [ws]);
 
-    const GameContext = (
+    const Game = (
         <GameStateContext.Provider value={gs}>
             <div className="flex h-max w-max flex-col">
                 <Map
@@ -90,7 +90,7 @@ export function Game() {
                 />
 
                 <Navbar>
-                    <Button onClick={() => navigate('/')}>
+                    <Button onClick={() => navigate("/")}>
                         <FaHome />
                     </Button>
 
@@ -101,7 +101,7 @@ export function Game() {
                     )}
 
                     <Button disabled={!embarkedTrain} onClick={disembark}>
-                        {t('Disembark')}
+                        {t("Disembark")}
                     </Button>
                 </Navbar>
             </div>
@@ -112,12 +112,12 @@ export function Game() {
         <div className="flex h-max w-max flex-col items-center justify-center gap-5">
             <div className="flex flex-col items-center">
                 <span className="italic text-slate-400">
-                    {t('ConnectionLost')}
+                    {t("ConnectionLost")}
                 </span>
-                <span className="italic text-slate-400">{t('Reconnect')}</span>
+                <span className="italic text-slate-400">{t("Reconnect")}</span>
             </div>
         </div>
     );
 
-    return ws ? GameContext : LandingPage;
+    return ws ? Game : LandingPage;
 }

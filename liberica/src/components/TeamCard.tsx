@@ -1,4 +1,4 @@
-import { Team } from 'lib/bindings';
+import { Team } from "lib/bindings";
 
 export function TeamCard(props: {
     team: Team;
@@ -8,16 +8,17 @@ export function TeamCard(props: {
     const team = props.team;
 
     const states = {
-        selected: 'outline outline-solid outline-2 outline-slate-300',
-        default: '',
+        selected: "outline outline-solid outline-2 outline-slate-300",
+        default: "",
     };
 
-    const state = props.selected ? 'selected' : 'default';
+    const state = props.selected ? "selected" : "default";
 
     return (
         <div
             className={`my-1 flex w-full items-center rounded-md transition-all hover:bg-slate-100 ${states[state]}`}
-            onClick={props.onClick}>
+            onClick={props.onClick}
+        >
             <div
                 className="m-2 h-10 w-10 rounded"
                 style={{ backgroundColor: team.color }}

@@ -1,12 +1,8 @@
 name: CI
 
 on:
-  pull_request:
-    branches:
-      - main
-  push:
-    branches:
-      - main
+  - pull_request
+  - push
       
 env:
   CARGO_TERM_COLOR: always
@@ -27,9 +23,12 @@ jobs:
       - name: 🔬 Rust fmt
         run: cargo fmt --check --all
 
+      - name: 🔨 Build robusta
+        run: cargo build
+
 
   liberica:
-    name: ⚡ liberica Check & Build
+    name: ⚡ liberica Check
     runs-on: ubuntu-latest
     
     defaults:

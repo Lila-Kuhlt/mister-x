@@ -1,8 +1,8 @@
-import trainSVG from 'assets/tram2.svg';
-import detectiveSVG from 'assets/tie.svg';
-import mrXSVG from 'assets/secret.svg';
+import trainSVG from "assets/tram2.svg";
+import detectiveSVG from "assets/tie.svg";
+import mrXSVG from "assets/secret.svg";
 
-import L, { IconOptions } from 'leaflet';
+import L, { IconOptions } from "leaflet";
 
 const DEFAULT_TRAIN_SETTINGS: Partial<IconOptions> = {
     iconSize: [30, 30],

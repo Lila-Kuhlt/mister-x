@@ -1,4 +1,4 @@
-import { ClientMessage, ServerMessage } from 'lib/bindings';
+import { ClientMessage, ServerMessage } from "lib/bindings";
 
 export type Keys<T> = T extends T ? keyof T : never;
 export type Concrete<T, K extends Keys<T>> = T extends { [P in K]: infer V }
@@ -53,12 +53,12 @@ export class WebSocketApi {
     }
 
     public connect(endpoint: string) {
-        console.log('Connecting to', endpoint);
+        console.log("Connecting to", endpoint);
         this.endpoint = endpoint;
         this.connection = new WebSocket(endpoint);
-        this.connection.onerror = (e) => this.metaHandlers['Error']?.(e);
-        this.connection.onclose = (e) => this.metaHandlers['Disconnect']?.(e);
-        this.connection.onopen = () => this.metaHandlers['Connect']?.();
+        this.connection.onerror = (e) => this.metaHandlers["Error"]?.(e);
+        this.connection.onclose = (e) => this.metaHandlers["Disconnect"]?.(e);
+        this.connection.onopen = () => this.metaHandlers["Connect"]?.();
         this.connection.onmessage = (e) => {
             const res = this.parseMsg(e.data);
             if (res) this.handleMessage(res);
@@ -81,7 +81,7 @@ export class WebSocketApi {
             const handler = key as Keys<ServerMessage>;
             if (!this.handlers[handler])
                 console.warn(
-                    'No message handler found for message type ' + handler
+                    "No message handler found for message type " + handler,
                 );
             this.handlers[handler]?.(msg[key as keyof ServerMessage]);
         }
@@ -89,7 +89,7 @@ export class WebSocketApi {
 
     public register<T extends Keys<ServerMessage>>(
         type: T,
-        handler: WSHandlerMap<ServerMessage>[T]
+        handler: WSHandlerMap<ServerMessage>[T],
     ): WebSocketApi {
         this.handlers[type] = handler;
         return this;
@@ -97,7 +97,7 @@ export class WebSocketApi {
 
     public registerEvent<T extends Keys<WSEvent>>(
         type: T,
-        handler: WSHandlerMap<WSEvent>[T]
+        handler: WSHandlerMap<WSEvent>[T],
     ) {
         this.metaHandlers[type] = handler;
         return this;

@@ -11,9 +11,11 @@ import eslintConfigPrettier from "eslint-config-prettier"
  * - eslint-plugin-react
  * - eslint-plugin-react-hooks
  * - eslint-plugin-react-refresh
+ * - eslint-plutin-i18next
  *
  * For more information see the corresponding PRs:
  * - https://github.com/jsx-eslint/eslint-plugin-react/pull/3743
+ * - https://github.com/edvardchen/eslint-plugin-i18next/pull/120
  */
 
 /** @type {import("eslint").Config} */

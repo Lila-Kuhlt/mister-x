@@ -1,19 +1,19 @@
-import axios from 'axios';
-import { Team, Stop, CreateTeam } from 'lib/bindings';
-import { WebSocketApi } from './websockets';
+import axios from "axios";
+import { Team, Stop, CreateTeam } from "lib/bindings";
+import { WebSocketApi } from "./websockets";
 
 const ENDPOINTS = {
-    POST_CREATE_TEAM: '/create-team',
-    POST_START_GAME: '/start-game',
-    GET_TEAMS: '/teams',
-    GET_STOPS: '/stops',
-    GET_PING: '/ping',
-    GET_WS: '/ws',
+    POST_CREATE_TEAM: "/create-team",
+    POST_START_GAME: "/start-game",
+    GET_TEAMS: "/teams",
+    GET_STOPS: "/stops",
+    GET_PING: "/ping",
+    GET_WS: "/ws",
 };
 
 const hostname = location.hostname;
 const isDevServer = !import.meta.env.PROD;
-const isLocal = ['localhost', '127.0.0.1'].includes(hostname);
+const isLocal = ["localhost", "127.0.0.1"].includes(hostname);
 
 /**
  * Get the WebSocket endpoint.
@@ -27,8 +27,8 @@ const isLocal = ['localhost', '127.0.0.1'].includes(hostname);
  * @returns The websocket endpoint
  */
 export function getWebSocketEndpoint(): string {
-    const port = isDevServer ? '3000' : location.port;
-    const proto = isLocal || isDevServer ? 'ws' : 'wss';
+    const port = isDevServer ? "3000" : location.port;
+    const proto = isLocal || isDevServer ? "ws" : "wss";
 
     return `${proto}://${hostname}:${port}`;
 }
@@ -45,8 +45,8 @@ export function getWebSocketEndpoint(): string {
  * @returns The http endpoint
  */
 export function getHTTPEndpoint(): string {
-    const port = isDevServer ? '3000' : location.port;
-    const proto = isLocal || isDevServer ? 'http' : 'https';
+    const port = isDevServer ? "3000" : location.port;
+    const proto = isLocal || isDevServer ? "http" : "https";
 
     return `${proto}://${hostname}:${port}/api`;
 }

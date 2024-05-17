@@ -8,16 +8,16 @@ import {
     LayerGroup,
     Circle,
     Tooltip,
-} from 'react-leaflet';
-import { createContext, useContext, useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { MrXIcon, TrainIcon, DetectiveIcon } from 'components/MapIcons';
-import { Button } from 'components/InputElements';
-import { Marker } from './Marker';
-import { GameState, Stop, TeamState, Train } from 'lib/bindings';
-import { getStops } from 'lib/api';
-import { getContrastingTextColor } from 'lib/util';
-import Style from 'style/Map.module.css';
+} from "react-leaflet";
+import { createContext, useContext, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { MrXIcon, TrainIcon, DetectiveIcon } from "components/MapIcons";
+import { Button } from "components/InputElements";
+import { Marker } from "./Marker";
+import { GameState, Stop, TeamState, Train } from "lib/bindings";
+import { getStops } from "lib/api";
+import { getContrastingTextColor } from "lib/util";
+import Style from "style/Map.module.css";
 
 export const GameStateContext = createContext<GameState>({
     teams: [],
@@ -40,7 +40,7 @@ function ResetMapViewButton() {
         <div className="leaflet-top leaflet-center">
             <div className="leaflet-control leaflet-bar">
                 <Button onClick={() => map.setView(CENTER, DEFAULT_ZOOM)}>
-                    {t('ResetMapView')}
+                    {t("ResetMapView")}
                 </Button>
             </div>
         </div>
@@ -59,11 +59,12 @@ function TrainMarker(props: {
         <Marker
             icon={TrainIcon}
             position={{ ...train }}
-            onClick={() => props.onClick?.(train)}>
+            onClick={() => props.onClick?.(train)}
+        >
             {zoom > DEFAULT_ZOOM && (
                 <Tooltip direction="right" permanent>
-                    {t('to', {
-                        line: train.line_name.split(' ')[1],
+                    {t("to", {
+                        line: train.line_name.split(" ")[1],
                         direction: train.direction,
                     })}
                 </Tooltip>
@@ -77,19 +78,22 @@ function TeamMarker(props: { player: TeamState }) {
 
     return (
         <Marker
-            icon={player.team.kind == 'MrX' ? MrXIcon : DetectiveIcon}
-            position={{ ...player }}>
+            icon={player.team.kind == "MrX" ? MrXIcon : DetectiveIcon}
+            position={{ ...player }}
+        >
             <Tooltip
                 className={Style.tooltip}
                 direction="top"
                 opacity={1}
-                permanent>
+                permanent
+            >
                 <a
                     style={{
                         background: player.team.color,
                         color: getContrastingTextColor(player.team.color),
                     }}
-                    className={Style.detectiveLabel}>
+                    className={Style.detectiveLabel}
+                >
                     {player.team.name}
                 </a>
             </Tooltip>
@@ -101,7 +105,7 @@ export function Map(
     props: MapProps & {
         onStopClick?: (stop: Stop) => void;
         onTrainClick?: (train: Train) => void;
-    }
+    },
 ) {
     const gs = useContext(GameStateContext);
     const [stops, setStops] = useState<Stop[]>([]);
@@ -114,7 +118,8 @@ export function Map(
             center={CENTER}
             zoom={DEFAULT_ZOOM}
             className="h-max w-max"
-            {...props.containerProps}>
+            {...props.containerProps}
+        >
             <TileLayer
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 updateInterval={200}
@@ -132,8 +137,8 @@ export function Map(
                                 }}
                                 center={[stop.lat, stop.lon]}
                                 pathOptions={{
-                                    color: 'none',
-                                    fillColor: 'blue',
+                                    color: "none",
+                                    fillColor: "blue",
                                     opacity: 10.0,
                                 }}
                                 radius={50}
