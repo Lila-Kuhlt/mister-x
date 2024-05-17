@@ -1,0 +1,4 @@
+fn_single_line = true
+imports_layout = "Horizontal"
+imports_granularity = "Module"
+max_width = 120

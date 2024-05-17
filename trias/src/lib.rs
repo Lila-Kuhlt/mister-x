@@ -34,10 +34,7 @@ pub enum RequestPayload {
     TripInfoRequest(TripInfoRequest),
 }
 
-pub fn generate_service_request(
-    access_token: String,
-    payload: RequestPayload,
-) -> Result<String, &'static str> {
+pub fn generate_service_request(access_token: String, payload: RequestPayload) -> Result<String, &'static str> {
     let request = ServiceRequest {
         request_timestamp: Utc::now(),
         requestor_ref: access_token,
@@ -58,10 +55,7 @@ file:///C:/development/HEAD/extras/TRIAS/TRIAS_1.2/Trias.xsd">
     ))
 }
 
-pub async fn post_request(
-    api_endpoint: &str,
-    request: &str,
-) -> Result<TriasResponse, Box<dyn Error>> {
+pub async fn post_request(api_endpoint: &str, request: &str) -> Result<TriasResponse, Box<dyn Error>> {
     let client = reqwest::Client::new();
     let response = client
         .post(api_endpoint)
@@ -94,11 +88,7 @@ pub async fn search_stops(
         panic!("Wrong response type");
     };
 
-    let locations = response
-        .location_result
-        .into_iter()
-        .map(|x| x.location)
-        .collect();
+    let locations = response.location_result.into_iter().map(|x| x.location).collect();
     Ok(locations)
 }
 
@@ -115,9 +105,7 @@ pub async fn stop_events(
         include_onward_calls: true,
         ..Default::default()
     };
-    let payload = StopEventRequestBuilder::new(location_ref)
-        .params(params)
-        .build();
+    let payload = StopEventRequestBuilder::new(location_ref).params(params).build();
 
     let xml_request = generate_service_request(access_token, payload)?;
     let response = post_request(api_endpoint, &xml_request).await?;

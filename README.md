@@ -7,7 +7,7 @@ Play a game of Scotland Yard with your friends using public transport.
 ## Setup
 **Requirements:**
 - [Rust](https://www.rust-lang.org/tools/install)
-- npm
+- [bun](https://bun.sh/)
 
 To be able to use the TRIAS API, you need an API Token which you can put into a file called `robusta/.env` with the following structure:
 ```

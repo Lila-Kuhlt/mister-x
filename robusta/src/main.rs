@@ -106,11 +106,7 @@ async fn handler(ws: WebSocketUpgrade, State(state): State<SharedState>) -> Resp
     let client = {
         let mut state = state.lock().await;
         let id = state.client_id_gen.next();
-        let client_connection = ClientConnection {
-            id,
-            team_id: 0,
-            send,
-        };
+        let client_connection = ClientConnection { id, team_id: 0, send };
         state.connections.push(client_connection);
         info!("Client {} connected", id);
         Client {
@@ -131,9 +127,7 @@ async fn handle_socket(socket: WebSocket, mut client: Client) {
 
     let disconnect = |client_send: Sender<InputMessage>, client_id| async move {
         client_send
-            .send(InputMessage::Server(ServerMessage::ClientDisconnected(
-                client_id,
-            )))
+            .send(InputMessage::Server(ServerMessage::ClientDisconnected(client_id)))
             .await
             .expect("game logic queue disconnected");
     };
@@ -338,10 +332,7 @@ async fn main() {
         .nest("/api", api)
         .nest_service(
             "/",
-            get_service(
-                ServeDir::new("../liberica/dist")
-                    .fallback(ServeFile::new("../liberica/dist/index.html")),
-            ),
+            get_service(ServeDir::new("../liberica/dist").fallback(ServeFile::new("../liberica/dist/index.html"))),
         )
         .layer(CorsLayer::permissive())
         .with_state(state.clone());
@@ -444,25 +435,23 @@ async fn run_game_loop(mut recv: Receiver<InputMessage>, state: SharedState) {
             serde_json::to_string(&game_state).unwrap()
         )
         .unwrap();
-        fs::write(
-            TEAMS_FILE,
-            serde_json::to_string_pretty(&game_state.teams).unwrap(),
-        )
-        .unwrap();
+        fs::write(TEAMS_FILE, serde_json::to_string_pretty(&game_state.teams).unwrap()).unwrap();
 
         for connection in state.connections.iter_mut() {
             let game_state = GameState {
                 teams: game_state
                     .teams
                     .iter()
-                    .filter(|ts| {
-                        ts.team.kind == TeamKind::Detective || ts.team.id == connection.team_id
-                    })
+                    .filter(|ts| ts.team.kind == TeamKind::Detective || ts.team.id == connection.team_id)
                     .cloned()
                     .collect(),
                 trains: game_state.trains.clone(),
             };
-            if let Err(err) = connection.send.send(ws_message::ServerMessage::GameState(game_state.clone())).await {
+            if let Err(err) = connection
+                .send
+                .send(ws_message::ServerMessage::GameState(game_state.clone()))
+                .await
+            {
                 error!("failed to send game state to client {}: {}", connection.id, err);
                 continue;
             }

@@ -90,10 +90,7 @@ fn parse_curve(line: &str) -> Option<((&str, &str), Vec<Point>)> {
             let mut coords = point.split(',');
             let latitude = coords.next()?.trim().parse().ok()?;
             let longitude = coords.next()?.trim().parse().ok()?;
-            Some(Point {
-                latitude,
-                longitude,
-            })
+            Some(Point { latitude, longitude })
         })
         .collect::<Option<Vec<_>>>()?;
     Some(((start, end), points))
@@ -121,7 +118,9 @@ async fn kvv_stops() -> Vec<Stop> {
     let access_token = ACCESS_TOKEN.get().unwrap();
     let api_endpoint = API_ENDPOINT.get().unwrap();
     join_all(STOPS.keys().map(|&stop_id| async move {
-        let stops = trias::search_stops(stop_id.to_owned(), access_token.clone(), api_endpoint, 1).await.unwrap();
+        let stops = trias::search_stops(stop_id.to_owned(), access_token.clone(), api_endpoint, 1)
+            .await
+            .unwrap();
 
         let first_stop = stops.into_iter().next().unwrap();
         let stop_point = first_stop.stop_point;
@@ -132,7 +131,8 @@ async fn kvv_stops() -> Vec<Stop> {
             lat: position.latitude,
             lon: position.longitude,
         }
-    })).await
+    }))
+    .await
 }
 
 #[derive(Debug, Clone)]
@@ -173,8 +173,14 @@ pub fn get_times(call: &trias::response::CallAtStop) -> Option<Times> {
         .map(|service| service.estimated_time.unwrap_or(service.timetabled_time));
     match (arrival, departure) {
         (Some(arrival), Some(departure)) => Some(Times { arrival, departure }),
-        (Some(arrival), None) => Some(Times { arrival, departure: arrival + DEFAULT_WAIT_TIME }),
-        (None, Some(departure)) => Some(Times { arrival: departure - DEFAULT_WAIT_TIME, departure }),
+        (Some(arrival), None) => Some(Times {
+            arrival,
+            departure: arrival + DEFAULT_WAIT_TIME,
+        }),
+        (None, Some(departure)) => Some(Times {
+            arrival: departure - DEFAULT_WAIT_TIME,
+            departure,
+        }),
         (None, None) => {
             tracing::warn!("no departure or arrival time");
             None
@@ -194,7 +200,8 @@ pub async fn fetch_departures(stops: &[Stop]) -> LineDepartures {
                 .await
                 .map_err(|err| err.to_string())
         }
-    })).await;
+    }))
+    .await;
 
     let mut journeys = HashMap::new();
 
@@ -247,9 +254,7 @@ pub fn find_stop_by_kvv_id<'a>(id: &str, stops: &'a [Stop]) -> Option<&'a Stop> 
     // stop ids can have extra information at the end, e.g. "de:08212:3:01" which is not present in
     // the base id "de:08212:3". We want to match the base id.
     let id = format!("{}:", id);
-    stops
-        .iter()
-        .find(|stop| id.starts_with(&format!("{}:", stop.id)))
+    stops.iter().find(|stop| id.starts_with(&format!("{}:", stop.id)))
 }
 
 pub fn points_on_route(start_stop_id: &str, end_stop_id: &str, stops: &[Stop]) -> Vec<Point> {
@@ -330,15 +335,10 @@ pub async fn fetch_departures_for_region() -> LineDepartures {
     fetch_departures(stops).await
 }
 
-pub fn train_positions(
-    departures_per_line: &LineDepartures,
-    render_time: DateTime<Utc>,
-) -> Vec<Train> {
+pub fn train_positions(departures_per_line: &LineDepartures, render_time: DateTime<Utc>) -> Vec<Train> {
     let stops = KVV_STOPS.get().expect("KVV_STOPS not initialized");
     departures_per_line
         .iter()
-        .flat_map(|(journey_ref, departures)| {
-            train_position_per_route(render_time, journey_ref, departures, stops)
-        })
+        .flat_map(|(journey_ref, departures)| train_position_per_route(render_time, journey_ref, departures, stops))
         .collect()
 }

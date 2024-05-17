@@ -12,11 +12,7 @@ fn main() {
         .unwrap_or(project_dir.parent().unwrap().join("liberica"));
 
     for path in ["package.json", "src", "tsconfig.json", "index.html"] {
-        println!(
-            "cargo:rerun-if-changed={}/{}",
-            liberica_dir.to_string_lossy(),
-            path
-        );
+        println!("cargo:rerun-if-changed={}/{}", liberica_dir.to_string_lossy(), path);
     }
     println!("cargo:rerun-if-env-changed=BUILD_FRONTEND");
     if std::env::var("BUILD_FRONTEND").is_err() {
@@ -30,32 +26,32 @@ fn main() {
     // Change into the `liberica` directory
     env::set_current_dir(liberica_dir).unwrap();
 
-    // Run `npm install`
-    let npm_install = Command::new("npm")
+    // Run `bun install`
+    let bun_install = Command::new("bun")
         .arg("install")
         .output()
-        .expect("Failed to run `npm install`");
+        .expect("Failed to run `bun install`, is bun installed?");
 
-    // Check for errors in `npm install`
-    if !npm_install.status.success() {
+    // Check for errors in `bun install`
+    if !bun_install.status.success() {
         println!(
-            "cargo:warning=`npm install` failed: {}",
-            String::from_utf8_lossy(&npm_install.stderr).replace('\n', "\ncargo:warning="),
+            "cargo:warning=`bun install` failed: {}",
+            String::from_utf8_lossy(&bun_install.stderr).replace('\n', "\ncargo:warning="),
         );
     }
 
-    // Run `npm run build`
-    let npm_build = Command::new("npm")
+    // Run `bun run build`
+    let bun_build = Command::new("bun")
         .arg("run")
-        .arg("build:vite")
+        .arg("build")
         .output()
-        .expect("Failed to run `npm run build`");
+        .expect("Failed to run `bun run build`");
 
-    // Check for errors in `npm run build`
-    if !npm_build.status.success() {
+    // Check for errors in `bun run build`
+    if !bun_build.status.success() {
         println!(
-            "cargo:warning=`npm run build` failed: {}",
-            String::from_utf8_lossy(&npm_build.stderr).replace('\n', "\ncargo:warning="),
+            "cargo:warning=`bun run build` failed: {}",
+            String::from_utf8_lossy(&bun_build.stderr).replace('\n', "\ncargo:warning="),
         );
     }
 

@@ -19,10 +19,7 @@ impl Point {
 }
 
 pub fn interpolate_segment(points: &[Point], progress: f32) -> Option<Point> {
-    let total_length = points
-        .windows(2)
-        .map(|slice| slice[0].distance(slice[1]))
-        .sum::<f32>();
+    let total_length = points.windows(2).map(|slice| slice[0].distance(slice[1])).sum::<f32>();
     let length = progress * total_length;
 
     let mut current_length = 0.0;
