@@ -110,7 +110,9 @@ export function Map(
     const gs = useContext(GameStateContext);
     const [stops, setStops] = useState<Stop[]>([]);
     useEffect(() => {
-        getStops().then(setStops);
+        getStops()
+            .then(setStops)
+            .catch(() => console.warn("failed to get stops"));
     }, []);
 
     return (

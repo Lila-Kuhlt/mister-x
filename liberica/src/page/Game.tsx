@@ -3,10 +3,9 @@ import { createWebSocketConnection } from "lib/api";
 import { GameState, Team, Train } from "lib/bindings";
 import { WebSocketApi } from "lib/websockets";
 import { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { Navbar } from "components/Navbar";
+import { useLocation } from "react-router-dom";
+import { HomeButton, Navbar } from "components/Navbar";
 import { Button } from "components/InputElements";
-import { FaHome } from "react-icons/fa";
 import { useTranslation } from "react-i18next";
 
 export function Game() {
@@ -14,7 +13,6 @@ export function Game() {
     const [gs, setGameState] = useState<GameState>({ teams: [], trains: [] });
     const [embarkedTrain, setEmbarkedTrain] = useState<Train>();
     const team: Team = useLocation().state; // this is how Home passes the team
-    const navigate = useNavigate();
     const { t } = useTranslation();
 
     function disembark() {
@@ -70,8 +68,8 @@ export function Game() {
     }, [ws]);
 
     const Game = (
-        <GameStateContext.Provider value={gs}>
-            <div className="flex h-max w-max flex-col">
+        <div className="flex h-max w-max flex-col">
+            <GameStateContext.Provider value={gs}>
                 <Map
                     tileProps={{ updateInterval: 500 }}
                     containerProps={{ preferCanvas: true }}
@@ -88,24 +86,22 @@ export function Game() {
                     }}
                     onTrainClick={embark}
                 />
+            </GameStateContext.Provider>
 
-                <Navbar>
-                    <Button onClick={() => navigate("/")}>
-                        <FaHome />
-                    </Button>
+            <Navbar>
+                <HomeButton />
 
-                    {embarkedTrain && (
-                        <span>
-                            {embarkedTrain.line_name} {embarkedTrain.direction}
-                        </span>
-                    )}
+                {embarkedTrain && (
+                    <span>
+                        {embarkedTrain.line_name} {embarkedTrain.direction}
+                    </span>
+                )}
 
-                    <Button disabled={!embarkedTrain} onClick={disembark}>
-                        {t("Disembark")}
-                    </Button>
-                </Navbar>
-            </div>
-        </GameStateContext.Provider>
+                <Button disabled={!embarkedTrain} onClick={disembark}>
+                    {t("Disembark")}
+                </Button>
+            </Navbar>
+        </div>
     );
 
     const LandingPage = (
