@@ -20,11 +20,11 @@ export function Navbar(props: PropsWithChildren) {
 }
 
 export function HomeButton() {
-  const navigate = useNavigate();
+    const navigate = useNavigate();
 
-  return (
-    <Button onClick={() => navigate("/")}>
-      <FaHome />
-    </Button>
-  )
+    return (
+        <Button onClick={() => navigate("/")}>
+            <FaHome />
+        </Button>
+    );
 }

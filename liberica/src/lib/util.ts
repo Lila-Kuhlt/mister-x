@@ -19,5 +19,5 @@ export const getContrastingTextColor = (bg: string) => {
 };
 
 export const clamp = (x: number, min: number, max: number) => {
-  return Math.min(Math.max(x, min), max)
+    return Math.min(Math.max(x, min), max);
 };
