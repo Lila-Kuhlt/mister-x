@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::gadgets::{MrXGadget, DetectiveGadget};
+
 #[derive(specta::Type, Clone, Deserialize, Debug)]
 pub enum ClientMessage {
     Position { long: f32, lat: f32 },
@@ -10,22 +12,6 @@ pub enum ClientMessage {
     MrXGadget(MrXGadget),
     DetectiveGadget(DetectiveGadget),
     Message(String),
-}
-
-#[derive(specta::Type, Clone, Serialize, Deserialize, Debug)]
-pub enum MrXGadget {
-    AlternativeFacts { stop_id: String },
-    Midjourney { image: Vec<u8> },
-    NotFound,
-    Teleport,
-    Shifter,
-}
-
-#[derive(specta::Type, Clone, Serialize, Deserialize, Debug)]
-pub enum DetectiveGadget {
-    Stop { stop_id: String },
-    OutOfOrder,
-    Shackles,
 }
 
 #[derive(specta::Type, Clone, Serialize, Deserialize, Debug)]

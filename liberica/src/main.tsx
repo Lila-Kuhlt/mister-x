@@ -3,7 +3,7 @@ import { Game } from "page/Game";
 import { Home } from "page/Home";
 import { Replay } from "page/Replay";
 import { Admin } from "page/Admin";
-import { DetectiveGadgets } from "page/Gadgets";
+import { DetectiveGadgets } from "components/Gadgets";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import "style/main.css";
