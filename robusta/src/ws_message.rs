@@ -26,10 +26,13 @@ pub struct GameState {
     pub teams: Vec<TeamState>,
     pub trains: Vec<Train>,
     // in seconds
+    #[specta(optional)]
     pub position_cooldown: Option<f32>,
     // in seconds
+    #[specta(optional)]
     pub detective_gadget_cooldown: Option<f32>,
     // in seconds
+    #[specta(optional)]
     pub mr_x_gadget_cooldown: Option<f32>,
 }
 

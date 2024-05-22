@@ -13,9 +13,6 @@ export function Game() {
     const [gs, setGameState] = useState<GameState>({
         teams: [],
         trains: [],
-        position_cooldown: null,
-        mr_x_gadget_cooldown: null,
-        detective_gadget_cooldown: null,
     });
     const [embarkedTrain, setEmbarkedTrain] = useState<Train>();
     const team = useLocation().state as Team | undefined; // this is how Home passes the team
