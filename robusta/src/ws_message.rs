@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::gadgets::{MrXGadget, DetectiveGadget};
+use crate::gadgets::{DetectiveGadget, MrXGadget};
 
 #[derive(specta::Type, Clone, Deserialize, Debug)]
 pub enum ClientMessage {
@@ -25,6 +25,12 @@ pub enum ClientResponse {
 pub struct GameState {
     pub teams: Vec<TeamState>,
     pub trains: Vec<Train>,
+    // in seconds
+    pub position_cooldown: Option<f32>,
+    // in seconds
+    pub detective_gadget_cooldown: Option<f32>,
+    // in seconds
+    pub mr_x_gadget_cooldown: Option<f32>,
 }
 
 #[derive(specta::Type, Default, Clone, Serialize, Deserialize, Debug)]

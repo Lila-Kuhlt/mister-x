@@ -22,6 +22,7 @@ pub enum DetectiveGadget {
 #[derive(Debug)]
 pub struct GadgetState<T> {
     can_be_used: bool,
+    cooldown: Option<f32>,
     used: HashSet<mem::Discriminant<T>>,
 }
 
@@ -29,13 +30,29 @@ impl<T> GadgetState<T> {
     pub fn new() -> Self {
         Self {
             can_be_used: false,
+            cooldown: None,
             used: HashSet::new(),
         }
     }
 
-    pub fn try_use(&mut self, gadget: &T) -> bool {
-        if self.can_be_used && self.used.insert(mem::discriminant(gadget)) {
+    pub fn update_time(&mut self, delta: f32) {
+        if let Some(cooldown) = self.cooldown.as_mut() {
+            *cooldown -= delta;
+            if *cooldown < 0.0 {
+                self.can_be_used = true;
+                self.cooldown = None;
+            }
+        }
+    }
+
+    pub fn remaining(&self) -> Option<f32> {
+        self.cooldown
+    }
+
+    pub fn try_use(&mut self, gadget: &T, cooldown: f32) -> bool {
+        if self.can_be_used && self.cooldown.is_none() && self.used.insert(mem::discriminant(gadget)) {
             self.can_be_used = false;
+            self.cooldown = Some(cooldown);
             true
         } else {
             false

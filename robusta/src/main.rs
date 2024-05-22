@@ -18,6 +18,7 @@ use axum::{
 use futures_util::SinkExt;
 use reqwest::StatusCode;
 use tokio::sync::mpsc::{Receiver, Sender};
+use tokio::time::Instant;
 use tower::util::ServiceExt;
 use tower_http::{
     cors::CorsLayer,
@@ -26,7 +27,7 @@ use tower_http::{
 use tracing::{error, info, warn, Level};
 use tracing_appender::rolling::{self, Rotation};
 
-use crate::gadgets::{GadgetState, DetectiveGadget, MrXGadget};
+use crate::gadgets::{DetectiveGadget, GadgetState, MrXGadget};
 use crate::kvv::LineDepartures;
 use crate::unique_id::UniqueIdGen;
 use crate::ws_message::{ClientMessage, ClientResponse, GameState, Team, TeamKind, TeamState};
@@ -42,8 +43,8 @@ const TEAMS_FILE: &str = "teams.json";
 /// The name used for the Mr. X team.
 const MRX: &str = "Mr. X";
 
-/// The interval between position broadcasts and gadgets uses (10 min).
-const COOLDOWN: Duration = Duration::from_secs(600);
+/// The interval between position broadcasts and gadgets uses in seconds (10 min).
+const COOLDOWN: f32 = 600.0;
 
 #[derive(Debug)]
 enum InputMessage {
@@ -78,8 +79,6 @@ struct AppState {
     pub connections: Vec<ClientConnection>,
     pub client_id_gen: UniqueIdGen,
     pub team_id_gen: UniqueIdGen,
-    pub mr_x_gadgets: GadgetState<MrXGadget>,
-    pub detective_gadgets: GadgetState<DetectiveGadget>,
 }
 
 impl AppState {
@@ -90,8 +89,6 @@ impl AppState {
             connections: Vec::new(),
             client_id_gen: UniqueIdGen::new(),
             team_id_gen: UniqueIdGen::new(),
-            mr_x_gadgets: GadgetState::new(),
-            detective_gadgets: GadgetState::new(),
         }
     }
 
@@ -377,7 +374,7 @@ enum SpecialPos {
     NotFound,
 }
 
-async fn run_game_loop(mut recv: Receiver<InputMessage>, shared_state: SharedState) {
+async fn run_game_loop(mut recv: Receiver<InputMessage>, state: SharedState) {
     let mut departures = HashMap::new();
     let mut log_file = rolling::Builder::new()
         .rotation(Rotation::DAILY)
@@ -387,16 +384,48 @@ async fn run_game_loop(mut recv: Receiver<InputMessage>, shared_state: SharedSta
         .build("logs")
         .expect("failed to initialize rolling file appender");
 
-    let send_pos = start_game(Arc::clone(&shared_state)).await;
+    let mut special_pos = None;
 
     // the time for a single frame
-    let mut interval = tokio::time::interval(Duration::from_millis(500));
+    let mut interval = tokio::time::interval(Duration::from_millis(100));
 
+    let mut time = Instant::now();
+    let mut position_cooldown = None;
+    let mut mr_x_gadgets = GadgetState::new();
+    let mut detective_gadgets = GadgetState::new();
     loop {
         interval.tick().await;
 
+        let old_time = time;
+        time = Instant::now();
+        let delta = (time - old_time).as_secs_f32();
+        if let Some(cooldown) = position_cooldown.as_mut() {
+            *cooldown -= delta;
+            if *cooldown < 0.0 {
+                position_cooldown = Some(COOLDOWN);
+                // broadcast Mr. X position
+                match special_pos {
+                    Some(SpecialPos::Stop(stop_id)) => {
+                        // TODO: broadcast stop id
+                    }
+                    Some(SpecialPos::Image(image)) => {
+                        // TODO: broadcast image
+                    }
+                    Some(SpecialPos::NotFound) => {
+                        // TODO: broadcast 404
+                    }
+                    None => {
+                        // TODO: broadcast Mr. X position
+                    }
+                }
+                special_pos = None;
+            }
+        }
+        mr_x_gadgets.update_time(delta);
+        detective_gadgets.update_time(delta);
+
         // handle messages
-        let mut state = shared_state.lock().await;
+        let mut state = state.lock().await;
         while let Ok(msg) = recv.try_recv() {
             match msg {
                 InputMessage::Client(msg, id) => {
@@ -437,45 +466,41 @@ async fn run_game_loop(mut recv: Receiver<InputMessage>, shared_state: SharedSta
                         ClientMessage::MrXGadget(gadget) => {
                             use MrXGadget::*;
 
-                            if state.team_by_client_id(id).map(|ts| ts.team.kind != TeamKind::MrX).unwrap_or(true) {
+                            if state
+                                .team_by_client_id(id)
+                                .map(|ts| ts.team.kind != TeamKind::MrX)
+                                .unwrap_or(true)
+                            {
                                 warn!("Client {} tried to use MrX Gadget, but is not MrX", id);
                                 continue;
                             }
-                            if state.mr_x_gadgets.try_use(&gadget) {
-                                let state = Arc::clone(&shared_state);
-                                tokio::spawn(async move {
-                                    tokio::time::sleep(COOLDOWN).await;
-                                    state.lock().await.mr_x_gadgets.allow_use();
-                                });
-                            } else {
+                            if !mr_x_gadgets.try_use(&gadget, COOLDOWN) {
                                 warn!("Client {} tried to use MrX Gadget, but is not allowed to", id);
                                 continue;
                             }
 
                             match &gadget {
                                 AlternativeFacts { stop_id } => {
-                                    if send_pos.send(SpecialPos::Stop(stop_id.clone())).await.is_err() {
-                                        error!("special position channel closed");
-                                    }
+                                    special_pos = Some(SpecialPos::Stop(stop_id.clone()));
                                     continue;
                                 }
                                 Midjourney { image } => {
-                                    if send_pos.send(SpecialPos::Image(image.clone())).await.is_err() {
-                                        error!("special position channel closed");
-                                    }
-                                    continue;
+                                    special_pos = Some(SpecialPos::Image(image.clone()));
                                 }
                                 NotFound => {
-                                    if send_pos.send(SpecialPos::NotFound).await.is_err() {
-                                        error!("special position channel closed");
-                                    }
+                                    special_pos = Some(SpecialPos::NotFound);
                                     continue;
                                 }
                                 Teleport => {}
                                 Shifter => {}
                             }
                             for connection in state.connections.iter_mut() {
-                                if connection.send.send(ClientResponse::MrXGadget(gadget.clone())).await.is_err() {
+                                if connection
+                                    .send
+                                    .send(ClientResponse::MrXGadget(gadget.clone()))
+                                    .await
+                                    .is_err()
+                                {
                                     continue;
                                 }
                             }
@@ -483,17 +508,15 @@ async fn run_game_loop(mut recv: Receiver<InputMessage>, shared_state: SharedSta
                         ClientMessage::DetectiveGadget(gadget) => {
                             use DetectiveGadget::*;
 
-                            if state.team_by_client_id(id).map(|ts| ts.team.kind != TeamKind::Detective).unwrap_or(true) {
+                            if state
+                                .team_by_client_id(id)
+                                .map(|ts| ts.team.kind != TeamKind::Detective)
+                                .unwrap_or(true)
+                            {
                                 warn!("Client {} tried to use Detective Gadget, but is not Detective", id);
                                 continue;
                             }
-                            if state.detective_gadgets.try_use(&gadget) {
-                                let state = Arc::clone(&shared_state);
-                                tokio::spawn(async move {
-                                    tokio::time::sleep(COOLDOWN).await;
-                                    state.lock().await.detective_gadgets.allow_use();
-                                });
-                            } else {
+                            if !detective_gadgets.try_use(&gadget, COOLDOWN) {
                                 warn!("Client {} tried to use Detective Gadget, but is not allowed to", id);
                                 continue;
                             }
@@ -501,14 +524,19 @@ async fn run_game_loop(mut recv: Receiver<InputMessage>, shared_state: SharedSta
                             match &gadget {
                                 Stop { stop_id } => {
                                     // TODO: mark stop as blocked for the next 20 mins
-                                },
+                                }
                                 OutOfOrder => {
                                     // TODO: immediately broadcast Mr. X position
-                                },
+                                }
                                 Shackles => {}
                             }
                             for connection in state.connections.iter_mut() {
-                                if connection.send.send(ClientResponse::DetectiveGadget(gadget.clone())).await.is_err() {
+                                if connection
+                                    .send
+                                    .send(ClientResponse::DetectiveGadget(gadget.clone()))
+                                    .await
+                                    .is_err()
+                                {
                                     continue;
                                 }
                             }
@@ -544,6 +572,9 @@ async fn run_game_loop(mut recv: Receiver<InputMessage>, shared_state: SharedSta
         let game_state = GameState {
             teams: state.teams.clone(),
             trains,
+            position_cooldown,
+            mr_x_gadget_cooldown: mr_x_gadgets.remaining(),
+            detective_gadget_cooldown: detective_gadgets.remaining(),
         };
         writeln!(
             log_file,
@@ -564,6 +595,9 @@ async fn run_game_loop(mut recv: Receiver<InputMessage>, shared_state: SharedSta
                     .cloned()
                     .collect(),
                 trains: game_state.trains.clone(),
+                position_cooldown: game_state.position_cooldown,
+                mr_x_gadget_cooldown: game_state.mr_x_gadget_cooldown,
+                detective_gadget_cooldown: game_state.detective_gadget_cooldown,
             };
             if let Err(err) = connection
                 .send
@@ -575,43 +609,4 @@ async fn run_game_loop(mut recv: Receiver<InputMessage>, shared_state: SharedSta
             }
         }
     }
-}
-
-async fn start_game(state: SharedState) -> Sender<SpecialPos> {
-    let (send_pos, mut recv_pos) = tokio::sync::mpsc::channel(1);
-
-    tokio::spawn(async move {
-        let mut interval = tokio::time::interval(COOLDOWN);
-        interval.tick().await;
-        // TODO: broadcast Mr. X start
-        interval.tick().await;
-        {
-            let mut state = state.lock().await;
-            state.mr_x_gadgets.allow_use();
-            state.detective_gadgets.allow_use();
-        }
-        // TODO: broadcast Detective start
-        loop {
-            use SpecialPos::*;
-
-            interval.tick().await;
-            // broadcast Mr. X position
-            match recv_pos.try_recv() {
-                Ok(Stop(stop_id)) => {
-                    // TODO: broadcast stop id
-                }
-                Ok(Image(image)) => {
-                    // TODO: broadcast image
-                }
-                Ok(NotFound) => {
-                    // TODO: broadcast 404
-                }
-                Err(_) => {
-                    // TODO: broadcast Mr. X position
-                }
-            }
-        }
-    });
-
-    send_pos
 }
