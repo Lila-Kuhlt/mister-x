@@ -384,45 +384,14 @@ async fn run_game_loop(mut recv: Receiver<InputMessage>, state: SharedState) {
         .build("logs")
         .expect("failed to initialize rolling file appender");
 
-    let mut special_pos = None;
-
     // the time for a single frame
-    let mut interval = tokio::time::interval(Duration::from_millis(100));
+    let mut interval = tokio::time::interval(Duration::from_millis(500));
 
-    let mut time = Instant::now();
-    let mut position_cooldown = None;
-    let mut mr_x_gadgets = GadgetState::new();
-    let mut detective_gadgets = GadgetState::new();
+    let running_state = Arc::new(tokio::sync::Mutex::new(RunningState::new()));
+    start_game(Arc::clone(&running_state)).await;
+
     loop {
         interval.tick().await;
-
-        let old_time = time;
-        time = Instant::now();
-        let delta = (time - old_time).as_secs_f32();
-        if let Some(cooldown) = position_cooldown.as_mut() {
-            *cooldown -= delta;
-            if *cooldown < 0.0 {
-                position_cooldown = Some(COOLDOWN);
-                // broadcast Mr. X position
-                match special_pos {
-                    Some(SpecialPos::Stop(stop_id)) => {
-                        // TODO: broadcast stop id
-                    }
-                    Some(SpecialPos::Image(image)) => {
-                        // TODO: broadcast image
-                    }
-                    Some(SpecialPos::NotFound) => {
-                        // TODO: broadcast 404
-                    }
-                    None => {
-                        // TODO: broadcast Mr. X position
-                    }
-                }
-                special_pos = None;
-            }
-        }
-        mr_x_gadgets.update_time(delta);
-        detective_gadgets.update_time(delta);
 
         // handle messages
         let mut state = state.lock().await;
@@ -474,21 +443,22 @@ async fn run_game_loop(mut recv: Receiver<InputMessage>, state: SharedState) {
                                 warn!("Client {} tried to use MrX Gadget, but is not MrX", id);
                                 continue;
                             }
-                            if !mr_x_gadgets.try_use(&gadget, COOLDOWN) {
+                            let mut running_state = running_state.lock().await;
+                            if !running_state.mr_x_gadgets.try_use(&gadget, COOLDOWN) {
                                 warn!("Client {} tried to use MrX Gadget, but is not allowed to", id);
                                 continue;
                             }
 
                             match &gadget {
                                 AlternativeFacts { stop_id } => {
-                                    special_pos = Some(SpecialPos::Stop(stop_id.clone()));
+                                    running_state.special_pos = Some(SpecialPos::Stop(stop_id.clone()));
                                     continue;
                                 }
                                 Midjourney { image } => {
-                                    special_pos = Some(SpecialPos::Image(image.clone()));
+                                    running_state.special_pos = Some(SpecialPos::Image(image.clone()));
                                 }
                                 NotFound => {
-                                    special_pos = Some(SpecialPos::NotFound);
+                                    running_state.special_pos = Some(SpecialPos::NotFound);
                                     continue;
                                 }
                                 Teleport => {}
@@ -516,7 +486,8 @@ async fn run_game_loop(mut recv: Receiver<InputMessage>, state: SharedState) {
                                 warn!("Client {} tried to use Detective Gadget, but is not Detective", id);
                                 continue;
                             }
-                            if !detective_gadgets.try_use(&gadget, COOLDOWN) {
+                            let mut running_state = running_state.lock().await;
+                            if !running_state.detective_gadgets.try_use(&gadget, COOLDOWN) {
                                 warn!("Client {} tried to use Detective Gadget, but is not allowed to", id);
                                 continue;
                             }
@@ -569,12 +540,15 @@ async fn run_game_loop(mut recv: Receiver<InputMessage>, state: SharedState) {
         }
 
         // log game state
-        let game_state = GameState {
-            teams: state.teams.clone(),
-            trains,
-            position_cooldown,
-            mr_x_gadget_cooldown: mr_x_gadgets.remaining(),
-            detective_gadget_cooldown: detective_gadgets.remaining(),
+        let game_state = {
+            let running_state = running_state.lock().await;
+            GameState {
+                teams: state.teams.clone(),
+                trains,
+                position_cooldown: running_state.position_cooldown,
+                mr_x_gadget_cooldown: running_state.mr_x_gadgets.remaining(),
+                detective_gadget_cooldown: running_state.detective_gadgets.remaining(),
+            }
         };
         writeln!(
             log_file,
@@ -609,4 +583,70 @@ async fn run_game_loop(mut recv: Receiver<InputMessage>, state: SharedState) {
             }
         }
     }
+}
+
+struct RunningState {
+    position_cooldown: Option<f32>,
+    mr_x_gadgets: GadgetState<MrXGadget>,
+    detective_gadgets: GadgetState<DetectiveGadget>,
+    special_pos: Option<SpecialPos>,
+}
+
+impl RunningState {
+    fn new() -> Self {
+        Self {
+            position_cooldown: None,
+            mr_x_gadgets: GadgetState::new(),
+            detective_gadgets: GadgetState::new(),
+            special_pos: None,
+        }
+    }
+}
+
+async fn start_game(state: Arc<tokio::sync::Mutex<RunningState>>) {
+    tokio::spawn(async move {
+        let mut warmup = true;
+
+        let mut time = Instant::now();
+        let mut interval = tokio::time::interval(Duration::from_millis(100));
+        loop {
+            interval.tick().await;
+            let mut state = state.lock().await;
+
+            let old_time = time;
+            time = Instant::now();
+            let delta = (time - old_time).as_secs_f32();
+            if let Some(cooldown) = state.position_cooldown.as_mut() {
+                *cooldown -= delta;
+                if *cooldown < 0.0 {
+                    state.position_cooldown = Some(COOLDOWN);
+                    if warmup {
+                        // TODO: broadcast Detective start
+                        warmup = false;
+                        state.mr_x_gadgets.allow_use();
+                        state.detective_gadgets.allow_use();
+                    } else {
+                        // broadcast Mr. X position
+                        match &state.special_pos {
+                            Some(SpecialPos::Stop(stop_id)) => {
+                                // TODO: broadcast stop id
+                            }
+                            Some(SpecialPos::Image(image)) => {
+                                // TODO: broadcast image
+                            }
+                            Some(SpecialPos::NotFound) => {
+                                // TODO: broadcast 404
+                            }
+                            None => {
+                                // TODO: broadcast Mr. X position
+                            }
+                        }
+                        state.special_pos = None;
+                    }
+                }
+            }
+            state.mr_x_gadgets.update_time(delta);
+            state.detective_gadgets.update_time(delta);
+        }
+    });
 }
