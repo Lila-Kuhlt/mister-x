@@ -38,4 +38,11 @@ export default [
 
     ...tseslint.configs.strictTypeChecked, // strict is a superset of recommended
     ...tseslint.configs.stylistic,
+
+
+    {
+        rules: {
+            "@typescript-eslint/no-confusing-void-expression": "off"
+        }
+    }
 ];
