@@ -1,7 +1,7 @@
 use chrono::{DateTime, Utc};
 use futures_util::future::join_all;
 use lazy_static::lazy_static;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use std::collections::HashMap;
 use std::sync::OnceLock;
@@ -16,7 +16,7 @@ use crate::ws_message::Train;
 const DEFAULT_WAIT_TIME: Duration = Duration::from_secs(30);
 
 /// Information about a tram station.
-#[derive(Debug, Serialize, specta::Type, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, specta::Type, Clone, PartialEq)]
 pub struct Stop {
     /// human readable stop name
     pub name: String,

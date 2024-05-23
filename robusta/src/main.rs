@@ -16,6 +16,7 @@ use axum::{
     Json, Router,
 };
 use futures_util::SinkExt;
+use point::Point;
 use reqwest::StatusCode;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::time::Instant;
@@ -26,6 +27,7 @@ use tower_http::{
 };
 use tracing::{error, info, warn, Level};
 use tracing_appender::rolling::{self, Rotation};
+use ws_message::MrXPosition;
 
 use crate::gadgets::{DetectiveGadget, GadgetState, MrXGadget};
 use crate::kvv::LineDepartures;
@@ -388,7 +390,7 @@ async fn run_game_loop(mut recv: Receiver<InputMessage>, state: SharedState) {
     let mut interval = tokio::time::interval(Duration::from_millis(500));
 
     let running_state = Arc::new(tokio::sync::Mutex::new(RunningState::new()));
-    start_game(Arc::clone(&running_state)).await;
+    start_game(Arc::clone(&state), Arc::clone(&running_state)).await;
 
     loop {
         interval.tick().await;
@@ -603,7 +605,7 @@ impl RunningState {
     }
 }
 
-async fn start_game(state: Arc<tokio::sync::Mutex<RunningState>>) {
+async fn start_game(state: SharedState, running_state: Arc<tokio::sync::Mutex<RunningState>>) {
     tokio::spawn(async move {
         let mut warmup = true;
 
@@ -611,42 +613,54 @@ async fn start_game(state: Arc<tokio::sync::Mutex<RunningState>>) {
         let mut interval = tokio::time::interval(Duration::from_millis(100));
         loop {
             interval.tick().await;
-            let mut state = state.lock().await;
+            let mut running_state = running_state.lock().await;
 
             let old_time = time;
             time = Instant::now();
             let delta = (time - old_time).as_secs_f32();
-            if let Some(cooldown) = state.position_cooldown.as_mut() {
+            if let Some(cooldown) = running_state.position_cooldown.as_mut() {
                 *cooldown -= delta;
                 if *cooldown < 0.0 {
-                    state.position_cooldown = Some(COOLDOWN);
+                    running_state.position_cooldown = Some(COOLDOWN);
                     if warmup {
                         // TODO: broadcast Detective start
                         warmup = false;
-                        state.mr_x_gadgets.allow_use();
-                        state.detective_gadgets.allow_use();
+                        running_state.mr_x_gadgets.allow_use();
+                        running_state.detective_gadgets.allow_use();
                     } else {
                         // broadcast Mr. X position
-                        match &state.special_pos {
+                        let mut state = state.lock().await;
+                        let position = match running_state.special_pos.take() {
                             Some(SpecialPos::Stop(stop_id)) => {
-                                // TODO: broadcast stop id
+                                MrXPosition::Stop(stop_id)
                             }
                             Some(SpecialPos::Image(image)) => {
-                                // TODO: broadcast image
+                                MrXPosition::Image(image)
                             }
                             Some(SpecialPos::NotFound) => {
-                                // TODO: broadcast 404
+                                MrXPosition::NotFound
                             }
                             None => {
-                                // TODO: broadcast Mr. X position
+                                let mr_x = state.teams.iter().find(|ts| ts.team.kind == TeamKind::MrX).expect("no Mr. X");
+                                let stop = kvv::nearest_stop(Point { latitude: mr_x.lat, longitude: mr_x.long });
+                                MrXPosition::Stop(stop.id.clone())
+                            }
+                        };
+                        for connection in state.connections.iter_mut() {
+                            if let Err(err) = connection
+                                .send
+                                .send(ClientResponse::MrXPosition(position.clone()))
+                                .await
+                            {
+                                error!("failed to send Mr. X position to client {}: {}", connection.id, err);
+                                continue;
                             }
                         }
-                        state.special_pos = None;
                     }
                 }
             }
-            state.mr_x_gadgets.update_time(delta);
-            state.detective_gadgets.update_time(delta);
+            running_state.mr_x_gadgets.update_time(delta);
+            running_state.detective_gadgets.update_time(delta);
         }
     });
 }
