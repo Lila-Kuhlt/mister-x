@@ -1,4 +1,4 @@
-import { ClientMessage, ServerMessage } from "lib/bindings";
+import { ClientMessage, ClientResponse } from "lib/bindings";
 
 export type Keys<T> = T extends T ? keyof T : never;
 export type Concrete<T, K extends Keys<T>> = T extends { [P in K]: infer V }
@@ -36,7 +36,7 @@ export class WebSocketApi {
     private connection!: WebSocket;
     private endpoint!: string;
 
-    private handlers: WSHandlerMap<ServerMessage> = {};
+    private handlers: WSHandlerMap<ClientResponse> = {};
     private metaHandlers: WSHandlerMap<WSEvent> = {};
 
     constructor(endpoint: string) {
@@ -66,9 +66,9 @@ export class WebSocketApi {
         };
     }
 
-    private parseMsg(msg: string): ServerMessage | undefined {
+    private parseMsg(msg: string): ClientResponse | undefined {
         try {
-            const json = JSON.parse(msg) as ServerMessage;
+            const json = JSON.parse(msg) as ClientResponse;
             return json;
         } catch (e) {
             this.metaHandlers.Error?.(e as Event);
@@ -76,21 +76,21 @@ export class WebSocketApi {
         }
     }
 
-    private handleMessage(msg: ServerMessage) {
+    private handleMessage(msg: ClientResponse) {
         this.lastMessage = new Date();
         for (const key in msg) {
-            const handler = key as Keys<ServerMessage>;
+            const handler = key as Keys<ClientResponse>;
             if (!this.handlers[handler])
                 console.warn(
                     "No message handler found for message type " + handler,
                 );
-            this.handlers[handler]?.(msg[key as keyof ServerMessage]);
+            this.handlers[handler]?.(msg[key as keyof ClientResponse]);
         }
     }
 
-    public register<T extends Keys<ServerMessage>>(
+    public register<T extends Keys<ClientResponse>>(
         type: T,
-        handler: WSHandlerMap<ServerMessage>[T],
+        handler: WSHandlerMap<ClientResponse>[T],
     ): this {
         this.handlers[type] = handler;
         return this;

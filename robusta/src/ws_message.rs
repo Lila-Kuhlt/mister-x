@@ -11,7 +11,7 @@ pub enum ClientMessage {
 }
 
 #[derive(specta::Type, Clone, Serialize, Deserialize, Debug)]
-pub enum ServerMessage {
+pub enum ClientResponse {
     GameState(GameState),
 }
 
