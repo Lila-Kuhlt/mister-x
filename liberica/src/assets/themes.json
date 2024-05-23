@@ -1,0 +1,11 @@
+{
+    "Lila Pause Muted": {
+        "text-bright":"#150d19",
+        "text-dark": "#f6f2f8",
+        "surface": "#f6f2f8",
+        "primary": "#925ea5",
+        "secondary": "#c397d1",
+        "accent": "#bf80a4"
+    },
+    
+}
