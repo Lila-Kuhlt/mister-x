@@ -43,6 +43,8 @@ pub struct GameState {
     // in seconds
     #[specta(optional)]
     pub mr_x_gadget_cooldown: Option<f32>,
+    #[specta(optional)]
+    pub blocked_stop: Option<String>,
 }
 
 #[derive(specta::Type, Default, Clone, Serialize, Deserialize, Debug)]

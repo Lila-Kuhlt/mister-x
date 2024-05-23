@@ -466,16 +466,7 @@ async fn run_game_loop(mut recv: Receiver<InputMessage>, state: SharedState) {
                                 Teleport => {}
                                 Shifter => {}
                             }
-                            for connection in state.connections.iter_mut() {
-                                if connection
-                                    .send
-                                    .send(ClientResponse::MrXGadget(gadget.clone()))
-                                    .await
-                                    .is_err()
-                                {
-                                    continue;
-                                }
-                            }
+                            broadcast(&state.connections, ClientResponse::MrXGadget(gadget)).await;
                         }
                         ClientMessage::DetectiveGadget(gadget) => {
                             use DetectiveGadget::*;
@@ -488,30 +479,29 @@ async fn run_game_loop(mut recv: Receiver<InputMessage>, state: SharedState) {
                                 warn!("Client {} tried to use Detective Gadget, but is not Detective", id);
                                 continue;
                             }
+                            let running_state_arc = &running_state;
                             let mut running_state = running_state.lock().await;
                             if !running_state.detective_gadgets.try_use(&gadget, COOLDOWN) {
                                 warn!("Client {} tried to use Detective Gadget, but is not allowed to", id);
                                 continue;
                             }
 
-                            match &gadget {
+                            broadcast(&state.connections, ClientResponse::DetectiveGadget(gadget.clone())).await;
+                            match gadget {
                                 Stop { stop_id } => {
-                                    // TODO: mark stop as blocked for the next 20 mins
+                                    running_state.blocked_stop = Some(stop_id);
+                                    let running_state = Arc::clone(&running_state_arc);
+                                    tokio::spawn(async move {
+                                        tokio::time::sleep(Duration::from_secs_f32(2.0 * COOLDOWN)).await;
+                                        running_state.lock().await.blocked_stop = None;
+                                    });
                                 }
                                 OutOfOrder => {
-                                    // TODO: immediately broadcast Mr. X position
+                                    let mr_x = state.teams.iter().find(|ts| ts.team.kind == TeamKind::MrX).expect("no Mr. X");
+                                    let stop = kvv::nearest_stop(Point { latitude: mr_x.lat, longitude: mr_x.long });
+                                    broadcast(&state.connections, ClientResponse::MrXPosition(MrXPosition::Stop(stop.id.clone()))).await;
                                 }
                                 Shackles => {}
-                            }
-                            for connection in state.connections.iter_mut() {
-                                if connection
-                                    .send
-                                    .send(ClientResponse::DetectiveGadget(gadget.clone()))
-                                    .await
-                                    .is_err()
-                                {
-                                    continue;
-                                }
                             }
                         }
                     }
@@ -550,6 +540,7 @@ async fn run_game_loop(mut recv: Receiver<InputMessage>, state: SharedState) {
                 position_cooldown: running_state.position_cooldown,
                 mr_x_gadget_cooldown: running_state.mr_x_gadgets.remaining(),
                 detective_gadget_cooldown: running_state.detective_gadgets.remaining(),
+                blocked_stop: running_state.blocked_stop.clone(),
             }
         };
         writeln!(
@@ -574,10 +565,11 @@ async fn run_game_loop(mut recv: Receiver<InputMessage>, state: SharedState) {
                 position_cooldown: game_state.position_cooldown,
                 mr_x_gadget_cooldown: game_state.mr_x_gadget_cooldown,
                 detective_gadget_cooldown: game_state.detective_gadget_cooldown,
+                blocked_stop: game_state.blocked_stop.clone(),
             };
             if let Err(err) = connection
                 .send
-                .send(ClientResponse::GameState(game_state.clone()))
+                .send(ClientResponse::GameState(game_state))
                 .await
             {
                 error!("failed to send game state to client {}: {}", connection.id, err);
@@ -587,11 +579,26 @@ async fn run_game_loop(mut recv: Receiver<InputMessage>, state: SharedState) {
     }
 }
 
+async fn broadcast(connections: &[ClientConnection], message: ClientResponse) {
+    for connection in connections.iter() {
+        if let Err(err) = connection.send.send(message.clone()).await {
+            let message_type = match message {
+                ClientResponse::GameState(_) => "game state",
+                ClientResponse::MrXPosition(_) => "Mr. X position",
+                ClientResponse::MrXGadget(_) => "Mr. X gadget",
+                ClientResponse::DetectiveGadget(_) => "Detective gadget",
+            };
+            error!("failed to send {} to client {}: {}", message_type, connection.id, err);
+        }
+    }
+}
+
 struct RunningState {
     position_cooldown: Option<f32>,
     mr_x_gadgets: GadgetState<MrXGadget>,
     detective_gadgets: GadgetState<DetectiveGadget>,
     special_pos: Option<SpecialPos>,
+    blocked_stop: Option<String>,
 }
 
 impl RunningState {
@@ -601,6 +608,7 @@ impl RunningState {
             mr_x_gadgets: GadgetState::new(),
             detective_gadgets: GadgetState::new(),
             special_pos: None,
+            blocked_stop: None,
         }
     }
 }
@@ -629,7 +637,7 @@ async fn start_game(state: SharedState, running_state: Arc<tokio::sync::Mutex<Ru
                         running_state.detective_gadgets.allow_use();
                     } else {
                         // broadcast Mr. X position
-                        let mut state = state.lock().await;
+                        let state = state.lock().await;
                         let position = match running_state.special_pos.take() {
                             Some(SpecialPos::Stop(stop_id)) => {
                                 MrXPosition::Stop(stop_id)
@@ -646,16 +654,7 @@ async fn start_game(state: SharedState, running_state: Arc<tokio::sync::Mutex<Ru
                                 MrXPosition::Stop(stop.id.clone())
                             }
                         };
-                        for connection in state.connections.iter_mut() {
-                            if let Err(err) = connection
-                                .send
-                                .send(ClientResponse::MrXPosition(position.clone()))
-                                .await
-                            {
-                                error!("failed to send Mr. X position to client {}: {}", connection.id, err);
-                                continue;
-                            }
-                        }
+                        broadcast(&state.connections, ClientResponse::MrXPosition(position)).await;
                     }
                 }
             }
