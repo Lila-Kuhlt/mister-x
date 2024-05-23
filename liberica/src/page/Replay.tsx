@@ -183,19 +183,18 @@ export function Replay() {
                             if (file.size >= max_replay_size) {
                                 alert(t("ReplayTooBig"));
                             }
-                            file.text().then((data) => {
-                                try {
+                            file.text()
+                                .then((data) => {
                                     const state = parseCSV(data);
                                     if (state.length > 0) {
                                         startReplay(state);
                                     }
-                                } catch (e) {
-                                    alert(t("FailedParseReplay"));
+                                })
+                                .catch(() =>
                                     console.error(
-                                        `failed to parse replay file: ${e}`,
-                                    );
-                                }
-                            });
+                                        `failed to parse replay file`,
+                                    ),
+                                );
                         }
                         // invalid replay file
                         reset();

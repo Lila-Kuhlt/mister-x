@@ -60,6 +60,7 @@ export class WebSocketApi {
         this.connection.onclose = (e) => this.metaHandlers["Disconnect"]?.(e);
         this.connection.onopen = () => this.metaHandlers["Connect"]?.();
         this.connection.onmessage = (e) => {
+            if (typeof e.data !== "string") return;
             const res = this.parseMsg(e.data);
             if (res) this.handleMessage(res);
         };
