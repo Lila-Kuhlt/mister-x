@@ -3,7 +3,7 @@ name: CI
 on:
   - pull_request
   - push
-      
+
 env:
   CARGO_TERM_COLOR: always
 
@@ -14,12 +14,12 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
-        
+
       - uses: actions/cache@v3
         with:
           path: target
           key: ${{ runner.os }}-robusta-mister-x
-          
+
       - name: 🔬 Rust fmt
         run: cargo fmt --check --all
 
@@ -30,20 +30,20 @@ jobs:
   liberica:
     name: ⚡ liberica Check
     runs-on: ubuntu-latest
-    
+
     defaults:
       run:
         working-directory: liberica
-        
+
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
-        
+
       - uses: actions/cache@v3
         with:
           path: liberica/node_modules
           key: ${{ runner.os }}-liberica-mister-x
-        
+
       - name: 🚧 Setup bun
         uses: oven-sh/setup-bun@v1
 

@@ -14,11 +14,12 @@ export const TextInput = ({
             placeholder="Lila Pause"
             onChange={(e) => {
                 const fn = {
-                    end: String.prototype.trimEnd,
-                    start: String.prototype.trimStart,
-                    all: String.prototype.trim,
+                    end: (s: string) => s.trimEnd(),
+                    start: (s: string) => s.trimStart(),
+                    all: (s: string) => s.trim(),
                 };
-                const value = trim && fn[trim].call(e.target.value);
+
+                const value = trim && fn[trim](e.target.value);
                 onTextChange(value || e.target.value);
             }}
             {...props}

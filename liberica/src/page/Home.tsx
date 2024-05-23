@@ -13,14 +13,15 @@ export function Home() {
     const { t } = useTranslation();
 
     useEffect(() => {
-        const updateTeams = () => getTeams().then(setTeams);
+        const updateTeams = () => void getTeams().then(setTeams);
 
         updateTeams();
+
         const interval = setInterval(updateTeams, 500);
         return () => clearInterval(interval);
     }, []);
 
-    const process = async () => {
+    const process = () => {
         if (selected === undefined) {
             return;
         }

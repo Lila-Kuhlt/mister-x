@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import { Team, Stop, CreateTeam } from "lib/bindings";
 import { WebSocketApi } from "./websockets";
 
@@ -62,10 +62,10 @@ export const postCreateTeam = (team: CreateTeam): Promise<Team> =>
     AXIOS.post(ENDPOINTS.POST_CREATE_TEAM, team);
 
 export const getTeams = (): Promise<Team[]> =>
-    AXIOS.get(ENDPOINTS.GET_TEAMS).then((data) => data.data);
+    AXIOS.get(ENDPOINTS.GET_TEAMS).then((data) => data.data as Team[]);
 
 export const getStops = (): Promise<Stop[]> =>
-    AXIOS.get(ENDPOINTS.GET_STOPS).then((data) => data.data);
+    AXIOS.get(ENDPOINTS.GET_STOPS).then((data) => data.data as Stop[]);
 
 export const serverAlive = (): Promise<boolean> =>
     AXIOS.get(ENDPOINTS.GET_PING)
@@ -74,3 +74,15 @@ export const serverAlive = (): Promise<boolean> =>
 
 export const createWebSocketConnection = () =>
     new WebSocketApi(BASE_URLS.WEBSOCKET + ENDPOINTS.GET_WS);
+
+export const defaultErrorHandler = (err: unknown) => {
+    if (err instanceof AxiosError) {
+        if (err.response) console.error("Request Error", err.response);
+        return;
+    }
+
+    if (err instanceof Error) {
+        console.error(err.message);
+        return;
+    }
+};

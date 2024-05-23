@@ -45,7 +45,7 @@ export class WebSocketApi {
 
     public reconnect(force = false) {
         // Don't try to reconnect if there is a connection already
-        if (this.connection?.readyState === this.connection.OPEN && force)
+        if (this.connection.readyState === this.connection.OPEN && force)
             return;
 
         this.disconnect();
@@ -60,6 +60,7 @@ export class WebSocketApi {
         this.connection.onclose = (e) => this.metaHandlers["Disconnect"]?.(e);
         this.connection.onopen = () => this.metaHandlers["Connect"]?.();
         this.connection.onmessage = (e) => {
+            if (typeof e.data !== "string") return;
             const res = this.parseMsg(e.data);
             if (res) this.handleMessage(res);
         };
@@ -90,7 +91,7 @@ export class WebSocketApi {
     public register<T extends Keys<ServerMessage>>(
         type: T,
         handler: WSHandlerMap<ServerMessage>[T],
-    ): WebSocketApi {
+    ): this {
         this.handlers[type] = handler;
         return this;
     }

@@ -1,5 +1,5 @@
 import { Button, DropDown, TextInput } from "components/InputElements";
-import { postCreateTeam } from "lib/api";
+import { defaultErrorHandler, postCreateTeam } from "lib/api";
 import { TeamKind } from "lib/bindings";
 import { FormEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -28,14 +28,9 @@ export function CreateTeam() {
 
         setLoading(true);
         postCreateTeam({ color, name, kind })
-            .then(() => {
-                setLoading(false);
-                navigate("/");
-            })
-            .catch((err) => {
-                setLoading(false);
-                alert(t(err.response.data));
-            });
+            .then(() => navigate("/"))
+            .catch(defaultErrorHandler)
+            .finally(() => setLoading(false));
     };
 
     return (

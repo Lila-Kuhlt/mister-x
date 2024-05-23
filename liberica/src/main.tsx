@@ -25,7 +25,11 @@ i18n.use(LanguageDetector)
             en: { translation: en_translation },
             de: { translation: de_translation },
         },
-    });
+    })
+    .catch(
+        (e: unknown) =>
+            e instanceof Error && console.error("i18n init error", e.message),
+    );
 
 const rootElement = document.getElementById("root") as HTMLElement;
 ReactDOM.createRoot(rootElement).render(

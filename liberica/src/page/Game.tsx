@@ -12,21 +12,21 @@ export function Game() {
     const [ws, setWS] = useState<WebSocketApi>();
     const [gs, setGameState] = useState<GameState>({ teams: [], trains: [] });
     const [embarkedTrain, setEmbarkedTrain] = useState<Train>();
-    const team: Team = useLocation().state; // this is how Home passes the team
+    const team = useLocation().state as Team | undefined; // this is how Home passes the team
     const { t } = useTranslation();
 
     function disembark() {
-        if (team) {
-            setEmbarkedTrain(undefined);
-            ws?.send("DisembarkTrain");
-        }
+        if (!team) return;
+
+        setEmbarkedTrain(undefined);
+        ws?.send("DisembarkTrain");
     }
 
     function embark(train: Train) {
-        if (team) {
-            setEmbarkedTrain(train);
-            ws?.send({ EmbarkTrain: { train_id: train.line_id } });
-        }
+        if (!team) return;
+
+        setEmbarkedTrain(train);
+        ws?.send({ EmbarkTrain: { train_id: train.line_id } });
     }
 
     useEffect(() => {
@@ -49,9 +49,8 @@ export function Game() {
     }, []);
 
     useEffect(() => {
-        if (team) {
-            ws?.send({ JoinTeam: { team_id: team.id } });
-        }
+        if (!team) return;
+        ws?.send({ JoinTeam: { team_id: team.id } });
     }, [ws, team]);
 
     useEffect(() => {
