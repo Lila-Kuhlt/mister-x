@@ -50,8 +50,5 @@ jobs:
       - name: 🚧 Install dependencies
         run: bun install
 
-      - name: 🔨 Build liberica
-        run: bun run build
-
       - name: 🔎 Lint liberica
         run: bun lint

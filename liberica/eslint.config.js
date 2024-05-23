@@ -21,13 +21,21 @@ import eslintConfigPrettier from "eslint-config-prettier"
 /** @type {import("eslint").Config} */
 export default [
     { ignores: ["src/lib/bindings.ts", "node_modules", "dist"] },
-    { languageOptions: { globals: globals.browser } },
+    {
+        languageOptions: {
+            globals: globals.browser,
+            parserOptions: {
+                project: true,
+                tsconfigRootDir: import.meta.dirname
+            }
+        }
+    },
 
     eslintJs.configs.recommended,
 
     eslintPluginPrettier,
     eslintConfigPrettier, // disables some rules that cause conflicts
 
-    ...tseslint.configs.strict, // strict is a superset of recommended
+    ...tseslint.configs.strictTypeChecked, // strict is a superset of recommended
     ...tseslint.configs.stylistic,
 ];
