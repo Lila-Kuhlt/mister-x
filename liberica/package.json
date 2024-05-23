@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "lint": "eslint src --cache",
-    "lint:clean": "eslint src",
+    "prettier": "prettier",
     "preview": "vite preview"
   },
   "dependencies": {
