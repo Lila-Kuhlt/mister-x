@@ -27,12 +27,11 @@ use tower_http::{
 };
 use tracing::{error, info, warn, Level};
 use tracing_appender::rolling::{self, Rotation};
-use ws_message::MrXPosition;
 
 use crate::gadgets::{DetectiveGadget, GadgetState, MrXGadget};
 use crate::kvv::LineDepartures;
 use crate::unique_id::UniqueIdGen;
-use crate::ws_message::{ClientMessage, ClientResponse, GameState, Team, TeamKind, TeamState};
+use crate::ws_message::{ClientMessage, ClientResponse, GameState, MrXPosition, Team, TeamKind, TeamState};
 
 mod gadgets;
 mod kvv;
