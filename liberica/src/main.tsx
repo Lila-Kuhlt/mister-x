@@ -33,7 +33,7 @@ i18n.use(LanguageDetector)
             e instanceof Error && console.error("i18n init error", e.message),
     );
 
-applyTheme(THEMES["Lila Pause"])
+applyTheme(THEMES["Lila Pause"]);
 
 const rootElement = document.getElementById("root") as HTMLElement;
 ReactDOM.createRoot(rootElement).render(
