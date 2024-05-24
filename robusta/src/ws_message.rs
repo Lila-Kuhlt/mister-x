@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
 
 use crate::gadgets::{DetectiveGadget, MrXGadget};
-use crate::kvv::Stop;
 
 #[derive(specta::Type, Clone, Deserialize, Debug)]
 pub enum ClientMessage {

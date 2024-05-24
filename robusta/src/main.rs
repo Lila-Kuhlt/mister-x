@@ -497,9 +497,20 @@ async fn run_game_loop(mut recv: Receiver<InputMessage>, state: SharedState) {
                                     });
                                 }
                                 OutOfOrder => {
-                                    let mr_x = state.teams.iter().find(|ts| ts.team.kind == TeamKind::MrX).expect("no Mr. X");
-                                    let stop = kvv::nearest_stop(Point { latitude: mr_x.lat, longitude: mr_x.long });
-                                    broadcast(&state.connections, ClientResponse::MrXPosition(MrXPosition::Stop(stop.id.clone()))).await;
+                                    let mr_x = state
+                                        .teams
+                                        .iter()
+                                        .find(|ts| ts.team.kind == TeamKind::MrX)
+                                        .expect("no Mr. X");
+                                    let stop = kvv::nearest_stop(Point {
+                                        latitude: mr_x.lat,
+                                        longitude: mr_x.long,
+                                    });
+                                    broadcast(
+                                        &state.connections,
+                                        ClientResponse::MrXPosition(MrXPosition::Stop(stop.id.clone())),
+                                    )
+                                    .await;
                                 }
                                 Shackles => {}
                             }
@@ -567,11 +578,7 @@ async fn run_game_loop(mut recv: Receiver<InputMessage>, state: SharedState) {
                 detective_gadget_cooldown: game_state.detective_gadget_cooldown,
                 blocked_stop: game_state.blocked_stop.clone(),
             };
-            if let Err(err) = connection
-                .send
-                .send(ClientResponse::GameState(game_state))
-                .await
-            {
+            if let Err(err) = connection.send.send(ClientResponse::GameState(game_state)).await {
                 error!("failed to send game state to client {}: {}", connection.id, err);
                 continue;
             }
@@ -629,6 +636,7 @@ async fn start_game(state: SharedState, running_state: Arc<tokio::sync::Mutex<Ru
             if let Some(cooldown) = running_state.position_cooldown.as_mut() {
                 *cooldown -= delta;
                 if *cooldown < 0.0 {
+                    let state = state.lock().await;
                     running_state.position_cooldown = Some(COOLDOWN);
                     if warmup {
                         // TODO: broadcast Detective start
@@ -637,20 +645,20 @@ async fn start_game(state: SharedState, running_state: Arc<tokio::sync::Mutex<Ru
                         running_state.detective_gadgets.allow_use();
                     } else {
                         // broadcast Mr. X position
-                        let state = state.lock().await;
                         let position = match running_state.special_pos.take() {
-                            Some(SpecialPos::Stop(stop_id)) => {
-                                MrXPosition::Stop(stop_id)
-                            }
-                            Some(SpecialPos::Image(image)) => {
-                                MrXPosition::Image(image)
-                            }
-                            Some(SpecialPos::NotFound) => {
-                                MrXPosition::NotFound
-                            }
+                            Some(SpecialPos::Stop(stop_id)) => MrXPosition::Stop(stop_id),
+                            Some(SpecialPos::Image(image)) => MrXPosition::Image(image),
+                            Some(SpecialPos::NotFound) => MrXPosition::NotFound,
                             None => {
-                                let mr_x = state.teams.iter().find(|ts| ts.team.kind == TeamKind::MrX).expect("no Mr. X");
-                                let stop = kvv::nearest_stop(Point { latitude: mr_x.lat, longitude: mr_x.long });
+                                let mr_x = state
+                                    .teams
+                                    .iter()
+                                    .find(|ts| ts.team.kind == TeamKind::MrX)
+                                    .expect("no Mr. X");
+                                let stop = kvv::nearest_stop(Point {
+                                    latitude: mr_x.lat,
+                                    longitude: mr_x.long,
+                                });
                                 MrXPosition::Stop(stop.id.clone())
                             }
                         };
