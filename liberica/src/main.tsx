@@ -12,6 +12,7 @@ import LanguageDetector from "i18next-browser-languagedetector";
 
 import en_translation from "i18n/en.json";
 import de_translation from "i18n/de.json";
+import { THEMES, applyTheme } from "lib/theme";
 
 i18n.use(LanguageDetector)
     .use(initReactI18next)
@@ -30,6 +31,8 @@ i18n.use(LanguageDetector)
         (e: unknown) =>
             e instanceof Error && console.error("i18n init error", e.message),
     );
+
+applyTheme(THEMES["Lila Pause"])
 
 const rootElement = document.getElementById("root") as HTMLElement;
 ReactDOM.createRoot(rootElement).render(
