@@ -1,19 +1,25 @@
-import THEMES_JSON from "assets/themes.json"
+import THEMES_JSON from "assets/themes.json";
+import Values from "values.js"
 
-export const RAW_THEMES: Record<string, Theme> = THEMES_JSON;
+export const THEMES: Record<string, Theme> = THEMES_JSON;
 
-export type Theme = {
-    'text-bright': string,
-    'text-dark': string,
-    'surface': string,
-    'primary': string,
-    'secondary': string,
-    'accent': string
+export interface Theme {
+    text: string;
+    surface: string;
+    primary: string;
+    secondary: string;
+    accent: string;
 }
+
+
 
 export function applyTheme(theme: Theme) {
-    const style = window.getComputedStyle(document.documentElement);
+    const style = document.documentElement.style;
     for (const key of Object.keys(theme)) {
-        style.setProperty(`--${key}`, theme[key as keyof Theme]);
+        const shades = new Values(theme[key as keyof Theme], "base").all(22);
+        for (const [i, shade] of shades.entries()) {
+            style.setProperty(`--${key}-${i * 100 + 100}`, '#' + shade.hex);
+        }
     }
 }
+

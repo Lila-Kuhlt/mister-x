@@ -22,7 +22,8 @@
     "react-leaflet": "^4.2.1",
     "react-router-dom": "^6.26.0",
     "runtypes": "^6.7.0",
-    "use-interval": "^1.4.0"
+    "use-interval": "^1.4.0",
+    "values.js": "^2.1.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.0",
