@@ -342,3 +342,16 @@ pub fn train_positions(departures_per_line: &LineDepartures, render_time: DateTi
         .flat_map(|(journey_ref, departures)| train_position_per_route(render_time, journey_ref, departures, stops))
         .collect()
 }
+
+pub fn nearest_stop(pos: Point) -> &'static Stop {
+    let stops = KVV_STOPS.get().expect("KVV_STOPS not initialized");
+    stops
+        .iter()
+        .min_by_key(|stop| {
+            pos.distance(Point {
+                latitude: stop.lat as f32,
+                longitude: stop.lon as f32,
+            }) as u64
+        })
+        .expect("no stops")
+}

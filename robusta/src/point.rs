@@ -5,8 +5,15 @@ pub struct Point {
 }
 
 impl Point {
+    /// The approximate distance between two points in meters, using equirectangular projection.
     pub fn distance(self, other: Self) -> f32 {
-        f32::hypot(other.latitude - self.latitude, other.longitude - self.longitude)
+        // the radius of the earth in meters
+        const EARTH_RADIUS: f32 = 6371008.8;
+
+        let delta_lat = (other.latitude - self.latitude).to_radians();
+        let delta_lon = (other.longitude - self.longitude).to_radians();
+        let mean_lat = (self.latitude + other.latitude) / 2.0;
+        EARTH_RADIUS * f32::hypot(delta_lat, f32::cos(mean_lat) * delta_lon)
     }
 
     /// Linear interpolation.
