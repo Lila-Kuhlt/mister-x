@@ -5,7 +5,7 @@
  */
 export type Stop = { name: string; id: string; lat: number; lon: number }
 
-export type ClientResponse = { GameState: GameState } | { MrXGadget: MrXGadget } | { DetectiveGadget: DetectiveGadget } | { MrXPosition: MrXPosition } | "GameStart" | "DetectiveStart" | "GameEnd"
+export type ClientResponse = { GameState: GameState } | { MrXGadget: MrXGadget } | { DetectiveGadget: DetectiveGadget } | { MrXPosition: MrXPosition } | { GameStart: null } | { DetectiveStart: null } | { GameEnd: null }
 
 export type MrXGadget = { AlternativeFacts: { stop_id: string } } | { Midjourney: { image: number[] } } | "NotFound" | "Teleport" | "Shifter"
 

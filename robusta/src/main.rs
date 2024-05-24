@@ -595,9 +595,9 @@ async fn broadcast(connections: &[ClientConnection], message: ClientResponse) {
                 ClientResponse::MrXPosition(_) => "Mr. X position",
                 ClientResponse::MrXGadget(_) => "Mr. X gadget",
                 ClientResponse::DetectiveGadget(_) => "Detective gadget",
-                ClientResponse::GameStart => "game start",
-                ClientResponse::DetectiveStart => "detective start",
-                ClientResponse::GameEnd => "game end",
+                ClientResponse::GameStart() => "game start",
+                ClientResponse::DetectiveStart() => "detective start",
+                ClientResponse::GameEnd() => "game end",
             };
             error!("failed to send {} to client {}: {}", message_type, connection.id, err);
         }
@@ -625,12 +625,12 @@ impl RunningState {
 }
 
 async fn start_game(connections: &[ClientConnection], running_state: &mut RunningState) {
-    broadcast(connections, ClientResponse::GameStart).await;
+    broadcast(connections, ClientResponse::GameStart()).await;
     running_state.position_cooldown = Some(COOLDOWN);
 }
 
 async fn end_game(connections: &[ClientConnection], running_state: &mut RunningState) {
-    broadcast(connections, ClientResponse::GameEnd).await;
+    broadcast(connections, ClientResponse::GameEnd()).await;
     *running_state = RunningState::new();
 }
 
@@ -653,7 +653,7 @@ async fn run_timer_loop(state: SharedState, running_state: Arc<tokio::sync::Mute
                     let state = state.lock().await;
                     running_state.position_cooldown = Some(COOLDOWN);
                     if warmup {
-                        broadcast(&state.connections, ClientResponse::DetectiveStart).await;
+                        broadcast(&state.connections, ClientResponse::DetectiveStart()).await;
                         warmup = false;
                         running_state.mr_x_gadgets.allow_use();
                         running_state.detective_gadgets.allow_use();

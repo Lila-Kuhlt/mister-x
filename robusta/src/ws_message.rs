@@ -20,9 +20,9 @@ pub enum ClientResponse {
     MrXGadget(MrXGadget),
     DetectiveGadget(DetectiveGadget),
     MrXPosition(MrXPosition),
-    GameStart,
-    DetectiveStart,
-    GameEnd,
+    GameStart(),
+    DetectiveStart(),
+    GameEnd(),
 }
 
 #[derive(specta::Type, Clone, Serialize, Deserialize, Debug)]
