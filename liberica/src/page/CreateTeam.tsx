@@ -39,7 +39,7 @@ export function CreateTeam() {
             style={{ backgroundColor: color }}
         >
             <form
-                className="container flex w-80 flex-col gap-3 rounded-xl bg-white p-8 shadow-md"
+                className="container flex w-80 flex-col gap-3 rounded-xl bg-surface p-8 shadow-md"
                 onSubmit={onSubmit}
             >
                 <h2 className="text-xl font-bold">{t("CreateTeam")}</h2>
@@ -64,7 +64,7 @@ export function CreateTeam() {
 
                 <Button disabled={loading}>
                     {loading ? (
-                        <div className="h-4 w-4 animate-spin rounded-full border-4 border-dashed dark:border-white"></div>
+                        <div className="h-4 w-4 animate-spin rounded-full border-4 border-dashed"></div>
                     ) : (
                         <>{t("CreateTeam")}</>
                     )}

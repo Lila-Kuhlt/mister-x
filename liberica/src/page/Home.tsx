@@ -30,7 +30,7 @@ export function Home() {
 
     return (
         <form className="flex h-screen items-center justify-center">
-            <div className="container flex w-80 flex-col gap-4 bg-white p-8">
+            <div className="bg-white container flex w-80 flex-col gap-4 p-8">
                 <h2 className="text-lg font-semibold">{t("SelectTeam")}</h2>
                 <div>
                     {teams.map((team, index) => (
@@ -50,7 +50,7 @@ export function Home() {
                     {t("JoinTeam")}
                 </Button>
                 <Link
-                    className="text-center text-slate-400 underline"
+                    className="text-slate-400 text-center underline"
                     to="/create"
                 >
                     {t("CreateTeam")}

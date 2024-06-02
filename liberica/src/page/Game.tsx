@@ -106,10 +106,10 @@ export function Game() {
     const LandingPage = (
         <div className="flex h-max w-max flex-col items-center justify-center gap-5">
             <div className="flex flex-col items-center">
-                <span className="italic text-slate-400">
+                <span className="text-slate-400 italic">
                     {t("ConnectionLost")}
                 </span>
-                <span className="italic text-slate-400">{t("Reconnect")}</span>
+                <span className="text-slate-400 italic">{t("Reconnect")}</span>
             </div>
         </div>
     );
