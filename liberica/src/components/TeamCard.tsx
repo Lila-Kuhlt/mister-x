@@ -16,7 +16,7 @@ export function TeamCard(props: {
 
     return (
         <div
-            className={`my-1 flex w-full items-center rounded-md transition-all hover:bg-slate-100 ${states[state]}`}
+            className={`hover:bg-slate-100 my-1 flex w-full items-center rounded-md transition-all ${states[state]}`}
             onClick={props.onClick}
         >
             <div
@@ -25,7 +25,7 @@ export function TeamCard(props: {
             />
             <div className="flex flex-col justify-center">
                 <span className="font-semibold">{team.name}</span>
-                <span className="justify-end font-normal italic text-slate-400">
+                <span className="text-slate-400 justify-end font-normal italic">
                     {team.kind}
                 </span>
             </div>

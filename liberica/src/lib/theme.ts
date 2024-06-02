@@ -1,11 +1,12 @@
 import THEMES_JSON from "assets/themes.json";
-import Values from "values.js";
+import { HexToHSL } from "lib/colors";
 
 export const THEMES: Record<string, Theme> = THEMES_JSON;
 
 export interface Theme {
-    text: string;
+    base: string;
     surface: string;
+    text: string;
     primary: string;
     secondary: string;
     accent: string;
@@ -13,11 +14,11 @@ export interface Theme {
 
 export function applyTheme(theme: Theme) {
     const style = document.documentElement.style;
-    for (const key of Object.keys(theme)) {
-        const shades = new Values(theme[key as keyof Theme], "base").all(22);
-        for (const [i, shade] of shades.entries()) {
-            const name = (i * 100 + 100).toString();
-            style.setProperty(`--${key}-${name}`, "#" + shade.hex);
-        }
+    for (const [name, color] of Object.entries(theme)) {
+        const { h, s, l } = HexToHSL(color as string);
+        style.setProperty(
+            `--color-${name}`,
+            `${h.toString()} ${s.toString()} ${l.toString()}`,
+        );
     }
 }

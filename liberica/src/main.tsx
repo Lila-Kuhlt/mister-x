@@ -3,6 +3,7 @@ import { Game } from "page/Game";
 import { Home } from "page/Home";
 import { Replay } from "page/Replay";
 import { Admin } from "page/Admin";
+import { Debug } from "page/Debug";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import "style/main.css";
@@ -32,7 +33,7 @@ i18n.use(LanguageDetector)
             e instanceof Error && console.error("i18n init error", e.message),
     );
 
-applyTheme(THEMES["Lila Pause"]);
+applyTheme(THEMES["Rosé Pine"]);
 
 const rootElement = document.getElementById("root") as HTMLElement;
 ReactDOM.createRoot(rootElement).render(
@@ -43,6 +44,7 @@ ReactDOM.createRoot(rootElement).render(
             <Route path="/game" element={<Game />} />
             <Route path="/replay" element={<Replay />} />
             <Route path="/admin" element={<Admin />} />
+            {import.meta.env.DEV && <Route path="/debug" element={<Debug />} />}
         </Routes>
     </BrowserRouter>,
 );

@@ -1,9 +1,11 @@
 {
-    "Lila Pause": {
-        "text":"#150d19",
-        "surface": "#f6f2f8",
-        "primary": "#925ea5",
-        "secondary": "#c397d1",
-        "accent": "#bf80a4"
+    "Rosé Pine": {
+        "base": "#faf4ed",
+        "surface": "#fffaf3",
+        "muted": "#9893a5",
+        "text": "#575279",
+        "primary": "#d7827e",
+        "secondary": "#286983",
+        "accent": "#ea9d34"
     }
 }
