@@ -17,8 +17,10 @@ use axum::{
     Json, Router,
 };
 use futures_util::SinkExt;
+use point::Point;
 use reqwest::StatusCode;
 use tokio::sync::mpsc::{Receiver, Sender};
+use tokio::time::Instant;
 use tower::util::ServiceExt;
 use tower_http::{
     cors::CorsLayer,
@@ -27,10 +29,12 @@ use tower_http::{
 use tracing::{error, info, warn, Level};
 use tracing_appender::rolling::{self, Rotation};
 
+use crate::gadgets::{DetectiveGadget, GadgetState, MrXGadget};
 use crate::kvv::LineDepartures;
 use crate::unique_id::UniqueIdGen;
-use crate::ws_message::{ClientMessage, ClientResponse, GameState, Team, TeamKind, TeamState};
+use crate::ws_message::{ClientMessage, ClientResponse, GameState, MrXPosition, Team, TeamKind, TeamState};
 
+mod gadgets;
 mod kvv;
 mod point;
 mod unique_id;
@@ -40,6 +44,9 @@ const TEAMS_FILE: &str = "teams.json";
 
 /// The name used for the Mr. X team.
 const MRX: &str = "Mr. X";
+
+/// The interval between position broadcasts and gadgets uses in seconds (10 min).
+const COOLDOWN: f32 = 600.0;
 
 #[derive(Debug)]
 enum InputMessage {
@@ -77,7 +84,7 @@ struct AppState {
 }
 
 impl AppState {
-    const fn new(game_logic_sender: Sender<InputMessage>) -> Self {
+    fn new(game_logic_sender: Sender<InputMessage>) -> Self {
         Self {
             teams: Vec::new(),
             game_logic_sender,
@@ -93,6 +100,12 @@ impl AppState {
 
     fn client_mut(&mut self, id: u32) -> Option<&mut ClientConnection> {
         self.connections.iter_mut().find(|x| x.id == id)
+    }
+
+    fn team_by_client_id(&mut self, id: u32) -> Option<&TeamState> {
+        self.client(id)
+            .map(|x| x.team_id)
+            .and_then(|team_id| self.teams.iter().find(|ts| ts.team.id == team_id))
     }
 
     fn team_mut_by_client_id(&mut self, id: u32) -> Option<&mut TeamState> {
@@ -340,7 +353,7 @@ fn load_state(send: Sender<InputMessage>) -> SharedState {
         .and_then(|x| serde_json::from_str::<Vec<TeamState>>(&x).ok())
         .unwrap_or_default();
 
-    let mut state = AppState::new(send.clone());
+    let mut state = AppState::new(send);
     let max_id = teams.iter().map(|ts| ts.team.id).max().unwrap_or(0);
     state.team_id_gen.set_min(max_id + 1);
     if !teams.iter().any(|ts| ts.team.kind == TeamKind::MrX) {
@@ -360,6 +373,12 @@ fn load_state(send: Sender<InputMessage>) -> SharedState {
     Arc::new(tokio::sync::Mutex::new(state))
 }
 
+enum SpecialPos {
+    Stop(String),
+    Image(Vec<u8>),
+    NotFound,
+}
+
 async fn run_game_loop(mut recv: Receiver<InputMessage>, state: SharedState) {
     let mut departures = HashMap::new();
     let mut log_file = rolling::Builder::new()
@@ -372,6 +391,11 @@ async fn run_game_loop(mut recv: Receiver<InputMessage>, state: SharedState) {
 
     // the time for a single frame
     let mut interval = tokio::time::interval(Duration::from_millis(500));
+
+    let mut running_state = RunningState::new();
+    start_game(&state.lock().await.connections, &mut running_state).await;
+    let running_state = Arc::new(tokio::sync::Mutex::new(running_state));
+    run_timer_loop(Arc::clone(&state), Arc::clone(&running_state)).await;
 
     loop {
         interval.tick().await;
@@ -415,6 +439,87 @@ async fn run_game_loop(mut recv: Receiver<InputMessage>, state: SharedState) {
                                 team.on_train = None;
                             }
                         }
+                        ClientMessage::MrXGadget(gadget) => {
+                            use MrXGadget::*;
+
+                            if state
+                                .team_by_client_id(id)
+                                .map(|ts| ts.team.kind != TeamKind::MrX)
+                                .unwrap_or(true)
+                            {
+                                warn!("Client {} tried to use MrX Gadget, but is not MrX", id);
+                                continue;
+                            }
+                            let mut running_state = running_state.lock().await;
+                            if !running_state.mr_x_gadgets.try_use(&gadget, COOLDOWN) {
+                                warn!("Client {} tried to use MrX Gadget, but is not allowed to", id);
+                                continue;
+                            }
+
+                            match &gadget {
+                                AlternativeFacts { stop_id } => {
+                                    running_state.special_pos = Some(SpecialPos::Stop(stop_id.clone()));
+                                    continue;
+                                }
+                                Midjourney { image } => {
+                                    running_state.special_pos = Some(SpecialPos::Image(image.clone()));
+                                }
+                                NotFound => {
+                                    running_state.special_pos = Some(SpecialPos::NotFound);
+                                    continue;
+                                }
+                                Teleport => {}
+                                Shifter => {}
+                            }
+                            broadcast(&state.connections, ClientResponse::MrXGadget(gadget)).await;
+                        }
+                        ClientMessage::DetectiveGadget(gadget) => {
+                            use DetectiveGadget::*;
+
+                            if state
+                                .team_by_client_id(id)
+                                .map(|ts| ts.team.kind != TeamKind::Detective)
+                                .unwrap_or(true)
+                            {
+                                warn!("Client {} tried to use Detective Gadget, but is not Detective", id);
+                                continue;
+                            }
+                            let running_state_arc = &running_state;
+                            let mut running_state = running_state.lock().await;
+                            if !running_state.detective_gadgets.try_use(&gadget, COOLDOWN) {
+                                warn!("Client {} tried to use Detective Gadget, but is not allowed to", id);
+                                continue;
+                            }
+
+                            broadcast(&state.connections, ClientResponse::DetectiveGadget(gadget.clone())).await;
+                            match gadget {
+                                Stop { stop_id } => {
+                                    running_state.blocked_stop = Some(stop_id);
+                                    let running_state = Arc::clone(&running_state_arc);
+                                    tokio::spawn(async move {
+                                        tokio::time::sleep(Duration::from_secs_f32(2.0 * COOLDOWN)).await;
+                                        running_state.lock().await.blocked_stop = None;
+                                    });
+                                }
+                                OutOfOrder => {
+                                    let mr_x = state
+                                        .teams
+                                        .iter()
+                                        .find(|ts| ts.team.kind == TeamKind::MrX)
+                                        .expect("no Mr. X");
+                                    let stop = kvv::nearest_stop(Point {
+                                        latitude: mr_x.lat,
+                                        longitude: mr_x.long,
+                                    });
+                                    broadcast(
+                                        &state.connections,
+                                        ClientResponse::MrXPosition(MrXPosition::Stop(stop.id.clone())),
+                                    )
+                                    .await;
+                                }
+                                Shackles => {}
+                            }
+                        }
                     }
                 }
                 InputMessage::Server(ServerMessage::Departures(deps)) => {
@@ -443,9 +548,16 @@ async fn run_game_loop(mut recv: Receiver<InputMessage>, state: SharedState) {
         }
 
         // log game state
-        let game_state = GameState {
-            teams: state.teams.clone(),
-            trains,
+        let game_state = {
+            let running_state = running_state.lock().await;
+            GameState {
+                teams: state.teams.clone(),
+                trains,
+                position_cooldown: running_state.position_cooldown,
+                mr_x_gadget_cooldown: running_state.mr_x_gadgets.remaining(),
+                detective_gadget_cooldown: running_state.detective_gadgets.remaining(),
+                blocked_stop: running_state.blocked_stop.clone(),
+            }
         };
         writeln!(
             log_file,
@@ -466,15 +578,114 @@ async fn run_game_loop(mut recv: Receiver<InputMessage>, state: SharedState) {
                     .cloned()
                     .collect(),
                 trains: game_state.trains.clone(),
+                position_cooldown: game_state.position_cooldown,
+                mr_x_gadget_cooldown: game_state.mr_x_gadget_cooldown,
+                detective_gadget_cooldown: game_state.detective_gadget_cooldown,
+                blocked_stop: game_state.blocked_stop.clone(),
             };
-            if let Err(err) = connection
-                .send
-                .send(ClientResponse::GameState(game_state.clone()))
-                .await
-            {
+            if let Err(err) = connection.send.send(ClientResponse::GameState(game_state)).await {
                 error!("failed to send game state to client {}: {}", connection.id, err);
                 continue;
             }
         }
     }
+}
+
+async fn broadcast(connections: &[ClientConnection], message: ClientResponse) {
+    for connection in connections.iter() {
+        if let Err(err) = connection.send.send(message.clone()).await {
+            let message_type = match message {
+                ClientResponse::GameState(_) => "game state",
+                ClientResponse::MrXPosition(_) => "Mr. X position",
+                ClientResponse::MrXGadget(_) => "Mr. X gadget",
+                ClientResponse::DetectiveGadget(_) => "Detective gadget",
+                ClientResponse::GameStart() => "game start",
+                ClientResponse::DetectiveStart() => "detective start",
+                ClientResponse::GameEnd() => "game end",
+            };
+            error!("failed to send {} to client {}: {}", message_type, connection.id, err);
+        }
+    }
+}
+
+struct RunningState {
+    position_cooldown: Option<f32>,
+    mr_x_gadgets: GadgetState<MrXGadget>,
+    detective_gadgets: GadgetState<DetectiveGadget>,
+    special_pos: Option<SpecialPos>,
+    blocked_stop: Option<String>,
+}
+
+impl RunningState {
+    fn new() -> Self {
+        Self {
+            position_cooldown: None,
+            mr_x_gadgets: GadgetState::new(),
+            detective_gadgets: GadgetState::new(),
+            special_pos: None,
+            blocked_stop: None,
+        }
+    }
+}
+
+async fn start_game(connections: &[ClientConnection], running_state: &mut RunningState) {
+    broadcast(connections, ClientResponse::GameStart()).await;
+    running_state.position_cooldown = Some(COOLDOWN);
+}
+
+async fn end_game(connections: &[ClientConnection], running_state: &mut RunningState) {
+    broadcast(connections, ClientResponse::GameEnd()).await;
+    *running_state = RunningState::new();
+}
+
+async fn run_timer_loop(state: SharedState, running_state: Arc<tokio::sync::Mutex<RunningState>>) {
+    tokio::spawn(async move {
+        let mut warmup = true;
+
+        let mut time = Instant::now();
+        let mut interval = tokio::time::interval(Duration::from_millis(100));
+        loop {
+            interval.tick().await;
+            let mut running_state = running_state.lock().await;
+
+            let old_time = time;
+            time = Instant::now();
+            let delta = (time - old_time).as_secs_f32();
+            if let Some(cooldown) = running_state.position_cooldown.as_mut() {
+                *cooldown -= delta;
+                if *cooldown < 0.0 {
+                    let state = state.lock().await;
+                    running_state.position_cooldown = Some(COOLDOWN);
+                    if warmup {
+                        broadcast(&state.connections, ClientResponse::DetectiveStart()).await;
+                        warmup = false;
+                        running_state.mr_x_gadgets.allow_use();
+                        running_state.detective_gadgets.allow_use();
+                    } else {
+                        // broadcast Mr. X position
+                        let position = match running_state.special_pos.take() {
+                            Some(SpecialPos::Stop(stop_id)) => MrXPosition::Stop(stop_id),
+                            Some(SpecialPos::Image(image)) => MrXPosition::Image(image),
+                            Some(SpecialPos::NotFound) => MrXPosition::NotFound,
+                            None => {
+                                let mr_x = state
+                                    .teams
+                                    .iter()
+                                    .find(|ts| ts.team.kind == TeamKind::MrX)
+                                    .expect("no Mr. X");
+                                let stop = kvv::nearest_stop(Point {
+                                    latitude: mr_x.lat,
+                                    longitude: mr_x.long,
+                                });
+                                MrXPosition::Stop(stop.id.clone())
+                            }
+                        };
+                        broadcast(&state.connections, ClientResponse::MrXPosition(position)).await;
+                    }
+                }
+            }
+            running_state.mr_x_gadgets.update_time(delta);
+            running_state.detective_gadgets.update_time(delta);
+        }
+    });
 }

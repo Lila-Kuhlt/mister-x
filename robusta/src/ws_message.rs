@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::gadgets::{DetectiveGadget, MrXGadget};
+
 #[derive(specta::Type, Clone, Deserialize, Debug)]
 pub enum ClientMessage {
     Position { long: f32, lat: f32 },
@@ -7,18 +9,44 @@ pub enum ClientMessage {
     JoinTeam { team_id: u32 },
     EmbarkTrain { train_id: String },
     DisembarkTrain,
+    MrXGadget(MrXGadget),
+    DetectiveGadget(DetectiveGadget),
     Message(String),
 }
 
 #[derive(specta::Type, Clone, Serialize, Deserialize, Debug)]
 pub enum ClientResponse {
     GameState(GameState),
+    MrXGadget(MrXGadget),
+    DetectiveGadget(DetectiveGadget),
+    MrXPosition(MrXPosition),
+    GameStart(),
+    DetectiveStart(),
+    GameEnd(),
+}
+
+#[derive(specta::Type, Clone, Serialize, Deserialize, Debug)]
+pub enum MrXPosition {
+    Stop(String),
+    Image(Vec<u8>),
+    NotFound,
 }
 
 #[derive(specta::Type, Default, Clone, Serialize, Deserialize, Debug)]
 pub struct GameState {
     pub teams: Vec<TeamState>,
     pub trains: Vec<Train>,
+    // in seconds
+    #[specta(optional)]
+    pub position_cooldown: Option<f32>,
+    // in seconds
+    #[specta(optional)]
+    pub detective_gadget_cooldown: Option<f32>,
+    // in seconds
+    #[specta(optional)]
+    pub mr_x_gadget_cooldown: Option<f32>,
+    #[specta(optional)]
+    pub blocked_stop: Option<String>,
 }
 
 #[derive(specta::Type, Default, Clone, Serialize, Deserialize, Debug)]

@@ -10,7 +10,10 @@ import { useTranslation } from "react-i18next";
 
 export function Game() {
     const [ws, setWS] = useState<WebSocketApi>();
-    const [gs, setGameState] = useState<GameState>({ teams: [], trains: [] });
+    const [gs, setGameState] = useState<GameState>({
+        teams: [],
+        trains: [],
+    });
     const [embarkedTrain, setEmbarkedTrain] = useState<Train>();
     const team = useLocation().state as Team | undefined; // this is how Home passes the team
     const { t } = useTranslation();
