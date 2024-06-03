@@ -18,7 +18,7 @@ export function applyTheme(theme: Theme) {
         const { h, s, l } = HexToHSL(color as string);
         style.setProperty(
             `--color-${name}`,
-            `${h.toString()} ${s.toString()} ${l.toString()}`,
+            `${h.toString()} ${s.toString()}% ${l.toString()}%`,
         );
     }
 }
