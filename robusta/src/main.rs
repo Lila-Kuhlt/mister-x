@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::fs;
 use std::io::Write;
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -316,17 +317,20 @@ async fn main() {
 }
 
 fn update_bindings() {
-    const BINDINGS: &str = "../liberica/src/lib/bindings.ts";
-    const TEMP_BINDINGS: &str = "../target/bindings.ts.tmp";
+    let robusta_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let project_dir = robusta_dir.parent().unwrap();
 
-    specta::export::ts(TEMP_BINDINGS).unwrap();
-    let old = fs::read_to_string(BINDINGS).unwrap_or_default();
-    let new = fs::read_to_string(TEMP_BINDINGS).unwrap();
+    let bindings = project_dir.join("liberica/src/lib/bindings.ts");
+    let temp_bindings = project_dir.join("target/bindings.ts.tmp");
+
+    specta::export::ts(temp_bindings.to_str().unwrap()).unwrap();
+    let old = fs::read_to_string(&bindings).unwrap_or_default();
+    let new = fs::read_to_string(&temp_bindings).unwrap();
 
     // Only update bindings if they changed to avoid triggering a recompile of the frontend
     if old != new {
         info!("Updating bindings");
-        fs::write(BINDINGS, new).unwrap();
+        fs::write(&bindings, new).unwrap();
     }
 }
 
