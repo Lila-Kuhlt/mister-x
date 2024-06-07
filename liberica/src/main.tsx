@@ -1,6 +1,6 @@
 import { CreateTeam } from "page/CreateTeam";
 import { Game } from "page/Game";
-import { Home } from "page/Home";
+import { SelectTeam } from "page/SelectTeam";
 import { Replay } from "page/Replay";
 import { Admin } from "page/Admin";
 import { Debug } from "page/Debug";
@@ -34,13 +34,13 @@ i18n.use(LanguageDetector)
             e instanceof Error && console.error("i18n init error", e.message),
     );
 
-applyTheme(THEMES["Rosé Pine"]);
+applyTheme(Object.values(THEMES)[0]);
 
 const rootElement = document.getElementById("root") as HTMLElement;
 ReactDOM.createRoot(rootElement).render(
     <BrowserRouter>
         <Routes>
-            <Route path="/" element={<Home />} />
+            <Route path="/" element={<SelectTeam />} />
             <Route path="/create" element={<CreateTeam />} />
             <Route path="/game" element={<Game />} />
             <Route path="/replay" element={<Replay />} />
