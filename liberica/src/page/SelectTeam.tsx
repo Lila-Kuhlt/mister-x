@@ -1,4 +1,4 @@
-import { BaseButton } from "components/lila/button";
+import { Button } from "components/lila/button";
 import { TeamCard } from "components/TeamCard";
 import { getTeams } from "lib/api";
 import { Team } from "lib/bindings";
@@ -28,8 +28,8 @@ export function SelectTeam() {
 
     return (
         <form className="flex h-screen items-center justify-center bg-base">
-            <div className="bg-white container flex w-80 flex-col gap-4 p-8">
-                <h2 className="text-lg font-semibold">{t("SelectTeam")}</h2>
+            <div className="bg-white container flex w-80 flex-col gap-4">
+                <span className="text-xl font-semibold">{t("SelectTeam")}</span>
                 <div className="flex flex-col gap-2">
                     {teams.map((team, index) => (
                         <TeamCard
@@ -40,20 +40,23 @@ export function SelectTeam() {
                         />
                     ))}
                 </div>
-                <BaseButton
-                    variant="primary"
-                    size="md-wide"
-                    disabled={selected === undefined}
-                    onClick={process}
-                >
-                    {t("JoinTeam")}
-                </BaseButton>
-                <Link
-                    className="text-muted text-center underline"
-                    to="/create"
-                >
-                    {t("CreateTeam")}
-                </Link>
+
+                <div className="flex flex-col gap-4 text-center">
+                    <Button
+                        variant="primary"
+                        size="md-wide"
+                        disabled={selected === undefined}
+                        onClick={process}
+                    >
+                        {t("JoinTeam")}
+                    </Button>
+                    <Link
+                        className="text-center text-muted underline"
+                        to="/create"
+                    >
+                        {t("CreateTeam")}
+                    </Link>
+                </div>
             </div>
         </form>
     );

@@ -1,3 +1,5 @@
+import { Select } from "./lila/select";
+
 export const TextInput = ({
     className,
     onTextChange,
@@ -28,17 +30,15 @@ export const TextInput = ({
 };
 
 export function DropDown<T extends string>({
-    className,
     items,
     onItemChange,
     ...props
-}: React.SelectHTMLAttributes<HTMLSelectElement> & {
+}: React.ComponentProps<"select"> & {
     items: T[];
     onItemChange?: (item: T) => void;
 }) {
     return (
-        <select
-            className={`border-slate-300 bg-white placeholder-slate-400 focus:border-purple-500 focus:ring-purple-500 block w-full rounded-md border px-3 py-2 shadow-sm focus:outline-none focus:ring-1 sm:text-sm ${className ?? ""}`}
+        <Select
             onChange={(item) =>
                 onItemChange?.(items[item.currentTarget.selectedIndex])
             }
@@ -47,17 +47,6 @@ export function DropDown<T extends string>({
             {items.map((item) => (
                 <option key={item}>{item}</option>
             ))}
-        </select>
+        </Select>
     );
 }
-
-export const Button = (props: React.ComponentProps<"button">) => {
-    return (
-        <button
-            className="hover: select-none rounded-lg bg-primary px-4 py-2 font-sans font-bold capitalize text-contrast transition-all"
-            {...props}
-        >
-            {props.children}
-        </button>
-    );
-};

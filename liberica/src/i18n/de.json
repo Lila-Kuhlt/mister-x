@@ -1,5 +1,5 @@
 {
-    "SelectTeam": "Team auswählen",
+    "SelectTeam": "Wähle dein Team",
     "ResetMapView": "Kartenansicht zurücksetzen",
     "CreateTeam": "Team erstellen",
     "InvalidName": "ungültiger Name",
@@ -17,5 +17,6 @@
     "time": "{{time, datetime(dateStyle: medium; timeStyle: long)}}",
     "FailedParseReplay": "Replay-Datei konnte nicht geparst werden",
     "ReplayTooBig": "Replay-Datei ist zu groß",
-    "Speed": "Geschwindigkeit"
+    "Speed": "Geschwindigkeit",
+    "Cancel": "Abbrechen"
 }

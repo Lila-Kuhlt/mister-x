@@ -5,7 +5,7 @@ import { WebSocketApi } from "lib/websockets";
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { HomeButton, Navbar } from "components/Navbar";
-import { Button } from "components/InputElements";
+import { Button } from "components/lila/button";
 import { useTranslation } from "react-i18next";
 
 export function Game() {
@@ -67,7 +67,7 @@ export function Game() {
     }, [ws]);
 
     const Game = (
-        <div className="flex h-max w-max flex-col">
+        <div className="flex h-dvh w-dvw flex-col">
             <GameStateContext.Provider value={gs}>
                 <Map
                     tileProps={{ updateInterval: 500 }}
@@ -96,7 +96,12 @@ export function Game() {
                     </span>
                 )}
 
-                <Button disabled={!embarkedTrain} onClick={disembark}>
+                <Button
+                    disabled={!embarkedTrain}
+                    onClick={disembark}
+                    variant={"primary"}
+                    size="lg"
+                >
                     {t("Disembark")}
                 </Button>
             </Navbar>
@@ -104,12 +109,12 @@ export function Game() {
     );
 
     const LandingPage = (
-        <div className="flex h-max w-max flex-col items-center justify-center gap-5">
+        <div className="flex h-dvh w-dvw flex-col items-center justify-center gap-5">
             <div className="flex flex-col items-center">
-                <span className="text-slate-400 italic">
+                <span className="italic text-on-base">
                     {t("ConnectionLost")}
                 </span>
-                <span className="text-slate-400 italic">{t("Reconnect")}</span>
+                <span className="italic text-on-base">{t("Reconnect")}</span>
             </div>
         </div>
     );

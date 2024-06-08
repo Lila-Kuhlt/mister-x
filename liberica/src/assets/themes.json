@@ -1,11 +1,28 @@
 {
+    "Rosé Pine Dawn": {
+        "base":         "#faf4ed",
+        "surface":      "#fffaf3",
+        "muted":        "#9893a5",
+        "primary":      "#d7827e",
+        "secondary":    "#286983",
+
+        "onBase":       "#575279",
+        "onSurface":    "@onBase",
+        "onMuted":      "@onBase",
+        "onPrimary":    "@base",
+        "onSecondary":  "@base"
+    },
     "Rosé Pine": {
-        "base": "#faf4ed",
-        "surface": "#fffaf3",
-        "muted": "#9893a5",
-        "text": "#575279",
-        "primary": "#d7827e",
-        "secondary": "#286983",
-        "accent": "#ea9d34"
+        "base":         "#191724",
+        "surface":      "#1f1d2e",
+        "muted":        "#6e6a86",
+        "primary":      "#ebbcba",
+        "secondary":    "#31748f",
+
+        "onBase":       "#e0def4",
+        "onSurface":    "@onBase",
+        "onMuted":      "@onBase",
+        "onPrimary":    "@base",
+        "onSecondary":  "@base"
     }
 }

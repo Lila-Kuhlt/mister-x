@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { useInterval } from "use-interval";
 import { GameStateContext, Map } from "components/map/Map";
-import { Button } from "components/InputElements";
+import { Button } from "components/lila";
 import { HomeButton, Navbar } from "components/Navbar";
 import { GameState } from "lib/bindings";
 import { clamp } from "lib/util";
@@ -203,6 +203,7 @@ export function Replay() {
 
                 <div className="flex-center flex">
                     <Button
+                        variant="primary"
                         onClick={() => setPaused((p) => !p)}
                         disabled={!running}
                     >

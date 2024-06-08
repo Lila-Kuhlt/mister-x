@@ -8,19 +8,18 @@ export function TeamCard(props: {
     const team = props.team;
 
     const states = {
-        selected: "outline outline-solid outline-2 outline-slate-300",
-        default: "",
+        selected:
+            "flex w-full items-center rounded-xl cursor-pointer bg-muted/20",
+        default:
+            "flex w-full items-center rounded-xl cursor-pointer hover:bg-muted/10",
     };
 
     const state = props.selected ? "selected" : "default";
 
     return (
-        <div
-            className={`hover:bg-slate-100 my-1 flex w-full items-center rounded-md transition-all ${states[state]}`}
-            onClick={props.onClick}
-        >
+        <div className={states[state]} onClick={props.onClick}>
             <div
-                className="m-2 h-10 w-10 rounded"
+                className="m-2 h-10 w-10 rounded-xl"
                 style={{ backgroundColor: team.color }}
             />
             <div className="flex flex-col justify-center">
