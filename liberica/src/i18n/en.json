@@ -1,7 +1,7 @@
 {
-    "SelectTeam": "Select team",
+    "SelectTeam": "Select your team",
     "ResetMapView": "Reset Map View",
-    "CreateTeam": "Create",
+    "CreateTeam": "Create team",
     "InvalidName": "invalid name",
     "NameAlreadyExists": "name already exists",
     "Detective": "Detective",
@@ -17,5 +17,6 @@
     "time": "{{time, datetime(dateStyle: medium; timeStyle: long)}}",
     "FailedParseReplay": "failed to parse replay file",
     "ReplayTooBig": "replay file is too big",
-    "Speed": "Speed"
+    "Speed": "Speed",
+    "Cancel": "Cancel"
 }

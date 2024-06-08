@@ -12,7 +12,7 @@ import {
 import { createContext, useContext, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { MrXIcon, TrainIcon, DetectiveIcon } from "components/MapIcons";
-import { Button } from "components/InputElements";
+import { Button } from "components/lila";
 import { Marker } from "./Marker";
 import { GameState, Stop, TeamState, Train } from "lib/bindings";
 import { getStops } from "lib/api";
@@ -39,7 +39,11 @@ function ResetMapViewButton() {
     return (
         <div className="leaflet-top leaflet-center">
             <div className="leaflet-control leaflet-bar">
-                <Button onClick={() => map.setView(CENTER, DEFAULT_ZOOM)}>
+                <Button
+                    onClick={() => map.setView(CENTER, DEFAULT_ZOOM)}
+                    variant={"primary"}
+                    size="lg"
+                >
                     {t("ResetMapView")}
                 </Button>
             </div>
@@ -119,7 +123,7 @@ export function Map(
         <MapContainer
             center={CENTER}
             zoom={DEFAULT_ZOOM}
-            className="h-max w-max"
+            className="z-0 h-dvh w-dvw"
             {...props.containerProps}
         >
             <TileLayer

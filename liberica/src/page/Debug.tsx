@@ -1,10 +1,12 @@
 import {
     BUTTON_SIZES,
     BUTTON_VARIANTS,
-    BaseButton,
+    Button,
     ButtonSize,
     ButtonVariant,
 } from "components/lila/button";
+import { TextInput } from "components/lila/input";
+import { THEMES, applyTheme } from "lib/theme";
 import { useState } from "react";
 
 export function Debug() {
@@ -14,13 +16,17 @@ export function Debug() {
     const [text, setText] = useState("Test");
 
     return (
-        <div className="bg-base flex h-screen w-dvw flex-col items-center justify-center gap-10">
-            <input
-                className="border-b-2 outline-none"
-                type="text"
+        <div className="flex h-screen w-dvw flex-col items-center justify-center gap-10 bg-base">
+            <TextInput
                 placeholder="Enter example text"
                 onChange={(e) => setText(e.target.value || "Test")}
-            ></input>
+            ></TextInput>
+
+            <select onChange={(e) => applyTheme(THEMES[e.target.value])}>
+                {Object.keys(THEMES).map((theme) => (
+                    <option key={theme}>{theme}</option>
+                ))}
+            </select>
 
             <table className="table-auto border-spacing-2">
                 <thead>
@@ -41,12 +47,12 @@ export function Debug() {
                                 <td className="py-2 pr-4">{variant}</td>
                                 <td className="py-2 pr-8">{size}</td>
                                 <td className="py-2">
-                                    <BaseButton
+                                    <Button
                                         variant={variant as ButtonVariant}
                                         size={size as ButtonSize}
                                     >
                                         {text}
-                                    </BaseButton>
+                                    </Button>
                                 </td>
                             </tr>
                         ))}
