@@ -28,7 +28,7 @@ export function SelectTeam() {
 
     return (
         <form className="flex h-screen items-center justify-center bg-base">
-            <div className="bg-white container flex w-80 flex-col gap-4">
+            <div className="container flex w-80 flex-col gap-4">
                 <span className="text-xl font-semibold">{t("SelectTeam")}</span>
                 <div className="flex flex-col gap-2">
                     {teams.map((team, index) => (
