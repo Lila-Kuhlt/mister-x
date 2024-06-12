@@ -14,7 +14,7 @@ import "style/main.css";
 
 import en_translation from "i18n/en.json";
 import de_translation from "i18n/de.json";
-import { THEMES, applyTheme } from "lib/theme";
+import { THEMES, ThemeName, applyTheme, loadTheme } from "lib/theme";
 
 i18n.use(LanguageDetector)
     .use(initReactI18next)
@@ -34,7 +34,11 @@ i18n.use(LanguageDetector)
             e instanceof Error && console.error("i18n init error", e.message),
     );
 
-applyTheme(Object.values(THEMES)[0]);
+const defaultTheme = Object.keys(THEMES)[0] as ThemeName;
+const setTheme = loadTheme();
+console.log("Default Theme:", defaultTheme);
+console.log("Set Theme:", defaultTheme);
+applyTheme(setTheme ?? defaultTheme);
 
 const rootElement = document.getElementById("root") as HTMLElement;
 ReactDOM.createRoot(rootElement).render(
