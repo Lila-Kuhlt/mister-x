@@ -34,8 +34,7 @@ export function applyTheme(theme: Theme) {
         }
 
         const { h, s, l } = hexToHSL(color);
-        // This has to be like this, to please the linter
-        const hsl = `${h.toString()} ${s.toString()}% ${l.toString()}%`;
+        const hsl = `${h} ${s}% ${l}%`;
 
         style.setProperty("--color-" + camelToKebabCase(name), hsl);
     }
