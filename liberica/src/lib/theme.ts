@@ -2,7 +2,9 @@ import THEMES_JSON from "assets/themes.json";
 import { hexToHSL } from "lib/colors";
 import { camelToKebabCase } from "lib/util";
 
-export const THEMES: Record<string, Theme> = THEMES_JSON;
+export type ThemeName = keyof typeof THEMES_JSON;
+export const THEMES: Record<ThemeName, Theme> = THEMES_JSON;
+export const THEME_NAMES = Object.keys(THEMES) as ThemeName[];
 
 export interface Theme {
     base: string;
@@ -18,24 +20,44 @@ export interface Theme {
     onMuted: string;
 }
 
-export function applyTheme(theme: Theme) {
-    const style = document.documentElement.style;
+const LOCAL_STORAGE_THEME_KEY = "theme";
 
-    for (const [name, val] of Object.entries(theme) as [
-        keyof Theme,
-        string,
-    ][]) {
+export function saveTheme(themeName?: ThemeName) {
+    if (!themeName) {
+        localStorage.removeItem(LOCAL_STORAGE_THEME_KEY);
+        return;
+    }
+
+    localStorage.setItem(LOCAL_STORAGE_THEME_KEY, themeName);
+}
+
+export function loadTheme(): ThemeName | null {
+    return localStorage.getItem(LOCAL_STORAGE_THEME_KEY) as ThemeName | null;
+}
+
+export function applyTheme(themeName: ThemeName, persistent = false) {
+    console.assert(THEME_NAMES.includes(themeName), "Set Theme does not exist");
+
+    const style = document.documentElement.style;
+    const theme = THEMES[themeName];
+
+    type ThemeEntry = [keyof Theme, string];
+
+    for (const [name, val] of Object.entries(theme) as ThemeEntry[]) {
         let color = val;
 
         if (val.startsWith("@")) {
             const link = val.substring(1) as keyof Theme;
             color = theme[link];
-            console.log(name, "links to " + link + " --> " + color);
         }
 
         const { h, s, l } = hexToHSL(color);
         const hsl = `${h} ${s}% ${l}%`;
 
         style.setProperty("--color-" + camelToKebabCase(name), hsl);
+    }
+
+    if (persistent) {
+        saveTheme(themeName);
     }
 }

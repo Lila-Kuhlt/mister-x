@@ -6,7 +6,7 @@ import {
     ButtonVariant,
 } from "components/lila/button";
 import { TextInput } from "components/lila/input";
-import { THEMES, applyTheme } from "lib/theme";
+import { THEMES, ThemeName, applyTheme } from "lib/theme";
 import { useState } from "react";
 
 export function Debug() {
@@ -14,7 +14,6 @@ export function Debug() {
     const variants = Object.keys(BUTTON_VARIANTS) as ButtonVariant[];
 
     const [text, setText] = useState("Test");
-
     return (
         <div className="flex h-screen w-dvw flex-col items-center justify-center gap-10 bg-base">
             <TextInput
@@ -22,7 +21,9 @@ export function Debug() {
                 onChange={(e) => setText(e.target.value || "Test")}
             ></TextInput>
 
-            <select onChange={(e) => applyTheme(THEMES[e.target.value])}>
+            <select
+                onChange={(e) => applyTheme(e.target.value as ThemeName, true)}
+            >
                 {Object.keys(THEMES).map((theme) => (
                     <option key={theme}>{theme}</option>
                 ))}
