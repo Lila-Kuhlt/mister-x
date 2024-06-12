@@ -34,7 +34,7 @@ i18n.use(LanguageDetector)
             e instanceof Error && console.error("i18n init error", e.message),
     );
 
-applyTheme(loadTheme() ?? Object.keys(THEMES)[0] as ThemeName);
+applyTheme(loadTheme() ?? (Object.keys(THEMES)[0] as ThemeName));
 
 const rootElement = document.getElementById("root") as HTMLElement;
 ReactDOM.createRoot(rootElement).render(
