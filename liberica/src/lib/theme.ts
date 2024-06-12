@@ -57,7 +57,5 @@ export function applyTheme(themeName: ThemeName, persistent = false) {
         style.setProperty("--color-" + camelToKebabCase(name), hsl);
     }
 
-    if (persistent) {
-        saveTheme(themeName);
-    }
+    if (persistent) saveTheme(themeName);
 }
