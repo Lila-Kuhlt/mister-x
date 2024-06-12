@@ -10,7 +10,7 @@ export interface HSL {
     l: number;
 }
 
-export function HexToRGB(hex: string): RGB {
+export function hexToRGB(hex: string): RGB {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
 
     if (!result) {
@@ -27,8 +27,8 @@ export function HexToRGB(hex: string): RGB {
     return { r, g, b };
 }
 
-export function HexToHSL(hex: string): HSL {
-    const { r, g, b } = HexToRGB(hex);
+export function hexToHSL(hex: string): HSL {
+    const { r, g, b } = hexToRGB(hex);
 
     const max = Math.max(r, g, b);
     const min = Math.min(r, g, b);

@@ -48,7 +48,7 @@ export function CreateTeam() {
 
                 <TextInput
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="Lila pause"
+                    placeholder="Lila Pause"
                 />
 
                 <DropDown<TeamKind>
