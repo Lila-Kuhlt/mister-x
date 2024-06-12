@@ -22,5 +22,5 @@ export const clamp = (x: number, min: number, max: number) => {
     return Math.min(Math.max(x, min), max);
 };
 
-export const fromCamelToKebabCase = (input: string) =>
+export const camelToKebabCase = (input: string) =>
     input.replace(/[A-Z]/g, (letter) => "-" + letter.toLowerCase());

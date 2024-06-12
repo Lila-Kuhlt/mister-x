@@ -1,6 +1,6 @@
 import THEMES_JSON from "assets/themes.json";
-import { HexToHSL } from "lib/colors";
-import { fromCamelToKebabCase } from "lib/util";
+import { hexToHSL } from "lib/colors";
+import { camelToKebabCase } from "lib/util";
 
 export const THEMES: Record<string, Theme> = THEMES_JSON;
 
@@ -33,10 +33,10 @@ export function applyTheme(theme: Theme) {
             console.log(name, "links to " + link + " --> " + color);
         }
 
-        const { h, s, l } = HexToHSL(color);
+        const { h, s, l } = hexToHSL(color);
+        // This has to be like this, to please the linter
         const hsl = `${h.toString()} ${s.toString()}% ${l.toString()}%`;
 
-        console.log(name, fromCamelToKebabCase(name));
-        style.setProperty("--color-" + fromCamelToKebabCase(name), hsl);
+        style.setProperty("--color-" + camelToKebabCase(name), hsl);
     }
 }
