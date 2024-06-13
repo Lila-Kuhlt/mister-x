@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { useInterval } from "use-interval";
 import { GameStateContext, Map } from "components/map/Map";
 import { Button } from "components/lila";
-import { HomeButton, Navbar } from "components/Navbar";
+import { Navbar } from "components/Navbar";
 import { GameState } from "lib/bindings";
 import { clamp } from "lib/util";
 import schema from "lib/schema";
@@ -173,8 +173,6 @@ export function Replay() {
             </GameStateContext.Provider>
 
             <Navbar>
-                <HomeButton />
-
                 <input
                     type="file"
                     onChange={(e) => {

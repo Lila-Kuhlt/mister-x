@@ -12,7 +12,6 @@ import {
 import { createContext, useContext, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { MrXIcon, TrainIcon, DetectiveIcon } from "components/MapIcons";
-import { Button } from "components/lila";
 import { Marker } from "./Marker";
 import { GameState, Stop, TeamState, Train } from "lib/bindings";
 import { getStops } from "lib/api";
@@ -28,28 +27,9 @@ const CENTER: [number, number] = [49.0046, 8.403];
 const DEFAULT_ZOOM = 15;
 
 export type MapProps = React.PropsWithChildren<{
-    tileProps?: Partial<TileLayerProps>;
-    containerProps?: Partial<MapContainerProps>;
+    tileProps?: Omit<Partial<TileLayerProps>, "className">;
+    containerProps?: Omit<Partial<MapContainerProps>, "className">;
 }>;
-
-function ResetMapViewButton() {
-    const map = useMap();
-    const { t } = useTranslation();
-
-    return (
-        <div className="leaflet-top leaflet-center">
-            <div className="leaflet-control leaflet-bar">
-                <Button
-                    onClick={() => map.setView(CENTER, DEFAULT_ZOOM)}
-                    variant={"primary"}
-                    size="lg"
-                >
-                    {t("ResetMapView")}
-                </Button>
-            </div>
-        </div>
-    );
-}
 
 function TrainMarker(props: {
     train: Train;
@@ -177,7 +157,7 @@ export function Map(
                     </LayerGroup>
                 </LayersControl.Overlay>
             </LayersControl>
-            <ResetMapViewButton />
+
             {props.children}
         </MapContainer>
     );

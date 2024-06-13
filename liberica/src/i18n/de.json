@@ -18,5 +18,6 @@
     "FailedParseReplay": "Replay-Datei konnte nicht geparst werden",
     "ReplayTooBig": "Replay-Datei ist zu groß",
     "Speed": "Geschwindigkeit",
-    "Cancel": "Abbrechen"
+    "Cancel": "Abbrechen",
+    "EmbarkPlaceholder": "Zum einsteigen auf Zug klicken"
 }

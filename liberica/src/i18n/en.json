@@ -18,5 +18,6 @@
     "FailedParseReplay": "failed to parse replay file",
     "ReplayTooBig": "replay file is too big",
     "Speed": "Speed",
-    "Cancel": "Cancel"
+    "Cancel": "Cancel",
+    "EmbarkPlaceholder": "Click on train to embark"
 }
