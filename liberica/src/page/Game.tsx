@@ -4,7 +4,7 @@ import { GameState, Team, Train } from "lib/bindings";
 import { WebSocketApi } from "lib/websockets";
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { HomeButton, Navbar } from "components/Navbar";
+import { Navbar } from "components/Navbar";
 import { Button } from "components/lila/button";
 import { useTranslation } from "react-i18next";
 
@@ -66,12 +66,26 @@ export function Game() {
         }
     }, [ws]);
 
+    const widgetEmbarkedTrain = (
+        <div className="flex h-full w-full flex-col truncate rounded-xl rounded-xl bg-muted/10 px-4 py-2.5 text-sm text-on-muted">
+            {embarkedTrain ? (
+                <span className="truncate">
+                    {embarkedTrain.line_name} {embarkedTrain.direction}
+                </span>
+            ) : (
+                <span className="truncate italic text-on-muted/50">
+                    {t("EmbarkPlaceholder")}
+                </span>
+            )}
+        </div>
+    );
+
     const Game = (
         <div className="flex h-dvh w-dvw flex-col">
             <GameStateContext.Provider value={gs}>
                 <Map
                     tileProps={{ updateInterval: 500 }}
-                    containerProps={{ preferCanvas: true }}
+                    containerProps={{ preferCanvas: true, zoomControl: false }}
                     onStopClick={(stop) => {
                         if (team) {
                             disembark();
@@ -85,30 +99,30 @@ export function Game() {
                     }}
                     onTrainClick={embark}
                 />
+
+                <Navbar>
+                    {widgetEmbarkedTrain}
+
+                    <Button
+                        disabled={!embarkedTrain}
+                        onClick={disembark}
+                        variant={"primary"}
+                        size="lg"
+                    >
+                        {t("Disembark")}
+                    </Button>
+                </Navbar>
             </GameStateContext.Provider>
-
-            <Navbar>
-                <HomeButton />
-
-                {embarkedTrain && (
-                    <span>
-                        {embarkedTrain.line_name} {embarkedTrain.direction}
-                    </span>
-                )}
-
-                <Button
-                    disabled={!embarkedTrain}
-                    onClick={disembark}
-                    variant={"primary"}
-                    size="lg"
-                >
-                    {t("Disembark")}
-                </Button>
-            </Navbar>
         </div>
     );
 
-    const LandingPage = (
+    return ws ? Game : <LandingPage />;
+}
+
+function LandingPage() {
+    const { t } = useTranslation();
+
+    return (
         <div className="flex h-dvh w-dvw flex-col items-center justify-center gap-5">
             <div className="flex flex-col items-center">
                 <span className="italic text-on-base">
@@ -118,6 +132,4 @@ export function Game() {
             </div>
         </div>
     );
-
-    return ws ? Game : LandingPage;
 }

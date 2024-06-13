@@ -22,7 +22,12 @@ export function Debug() {
             ></TextInput>
 
             <select
-                onChange={(e) => applyTheme(e.target.value as ThemeName, true)}
+                onChange={(e) =>
+                    applyTheme(e.target.value as ThemeName, {
+                        broadcast: true,
+                        persistent: true,
+                    })
+                }
             >
                 {Object.keys(THEMES).map((theme) => (
                     <option key={theme}>{theme}</option>

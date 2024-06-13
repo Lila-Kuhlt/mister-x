@@ -2,9 +2,24 @@ import THEMES_JSON from "assets/themes.json";
 import { hexToHSL } from "lib/colors";
 import { camelToKebabCase } from "lib/util";
 
+const LOCAL_STORAGE_THEME_KEY = "theme";
+const BROADCAST_CHANNEL_NAME = "theme";
+
 export type ThemeName = keyof typeof THEMES_JSON;
+
 export const THEMES: Record<ThemeName, Theme> = THEMES_JSON;
 export const THEME_NAMES = Object.keys(THEMES) as ThemeName[];
+
+export const BROADCAST_CHANNEL = new BroadcastChannel(BROADCAST_CHANNEL_NAME);
+
+BROADCAST_CHANNEL.onmessage = (msg: { data: ThemeName }) => {
+    console.debug(
+        `Received Boradcast Message on channel ${BROADCAST_CHANNEL_NAME}: `,
+        msg.data,
+    );
+    if (!THEME_NAMES.includes(msg.data)) return;
+    applyTheme(msg.data, { persistent: false, broadcast: false });
+};
 
 export interface Theme {
     base: string;
@@ -20,8 +35,6 @@ export interface Theme {
     onMuted: string;
 }
 
-const LOCAL_STORAGE_THEME_KEY = "theme";
-
 export function saveTheme(themeName?: ThemeName) {
     if (!themeName) {
         localStorage.removeItem(LOCAL_STORAGE_THEME_KEY);
@@ -35,8 +48,22 @@ export function loadTheme(): ThemeName | null {
     return localStorage.getItem(LOCAL_STORAGE_THEME_KEY) as ThemeName | null;
 }
 
-export function applyTheme(themeName: ThemeName, persistent = false) {
+export interface ApplyThemeOptions {
+    persistent: boolean;
+    broadcast: boolean;
+}
+
+const applyThemeOptionsDefaults: ApplyThemeOptions = {
+    persistent: false,
+    broadcast: false,
+};
+
+export function applyTheme(themeName: ThemeName, options: ApplyThemeOptions) {
     console.assert(THEME_NAMES.includes(themeName), "Set Theme does not exist");
+    const { persistent, broadcast } = {
+        ...applyThemeOptionsDefaults,
+        ...options,
+    };
 
     const style = document.documentElement.style;
     const theme = THEMES[themeName];
@@ -58,4 +85,5 @@ export function applyTheme(themeName: ThemeName, persistent = false) {
     }
 
     if (persistent) saveTheme(themeName);
+    if (broadcast) BROADCAST_CHANNEL.postMessage(themeName);
 }
