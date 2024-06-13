@@ -17,6 +17,7 @@ use axum::{
     Json, Router,
 };
 use futures_util::SinkExt;
+use lazy_static::lazy_static;
 use reqwest::StatusCode;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tower::util::ServiceExt;
@@ -248,8 +249,16 @@ async fn list_teams(State(state): State<SharedState>) -> Json<Vec<Team>> {
 }
 
 async fn list_stops() -> Json<&'static [kvv::Stop]> {
-    let stops = kvv::KVV_STOPS.get().unwrap();
-    Json(stops)
+    if *FETCH_TRAINS {
+        let stops = kvv::KVV_STOPS.get().unwrap();
+        Json(stops)
+    } else {
+        Json(&[])
+    }
+}
+
+lazy_static! {
+    static ref FETCH_TRAINS: bool = dotenv::var("NO_FETCH_TRAINS").is_err();
 }
 
 #[tokio::main]
@@ -262,28 +271,30 @@ async fn main() {
     update_bindings();
 
     info!("Starting server");
-    kvv::init().await;
-
     let (send, recv) = tokio::sync::mpsc::channel(100);
     let state = load_state(send.clone());
 
-    // fetch departures every 60 seconds and send them to the game logic queue
-    tokio::spawn(async move {
-        let mut interval = tokio::time::interval(Duration::from_secs(60));
-        loop {
-            interval.tick().await;
-            let departures = kvv::fetch_departures_for_region().await;
-            if departures.is_empty() {
-                warn!("Fetched no departures");
+    if *FETCH_TRAINS {
+        kvv::init().await;
+
+        // fetch departures every 60 seconds and send them to the game logic queue
+        tokio::spawn(async move {
+            let mut interval = tokio::time::interval(Duration::from_secs(60));
+            loop {
+                interval.tick().await;
+                let departures = kvv::fetch_departures_for_region().await;
+                if departures.is_empty() {
+                    warn!("Fetched no departures");
+                }
+                if let Err(err) = send
+                    .send(InputMessage::Server(ServerMessage::Departures(departures)))
+                    .await
+                {
+                    error!("Error while fetching data: {err}")
+                }
             }
-            if let Err(err) = send
-                .send(InputMessage::Server(ServerMessage::Departures(departures)))
-                .await
-            {
-                error!("Error while fetching data: {err}")
-            }
-        }
-    });
+        });
+    }
 
     info!("Starting game loop");
     tokio::spawn(run_game_loop(recv, state.clone()));
@@ -308,7 +319,7 @@ async fn main() {
 
     info!("Starting web server");
 
-    let port = std::env::var("PORT").unwrap_or_else(|_| "3000".to_string());
+    let port = dotenv::var("PORT").unwrap_or_else(|_| "3000".to_string());
     // run it with hyper on localhost:3000
     axum::Server::bind(&format!("0.0.0.0:{}", port).parse().unwrap())
         .serve(app.into_make_service())
@@ -429,15 +440,18 @@ async fn run_game_loop(mut recv: Receiver<InputMessage>, state: SharedState) {
 
         // compute train positions
         let time = chrono::Utc::now();
-        let mut trains = kvv::train_positions(&departures, time);
-        trains.retain(|x| !x.line_id.contains("bus"));
+        let mut trains = Vec::new();
+        if *FETCH_TRAINS {
+            trains = kvv::train_positions(&departures, time);
+            trains.retain(|x| !x.line_id.contains("bus"));
 
-        // update positions for players on trains
-        for team in state.teams.iter_mut() {
-            if let Some(train_id) = &team.on_train {
-                if let Some(train) = trains.iter().find(|x| &x.line_id == train_id) {
-                    team.long = train.long;
-                    team.lat = train.lat;
+            // update positions for players on trains
+            for team in state.teams.iter_mut() {
+                if let Some(train_id) = &team.on_train {
+                    if let Some(train) = trains.iter().find(|x| &x.line_id == train_id) {
+                        team.long = train.long;
+                        team.lat = train.lat;
+                    }
                 }
             }
         }
