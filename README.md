@@ -15,6 +15,16 @@ TRIAS_API_ENDPOINT=YOUR_API_ENDPOINT
 TRIAS_ACCESS_TOKEN=YOUR_TOKEN
 ```
 
+## Configuration
+### Robusta
+Robusta can be configured via environment variables or by using a `.env` file.
+
+Options:
+* `TRIAS_API_ENDPOINT`
+* `TRIAS_ACCESS_TOKEN`
+* `NO_FETCH_TRAINS`: when this is set, no train data is fetched (in particular, `TRIAS_API_ENDPOINT` and `TRIAS_ACCESS_TOKEN` are not needed)
+* `PORT`: the port (default: 3000)
+
 ## Portability
 If you are not in Karlsruhe, but want to use the app, you have to change some stuff:
 * The map center: update `CENTER` in `liberica/src/components/map/Map.tsx`
