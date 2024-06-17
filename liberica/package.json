@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "axios": "^1.6.2",
+    "framer-motion": "^11.2.10",
     "i18next": "^23.7.11",
     "i18next-browser-languagedetector": "^7.2.0",
     "leaflet": "^1.9.4",

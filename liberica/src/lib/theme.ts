@@ -49,16 +49,19 @@ export function loadTheme(): ThemeName | null {
 }
 
 export interface ApplyThemeOptions {
-    persistent: boolean;
-    broadcast: boolean;
+    persistent?: boolean;
+    broadcast?: boolean;
 }
 
-const applyThemeOptionsDefaults: ApplyThemeOptions = {
+const applyThemeOptionsDefaults: Required<ApplyThemeOptions> = {
     persistent: false,
     broadcast: false,
 };
 
-export function applyTheme(themeName: ThemeName, options: ApplyThemeOptions) {
+export function applyTheme(
+    themeName: ThemeName,
+    options: ApplyThemeOptions = {},
+) {
     console.assert(THEME_NAMES.includes(themeName), "Set Theme does not exist");
     const { persistent, broadcast } = {
         ...applyThemeOptionsDefaults,
