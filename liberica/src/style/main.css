@@ -2,6 +2,7 @@
 @layer base { 
       html { 
         @apply text-on-base; 
+        overscroll-behavior: none;
       } 
 }
 @tailwind components;
