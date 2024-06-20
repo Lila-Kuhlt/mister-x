@@ -4,7 +4,7 @@ import { GameState, Team, Train } from "lib/bindings";
 import { WebSocketApi } from "lib/websockets";
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { NavbarBody, NavbarDrawer, NavbarHeader } from "components/Navbar";
+import { Navbar } from "components/Navbar";
 import { Button } from "components/lila/button";
 import { useTranslation } from "react-i18next";
 
@@ -86,36 +86,29 @@ export function Game() {
                     onTrainClick={embark}
                 />
 
-                <NavbarDrawer>
-                    <NavbarHeader>
-                        <div className="flex h-full w-full flex-col truncate rounded-xl rounded-xl bg-muted/10 px-4 py-2.5 text-sm text-on-muted">
-                            {embarkedTrain ? (
-                                <span className="truncate">
-                                    {embarkedTrain.line_name}{" "}
-                                    {embarkedTrain.direction}
-                                </span>
-                            ) : (
-                                <span className="truncate italic text-on-muted/50">
-                                    {t("EmbarkPlaceholder")}
-                                </span>
-                            )}
-                        </div>
+                <Navbar>
+                    <div className="flex h-full w-full flex-col truncate rounded-xl rounded-xl bg-muted/10 px-4 py-2.5 text-sm text-on-muted">
+                        {embarkedTrain ? (
+                            <span className="truncate">
+                                {embarkedTrain.line_name}{" "}
+                                {embarkedTrain.direction}
+                            </span>
+                        ) : (
+                            <span className="truncate italic text-on-muted/50">
+                                {t("EmbarkPlaceholder")}
+                            </span>
+                        )}
+                    </div>
 
-                        <Button
-                            disabled={!embarkedTrain}
-                            onClick={disembark}
-                            variant={"primary"}
-                            size="lg"
-                        >
-                            {t("Disembark")}
-                        </Button>
-                    </NavbarHeader>
-                    <NavbarBody>
-                        <div className="h-20 bg-red p-2 text-on-primary">
-                            lol
-                        </div>
-                    </NavbarBody>
-                </NavbarDrawer>
+                    <Button
+                        disabled={!embarkedTrain}
+                        onClick={disembark}
+                        variant={"primary"}
+                        size="lg"
+                    >
+                        {t("Disembark")}
+                    </Button>
+                </Navbar>
             </GameStateContext.Provider>
         </div>
     );
