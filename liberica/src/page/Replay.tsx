@@ -1,8 +1,8 @@
 import { useRef, useState } from "react";
 import { useInterval } from "use-interval";
 import { GameStateContext, Map } from "components/map/Map";
-import { Button } from "components/InputElements";
-import { HomeButton, Navbar } from "components/Navbar";
+import { Button } from "components/lila";
+import { Navbar } from "components/Navbar";
 import { GameState } from "lib/bindings";
 import { clamp } from "lib/util";
 import schema from "lib/schema";
@@ -173,8 +173,6 @@ export function Replay() {
             </GameStateContext.Provider>
 
             <Navbar>
-                <HomeButton />
-
                 <input
                     type="file"
                     onChange={(e) => {
@@ -203,6 +201,7 @@ export function Replay() {
 
                 <div className="flex-center flex">
                     <Button
+                        variant="primary"
                         onClick={() => setPaused((p) => !p)}
                         disabled={!running}
                     >
