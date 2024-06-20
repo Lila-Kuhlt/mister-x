@@ -6,6 +6,7 @@ import {
     ButtonVariant,
 } from "components/lila/button";
 import { TextInput } from "components/lila/input";
+import { Select } from "components/lila/select";
 import { THEMES, ThemeName, applyTheme } from "lib/theme";
 import { useState } from "react";
 
@@ -19,9 +20,10 @@ export function Debug() {
             <TextInput
                 placeholder="Enter example text"
                 onChange={(e) => setText(e.target.value || "Test")}
-            ></TextInput>
+            />
 
-            <select
+            <Select
+                size="lg"
                 onChange={(e) =>
                     applyTheme(e.target.value as ThemeName, {
                         broadcast: true,
@@ -32,7 +34,7 @@ export function Debug() {
                 {Object.keys(THEMES).map((theme) => (
                     <option key={theme}>{theme}</option>
                 ))}
-            </select>
+            </Select>
 
             <table className="table-auto border-spacing-2">
                 <thead>
