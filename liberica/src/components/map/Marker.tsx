@@ -1,6 +1,7 @@
 import { PropsWithChildren } from "react";
 import { Marker as LMarker } from "react-leaflet";
 import { Icon } from "leaflet";
+import React from "react";
 
 export function Marker(
     props: PropsWithChildren & {

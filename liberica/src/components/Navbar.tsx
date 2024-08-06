@@ -3,6 +3,8 @@ import { Button } from "./InputElements";
 import { FaHome } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 
+import React from "react";
+
 export function Navbar(props: PropsWithChildren) {
     return (
         <div

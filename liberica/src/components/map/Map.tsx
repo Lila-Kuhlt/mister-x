@@ -18,6 +18,7 @@ import { GameState, Stop, TeamState, Train } from "lib/bindings";
 import { getStops } from "lib/api";
 import { getContrastingTextColor } from "lib/util";
 import Style from "style/Map.module.css";
+import React from "react";
 
 export const GameStateContext = createContext<GameState>({
     teams: [],

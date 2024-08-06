@@ -8,6 +8,7 @@ import { clamp } from "lib/util";
 import schema from "lib/schema";
 import { FaPlay, FaPause } from "react-icons/fa";
 import { useTranslation } from "react-i18next";
+import React from "react";
 
 // configuration
 const defaultSpeed = 10;

@@ -7,6 +7,7 @@ import { useLocation } from "react-router-dom";
 import { HomeButton, Navbar } from "components/Navbar";
 import { Button } from "components/InputElements";
 import { useTranslation } from "react-i18next";
+import React from "react";
 
 export function Game() {
     const [ws, setWS] = useState<WebSocketApi>();

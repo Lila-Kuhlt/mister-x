@@ -1,3 +1,5 @@
+import React from "react";
+
 export function Spinner(props: { color?: string }) {
     const color = props.color ?? "white";
     return (

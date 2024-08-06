@@ -2,27 +2,37 @@ import globals from "globals";
 import eslintJs from "@eslint/js";
 import tseslint from "typescript-eslint";
 
-/* import eslintPluginReact from "eslint-plugin-react";
- * import eslintPluginReactHooks from "eslint-plugin-react-hooks";
- * import eslintPluginReactRefresh from "eslint-plugin-react-refresh";
-*/ import eslintPlugini18next from "eslint-plugin-i18next";
+import eslintPluginReactHooks from "eslint-plugin-react-hooks";
+import eslintPluginReact from "eslint-plugin-react";
+import eslintPlugini18next from "eslint-plugin-i18next";
 
 // Prettier
 import eslintPluginPrettier from "eslint-plugin-prettier/recommended";
 import eslintConfigPrettier from "eslint-config-prettier";
 
-/* Currently some React related plugins are still not supported:
- *
- * - eslint-plugin-react
- * - eslint-plugin-react-hooks
- * - eslint-plugin-react-refresh
- * - eslint-plutin-i18next
- *
- * For more information see the corresponding PRs:
- * - https://github.com/jsx-eslint/eslint-plugin-react/pull/3743
- * - https://github.com/edvardchen/eslint-plugin-i18next/pull/126
- * - https://github.com/facebook/react/pull/29770
- */
+const reactPlugin = {
+    plugins: {
+        react: eslintPluginReact,
+    },
+    rules: eslintPluginReact.configs.recommended.rules,
+    settings: {
+        react: { version: "detect" },
+    },
+};
+
+const reactHooksPlugin = {
+    plugins: {
+        "react-hooks": eslintPluginReactHooks,
+    },
+    rules: eslintPluginReactHooks.configs.recommended.rules,
+};
+
+const i18Plugin = {
+    plugins: {
+        i18next: eslintPlugini18next,
+    },
+    rules: eslintPlugini18next.configs.recommended.rules,
+};
 
 /** @type {import("eslint").Config} */
 export default [
@@ -37,10 +47,9 @@ export default [
         },
     },
 
-    eslintJs.configs.recommended,
-
-    // eslintPluginReact.configs.recommended,
-    // eslintPlugini18next.configs.recommended,
+    reactPlugin,
+    reactHooksPlugin,
+    i18Plugin,
 
     eslintPluginPrettier,
     eslintConfigPrettier, // disables some rules that cause conflicts
