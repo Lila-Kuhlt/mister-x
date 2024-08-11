@@ -5,38 +5,53 @@ import tseslint from "typescript-eslint";
 import eslintPluginReactHooks from "eslint-plugin-react-hooks";
 import eslintPluginReact from "eslint-plugin-react";
 import eslintPlugini18next from "eslint-plugin-i18next";
+import eslintPluginReactRefesh from "eslint-plugin-react-refresh";
 
 // Prettier
 import eslintPluginPrettier from "eslint-plugin-prettier/recommended";
 import eslintConfigPrettier from "eslint-config-prettier";
 
+function flattenConfig(plugin, name, overrides = {}) {
+    return {
+        plugins: { [name]: plugin },
+        rules: {
+            ...plugin.configs?.recommended?.rules,
+            ...overrides,
+        },
+    };
+}
+
 const reactPlugin = {
-    plugins: {
-        react: eslintPluginReact,
-    },
-    rules: eslintPluginReact.configs.recommended.rules,
+    ...flattenConfig(eslintPluginReact, "react", {
+        "react/react-in-jsx-scope": "off",
+    }),
     settings: {
         react: { version: "detect" },
     },
 };
 
-const reactHooksPlugin = {
-    plugins: {
-        "react-hooks": eslintPluginReactHooks,
+const reactRefreshPlugin = flattenConfig(
+    eslintPluginReactRefesh,
+    "react-refresh",
+    {
+        "react-refresh/only-export-components": "warn",
     },
-    rules: eslintPluginReactHooks.configs.recommended.rules,
-};
+);
 
-const i18Plugin = {
-    plugins: {
-        i18next: eslintPlugini18next,
-    },
-    rules: eslintPlugini18next.configs.recommended.rules,
-};
+const reactHooksPlugin = flattenConfig(eslintPluginReactHooks, "react-hooks");
+const i18Plugin = flattenConfig(eslintPlugini18next, "i18next");
 
 /** @type {import("eslint").Config} */
 export default [
-    { ignores: ["src/lib/bindings.ts", "node_modules", "dist"] },
+    {
+        ignores: [
+            "src/lib/bindings.ts",
+            "node_modules",
+            "dist",
+            "*.config.js",
+            "*.config.ts",
+        ],
+    },
     {
         languageOptions: {
             globals: globals.browser,
@@ -50,6 +65,7 @@ export default [
     reactPlugin,
     reactHooksPlugin,
     i18Plugin,
+    reactRefreshPlugin,
 
     eslintPluginPrettier,
     eslintConfigPrettier, // disables some rules that cause conflicts

@@ -5,7 +5,6 @@ import { Team } from "lib/bindings";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
-import React from "react";
 
 export function Home() {
     const [teams, setTeams] = useState<Team[]>([]);

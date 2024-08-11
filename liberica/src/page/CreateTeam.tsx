@@ -5,7 +5,6 @@ import { FormEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { red, pink, lime, cyan, purple } from "tailwindcss/colors";
-import React from "react";
 
 export function CreateTeam() {
     const [color, setColor] = useState<string>(purple["500"]);

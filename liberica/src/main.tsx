@@ -5,11 +5,11 @@ import { Replay } from "page/Replay";
 import { Admin } from "page/Admin";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import "style/main.css";
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 import LanguageDetector from "i18next-browser-languagedetector";
-import React from "react";
+
+import "style/main.css";
 
 import en_translation from "i18n/en.json";
 import de_translation from "i18n/de.json";

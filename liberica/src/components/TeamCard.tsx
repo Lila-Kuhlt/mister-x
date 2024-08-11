@@ -1,5 +1,4 @@
 import { Team } from "lib/bindings";
-import React from "react";
 
 export function TeamCard(props: {
     team: Team;
