@@ -87,7 +87,7 @@ export function Game() {
                 />
 
                 <Navbar>
-                    <div className="flex h-full w-full flex-col truncate rounded-xl rounded-xl bg-muted/10 px-4 py-2.5 text-sm text-on-muted">
+                    <div className="flex h-full w-full flex-col truncate rounded-xl bg-muted/10 px-4 py-2.5 text-sm text-on-muted">
                         {embarkedTrain ? (
                             <span className="truncate">
                                 {embarkedTrain.line_name}{" "}

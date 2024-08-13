@@ -9,10 +9,13 @@ import { TextInput } from "components/lila/input";
 import { Select } from "components/lila/select";
 import { THEMES, ThemeName, applyTheme } from "lib/theme";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 export function Debug() {
     const sizes = Object.keys(BUTTON_SIZES) as ButtonSize[];
     const variants = Object.keys(BUTTON_VARIANTS) as ButtonVariant[];
+
+    const { t } = useTranslation();
 
     const [text, setText] = useState("Test");
     return (
@@ -39,9 +42,9 @@ export function Debug() {
             <table className="table-auto border-spacing-2">
                 <thead>
                     <tr className="text-left">
-                        <th>Variant</th>
-                        <th>Size</th>
-                        <th>Element</th>
+                        <th>{t("DebugVariant")}</th>
+                        <th>{t("DebugSize")}</th>
+                        <th>{t("DebugElement")}</th>
                     </tr>
                 </thead>
 

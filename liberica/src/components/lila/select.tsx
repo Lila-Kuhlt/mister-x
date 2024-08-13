@@ -10,10 +10,10 @@ export interface SelectPropsExt {
     noLogo?: boolean;
 }
 
-export const BASE =
+const BASE =
     "text-on-muted rounded-xl bg-muted/20 outline-none ring-muted focus:ring-2";
 
-export const INPUT_SIZES = {
+const INPUT_SIZES = {
     lg: "px-6 py-3 text-md",
 };
 

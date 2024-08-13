@@ -1,9 +1,11 @@
+/** eslint-disable react-refresh/only-export-components */ // This element does not have a state, so react-refresh is not needed
+
 import { classes } from "components/lila";
 
 const BASE =
     "select-none transition-all font-sans disabled:pointer-events-none active:opacity-[0.85] disabled:opacity-50 disabled:shadow-none ";
 
-export const BUTTON_VARIANTS = {
+const BUTTON_VARIANTS = {
     primary:
         "bg-primary text-on-primary rounded-xl font-bold hover:bg-primary/90 animate-entry",
     secondary:
@@ -11,7 +13,7 @@ export const BUTTON_VARIANTS = {
     muted: "bg-muted/10 text-on-muted rounded-xl font-bold hover:bg-muted/20 animate-entry",
 };
 
-export const BUTTON_SIZES = {
+const BUTTON_SIZES = {
     sm: "py-1 px-4 text-xs",
     md: "py-2 px-5 text-xs",
     lg: "py-2.5 px-7 text-sm",

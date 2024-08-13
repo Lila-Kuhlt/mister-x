@@ -19,5 +19,8 @@
     "ReplayTooBig": "replay file is too big",
     "Speed": "Speed",
     "Cancel": "Cancel",
-    "EmbarkPlaceholder": "Click on train to embark"
+    "EmbarkPlaceholder": "Click on train to embark",
+    "DebugVariant": "Variant",
+    "DebugSize": "Size",
+    "DebugElement": "Element"
 }
