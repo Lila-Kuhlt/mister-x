@@ -21,3 +21,6 @@ export const getContrastingTextColor = (bg: string) => {
 export const clamp = (x: number, min: number, max: number) => {
     return Math.min(Math.max(x, min), max);
 };
+
+export const camelToKebabCase = (input: string) =>
+    input.replace(/[A-Z]/g, (letter) => "-" + letter.toLowerCase());

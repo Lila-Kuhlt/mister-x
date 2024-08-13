@@ -1,4 +1,6 @@
-import { Button, DropDown, TextInput } from "components/InputElements";
+import { DropDown } from "components/InputElements";
+import { Button } from "components/lila/button";
+import { TextInput } from "components/lila/input";
 import { defaultErrorHandler, postCreateTeam } from "lib/api";
 import { TeamKind } from "lib/bindings";
 import { FormEvent, useState } from "react";
@@ -39,12 +41,15 @@ export function CreateTeam() {
             style={{ backgroundColor: color }}
         >
             <form
-                className="container flex w-80 flex-col gap-3 rounded-xl bg-white p-8 shadow-md"
+                className="container flex w-80 flex-col gap-3 rounded-xl bg-base p-8 shadow-md"
                 onSubmit={onSubmit}
             >
                 <h2 className="text-xl font-bold">{t("CreateTeam")}</h2>
 
-                <TextInput onTextChange={setName} trim="all" />
+                <TextInput
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Lila Pause"
+                />
 
                 <DropDown<TeamKind>
                     onItemChange={setKind}
@@ -62,12 +67,23 @@ export function CreateTeam() {
                     ))}
                 </div>
 
-                <Button disabled={loading}>
+                <Button variant="primary" size="md-wide" disabled={loading}>
                     {loading ? (
-                        <div className="h-4 w-4 animate-spin rounded-full border-4 border-dashed dark:border-white"></div>
+                        <div className="h-4 w-4 animate-spin rounded-full border-4 border-dashed"></div>
                     ) : (
                         <>{t("CreateTeam")}</>
                     )}
+                </Button>
+                <Button
+                    variant="muted"
+                    size="md-wide"
+                    disabled={loading}
+                    onClick={(e) => {
+                        e.preventDefault();
+                        navigate("/");
+                    }}
+                >
+                    {t("Cancel")}
                 </Button>
             </form>
         </div>
