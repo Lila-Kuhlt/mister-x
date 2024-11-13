@@ -18,15 +18,12 @@ use axum::{
     routing::{get, get_service, post},
     Json, Router,
 };
-use futures_util::{FutureExt, SinkExt};
+use futures_util::SinkExt;
 use lazy_static::lazy_static;
 use reqwest::StatusCode;
 use std::sync::atomic::AtomicBool;
-use tokio::{
-    pin,
-    sync::mpsc::{Receiver, Sender},
-};
-use tower::util::{Oneshot, ServiceExt};
+use tokio::sync::mpsc::{Receiver, Sender};
+use tower::util::ServiceExt;
 use tower_http::{
     cors::CorsLayer,
     services::{ServeDir, ServeFile},
