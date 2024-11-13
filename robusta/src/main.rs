@@ -50,6 +50,11 @@ const MRX: &str = "Mr. X";
 
 static PLAYERS_ONLINE: AtomicBool = AtomicBool::new(true);
 
+const USER_ONLINE_CHECK_MS: u64 = 100;
+const TRIAS_FETCH_TIMEOUT_S: u64 = 20;
+const USER_UPDATE_MS: u64 = 500;
+const USER_PROCESS_UPDATE_BATCHES: u64 = 50;
+
 #[derive(Debug)]
 enum InputMessage {
     Client(ClientMessage, u32),
@@ -285,14 +290,14 @@ async fn main() {
     let fetch_trains = if *FETCH_TRAINS {
         Box::pin(async move {
             kvv::init().await;
-            // fetch departures every 60 seconds and send them to the game logic queue
+            // fetch departures periodically and send them to the game logic queue if at least one player is online
             tokio::spawn(async move {
-                let mut interval = tokio::time::interval(Duration::from_millis(100));
-                let mut timeout = tokio::time::interval(Duration::from_secs(10));
+                let mut user_online_check_interval = tokio::time::interval(Duration::from_millis(USER_ONLINE_CHECK_MS));
+                let mut timeout = tokio::time::interval(Duration::from_secs(TRIAS_FETCH_TIMEOUT_S));
                 loop {
-                    interval.tick().await;
                     // Skip fetching updates if no player is currently connected
                     if !PLAYERS_ONLINE.load(std::sync::atomic::Ordering::Relaxed) {
+                        user_online_check_interval.tick().await;
                         continue;
                     }
 
@@ -314,7 +319,6 @@ async fn main() {
         Box::pin(std::future::ready(())) as Pin<Box<dyn Future<Output = ()>>>
     };
 
-    pin!(fetch_trains);
     info!("Starting game loop");
     let move_state = state.clone();
     let game_loop = async move {
@@ -403,8 +407,8 @@ async fn run_game_loop(mut recv: Receiver<InputMessage>, state: SharedState) {
         .expect("failed to initialize rolling file appender");
 
     // the time for a single frame
-    let interval_ms = 500;
-    let batches = 50;
+    let interval_ms = USER_UPDATE_MS;
+    let batches = USER_PROCESS_UPDATE_BATCHES;
 
     let mut interval = tokio::time::interval(Duration::from_millis(interval_ms / batches));
 
@@ -463,7 +467,7 @@ async fn run_game_loop(mut recv: Receiver<InputMessage>, state: SharedState) {
                     }
                 }
             }
-            PLAYERS_ONLINE.store(!state.connections.is_empty(), std::sync::atomic::Ordering::SeqCst);
+            PLAYERS_ONLINE.store(!state.connections.is_empty(), std::sync::atomic::Ordering::Relaxed);
         }
         let mut state = state.lock().await;
 
