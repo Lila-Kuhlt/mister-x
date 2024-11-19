@@ -291,6 +291,9 @@ async fn main() {
             tokio::spawn(async move {
                 let mut user_online_check_interval = tokio::time::interval(Duration::from_millis(USER_ONLINE_CHECK_MS));
                 let mut timeout = tokio::time::interval(Duration::from_secs(TRIAS_FETCH_TIMEOUT_S));
+                // the first tick completes immediately
+                user_online_check_interval.tick().await;
+                timeout.tick().await;
                 loop {
                     // Skip fetching updates if no player is currently connected
                     if !PLAYERS_ONLINE.load(std::sync::atomic::Ordering::Relaxed) {
