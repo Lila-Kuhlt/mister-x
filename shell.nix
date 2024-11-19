@@ -28,10 +28,8 @@ let
   };
 
   # Define the rustc we need
-  rustc-wasm = pkgs.rust-bin.stable.latest.default.override {
-    targets = [ "wasm32-unknown-unknown" ];
-    # wasm-pack needs this
-    extensions = [ "rust-src" ];
+  rustc = pkgs.rust-bin.stable.latest.default.override {
+    extensions = [ "clippy" "rust-analyzer" ];
   };
   
   lib = pkgs.lib;
@@ -39,33 +37,18 @@ in
   # Make a shell with the dependencies we need
   pkgs.mkShell {
     buildInputs = [
-      rustc-wasm
+      rustc
       pkgs.nodejs
       pkgs.cargo
-      pkgs.cargo-watch
-      pkgs.wasm-pack
       pkgs.clang
 
       pkgs.openssl
       pkgs.openssl.dev
-      pkgs.glib
-      pkgs.gtk3
-      pkgs.libsoup
-      pkgs.webkitgtk
-      pkgs.freetype
-      pkgs.freetype.dev
 
       pkgs.pkg-config
 
-      # Use Mold as a Linke
+      # Use Mold as a Linker
       pkgs.mold
-
-      # Vulkan
-      #pkgs.glslang
-      pkgs.shaderc
-      pkgs.vulkan-headers
-      pkgs.vulkan-loader
-      #pkgs.vulkan-validation-layers
     ];
 
     # Hacky way to run cago through Mold
