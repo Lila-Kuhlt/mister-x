@@ -1,24 +1,12 @@
 @tailwind base;
+@layer base { 
+      html { 
+        @apply text-on-base; 
+        overscroll-behavior: none;
+      } 
+}
 @tailwind components;
 @tailwind utilities;
-
-body,html {
-    margin: 0;
-    padding: 0
-}
-
-.h-max {
-    height: 100vh;
-}
-
-.w-max {
-    width: 100vw;
-}
-
-.flex-center {
-    justify-content: center;
-    align-items: center;
-}
 
 .leaflet-center {
   position: absolute;
